@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.0 · 2026-10-11
+
+Tools and approvals (DEV_PLAN Phase 4, first part).
+
+- Claude can use tools: run commands (bash) and read, write, edit and search files in the chat's own folder, and search and read the web (Anthropic's web search and web fetch). A reply keeps going through as many rounds of tools as it needs.
+- Approvals: in Ask mode commands and file changes wait for you (Allow once, Always allow, Deny); Auto runs them; Plan never does and Claude describes the change instead. A declined call is reported to Claude and the reply continues.
+- In the thread: the steps of a reply fold into one line ("Searched the web, wrote hello.py, and 1 more step"); each step opens to its input and output, command output streams live, search results are links.
+- Settings: Tools (workspace tools, web tools, the always-allowed list).
+- Engine: `tool.approve`, `tool.pending`; settings `webTools`, `workspaceTools`, `toolAllow`, `toolDeny`.
+- Fixed: the context meter no longer moves the composer bar when it first appears.
+
 ## 0.3.3 · 2026-10-11
 
 Chat on the Claude API (DEV_PLAN Phase 3, last part).

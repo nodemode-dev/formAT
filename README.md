@@ -1,7 +1,7 @@
 <h1 align="center">Format</h1>
 <p align="center"><b>A.T, the Agentic Terminal: the claude.ai way of working, on your own Claude API key, in the form family's Studio Dark design.</b></p>
 <p align="center">
-<img src="https://img.shields.io/badge/version-0.3.3-f97316" alt="version 0.3.3">
+<img src="https://img.shields.io/badge/version-0.4.0-f97316" alt="version 0.4.0">
 <img src="https://img.shields.io/badge/node-22-339933" alt="node 22">
 <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="python 3.12">
 <img src="https://img.shields.io/badge/license-Apache--2.0-lightgrey" alt="Apache 2.0 license">
@@ -13,7 +13,7 @@ Format is the form family's chat and agent workspace for the Claude API. It foll
 
 Format is not affiliated with Anthropic and uses none of its logos, fonts or styles.
 
-**Status.** v0.3.3 chats with Claude, branches a conversation when you edit any message (with a pager between versions), summarizes long chats so they keep going (compaction), sends large files once through the Files API, searches chats by their text, colours code and renders math. The engine's harness turns what you type and attach into a Claude API request (system prompt with your preferences, effort, thinking, prompt caching, images, PDFs, code and zips) and streams the reply into a Markdown view that renders each finished block once. Models and their effort levels come from your key's `/v1/models`. Around it: the sidebar that folds to a mini rail (Mod+B), the composer with the + menu, model, effort and permission menus, Stop and a queue, dictation, a floating Outputs card, a terminal dock with real shells (Hide or Mod+J), a command palette (Mod+K), and Settings for your account and API keys. Tools, artifacts and projects follow (see the roadmap in the planning sidecar).
+**Status.** v0.4.0 gives Claude tools: commands and files in each chat's own folder, and web search and fetch, with approval cards (Ask, Auto, Plan) and claude.ai's one-line summary of the steps. It also chats with Claude, branches a conversation when you edit any message (with a pager between versions), summarizes long chats so they keep going (compaction), sends large files once through the Files API, searches chats by their text, colours code and renders math. The engine's harness turns what you type and attach into a Claude API request (system prompt with your preferences, effort, thinking, prompt caching, images, PDFs, code and zips) and streams the reply into a Markdown view that renders each finished block once. Models and their effort levels come from your key's `/v1/models`. Around it: the sidebar that folds to a mini rail (Mod+B), the composer with the + menu, model, effort and permission menus, Stop and a queue, dictation, a floating Outputs card, a terminal dock with real shells (Hide or Mod+J), a command palette (Mod+K), and Settings for your account and API keys. Tools, artifacts and projects follow (see the roadmap in the planning sidecar).
 
 | Shortcut | Does |
 | --- | --- |

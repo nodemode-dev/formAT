@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.3
-Last updated: 2026-10-11 · v0.3.3: summaries in the thread, Long chats settings, the context meter fix
+Current build version: v0.4.0
+Last updated: 2026-10-11 · v0.4.0: tool cards, the summary line, approval cards, live output, Tools settings, the meter's box
 
 ---
 
@@ -215,6 +215,20 @@ The meter beside the model is the last reply's `usage` (input, cache creation, c
 - logged: v0.3.3 · 2026-10-11
 
 From v0.3.1 to v0.3.2 the meter never showed: `setContext` toggled `hidden` only when `hidden === !text`, which is the case where nothing should change. Its text was right, and the v0.3.1 check read the text of the hidden element and passed. Found while checking compaction in v0.3.3; the checks now require the element to be visible. The pattern in this codebase is `if (el.hidden !== want) el.hidden = want`, or the equivalent early return.
+
+### src/ui/composer.ts · the meter's box
+- refers-to: src/ui/composer.ts :: setContext; src/styles/ft-chat.css :: .ft-context
+- kind: warning-context
+- logged: v0.4.0 · 2026-10-11
+
+Once the meter could show (v0.3.3), its first appearance in a new chat widened the right side of the composer bar and moved the model and mode buttons 70 px (layout shift 0.0004, found by layout-shift attribution in the v0.4.0 check). The meter keeps a 12-character box at all times and is hidden with `visibility` through `is-empty`.
+
+### src/ui/tool-cards.ts · cards and the summary line
+- refers-to: src/ui/tool-cards.ts :: ToolCard, ToolGroup, describe, resultView; src/ui/chat-view.ts :: ensurePart, applyBlock, toolStatus, toolOutput
+- kind: rationale
+- logged: v0.4.0 · 2026-10-11
+
+claude.ai folds a run of tool calls into one line ("Used Clock, read 8 pages, and 21 more steps, 1 failed", UI_STUDY); Format does the same: consecutive tool blocks in a reply join one `details` group whose summary names the first two steps, counts the rest and the failures, and is closed by default. A text or thinking block ends the group, so a reply reads text, steps, text. The group opens itself only when a call waits for approval, because the approval must be seen; nothing closes on its own, so the thread never moves under the reader. Each card is created once per `tool_use` id and updated in place: the title and input when the input finishes, the state from `message.tool`, output appended to one Text node from `tool.output`, the result or links when the result block arrives (matched by `tool_use_id`, the result block itself draws nothing). The state label has a fixed 9em box so changing it does not move the line. Reloaded chats build the same cards from the stored blocks through `resultView`, which mirrors the engine's `tool_view`.
 
 ### src/ui/chat-view.ts · summaries
 - refers-to: src/ui/chat-view.ts :: node (compaction), paintCompaction, complete; src/app.ts :: message.completed (compactNext), compactNow

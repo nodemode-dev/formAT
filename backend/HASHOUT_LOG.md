@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.3
-Last updated: 2026-10-11 · v0.3.3: the Files API, compaction, chat.compact, remote file cleanup
+Current build version: v0.4.0
+Last updated: 2026-10-11 · v0.4.0: the tool loop, workspace tools, web search and fetch, approvals
 
 ---
 
@@ -50,6 +50,7 @@ backend/
 - [app/engine/cmd_conversation.py](#app-engine-cmd-conversation)
 - [app/engine/cmd_chat.py](#app-engine-cmd-chat)
 - [app/engine/cmd_message.py](#app-engine-cmd-message)
+- [app/engine/tools.py and the tool loop](#app-engine-tools)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -275,6 +276,38 @@ On-demand compaction (beta `compact-2026-09-04`, read 2026-10-11), not threshold
 - logged: v0.3.3 · 2026-10-11
 
 The decision to compact is made before the reply's `message.completed` is published and is carried on the reply as `meta.compactNext`, and the run stays in `RUNS` until the summary is stored. The window would otherwise take the reply's completion as the end of the run and send its queue into a 409.
+
+---
+
+## app/engine/tools.py and the tool loop {#app-engine-tools}
+
+### app/engine/chat.py · the loop
+- refers-to: app/engine/chat.py :: _run, _call_tool, _close_open_calls, tool_view, MAX_ROUNDS
+- kind: rationale
+- logged: v0.4.0 · 2026-10-11
+
+Sources read 2026-10-11 on platform.claude.com: "Tool use with Claude", "Web search tool" and "Web fetch tool". A reply is one stored message however many rounds it takes: each round streams into the same block list at an offset, and client results are appended as `tool_result` blocks in that list. That keeps one node per reply in the window, one message per reply in the tree (so branching and retry treat a tool run as one reply), and one place to resume from. `harness.api_messages` turns the list back into the alternating assistant and user messages the API needs, results first in each user message. Rounds stop when the stop reason is not `tool_use` (`pause_turn` loops without running anything) or after 40, which is reported on the reply. Inputs arrive as `input_json` deltas and are parsed at `block_stop`; until then the window shows the call as preparing. `_close_open_calls` runs on every exit: a server call without its result is dropped and a client call without one gets "Not run", because a request with an unanswered `tool_use` is rejected and the chat could never continue.
+
+### app/harness/request.py · passing blocks back
+- refers-to: app/harness/request.py :: api_messages, _assistant_block
+- kind: warning-context
+- logged: v0.4.0 · 2026-10-11
+
+Assistant blocks are now sent back as they were received, minus `None` fields and empty citations, instead of through the old allow-list of block types: the web search page requires `encrypted_content` and the results unchanged, and dynamic filtering (the 20260318 tools) adds code-execution blocks the allow-list did not know. Thinking blocks without a signature (a stopped stream) and empty text blocks are still dropped. User messages keep the allow-list.
+
+### app/engine/tools.py · the workspace and approvals
+- refers-to: app/engine/tools.py :: workspace, _inside, decision_for, wait_for_approval, answer, run, _bash
+- kind: rationale
+- logged: v0.4.0 · 2026-10-11
+
+Each chat has its own folder, `workspace/chats/<id>`; `read`, `write`, `edit`, `glob` and `grep` resolve every path and refuse anything outside it. `bash` starts there in a fresh login shell but is not confined: it runs as the person, with their permissions, so in Ask mode it waits for approval, and that approval is the guard. Read-only tools never ask; Plan refuses changes with a message that tells Claude to describe them instead; Auto runs everything not in `toolDeny`. An approval is a `threading.Event` the run waits on in quarter-second steps so Stop still works; `tool.approve` sets it. Always allow writes `toolAllow` through `settings.set`, so it shows in Settings and the CLI. Output is pushed as `tool.output` every 80 ms and the stored result keeps the last 30,000 characters. `edit` is the SEDO shape on purpose: one exact passage, refused when it is missing or not unique.
+
+### app/engine/tools.py · server tools
+- refers-to: app/engine/tools.py :: WEB_SEARCH, WEB_FETCH, definitions
+- kind: explainer
+- logged: v0.4.0 · 2026-10-11
+
+`web_search_20260318` and `web_fetch_20260318`: the current versions, with dynamic filtering (the API provisions the code execution it needs) and no beta header. They are offered unless the model's `capabilities.server_tools` says otherwise or `webTools` is off. Web search is billed by Anthropic per search ($10 per 1,000 on 2026-10-11); the Tools settings say so. Web fetch only fetches URLs that already appeared in the conversation, which is the API's own guard against exfiltration.
 
 ---
 

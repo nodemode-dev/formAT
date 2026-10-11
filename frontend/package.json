@@ -1,7 +1,7 @@
 {
   "name": "format",
   "private": true,
-  "version": "0.3.3",
+  "version": "0.4.0",
   "description": "Format · A.T, the Agentic Terminal · a chat and agent workspace on the Claude API in the form family",
   "license": "Apache-2.0",
   "type": "module",
