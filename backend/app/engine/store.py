@@ -27,6 +27,23 @@ CREATE TABLE IF NOT EXISTS messages (
 );
 CREATE INDEX IF NOT EXISTS messages_by_conversation ON messages(conversation_id, created);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS artifacts (
+  id TEXT PRIMARY KEY,
+  conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'html',
+  created REAL NOT NULL,
+  updated REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS artifact_versions (
+  artifact_id TEXT NOT NULL REFERENCES artifacts(id) ON DELETE CASCADE,
+  version INTEGER NOT NULL,
+  message_id TEXT,
+  content TEXT NOT NULL,
+  created REAL NOT NULL,
+  PRIMARY KEY (artifact_id, version)
+);
+CREATE INDEX IF NOT EXISTS artifacts_by_conversation ON artifacts(conversation_id, updated);
 """
 
 _lock = threading.RLock()
@@ -58,8 +75,8 @@ def conn() -> sqlite3.Connection:
                         prev = mid
                     c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
-            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '3')")
-            c.execute("UPDATE meta SET value = '3' WHERE key = 'schema'")
+            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '4')")
+            c.execute("UPDATE meta SET value = '4' WHERE key = 'schema'")
             _conn = c
         return _conn
 

@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.4.2
-Last updated: 2026-10-11 · v0.4.2: spawn_agent, agentLimit, agentModel
+Current build version: v0.5.0
+Last updated: 2026-10-11 · v0.5.0: artifacts, publish_artifact, the sandboxed artifact page, artifactNetwork
 
 ---
 
@@ -30,6 +30,8 @@ backend/
     │   ├── cmd_conversation.py    conversation.create, list, get, rename, pin, delete
     │   ├── cmd_message.py         message.add; messages_of for conversation.get
     │   ├── cmd_settings.py        models.list (fixture until v0.3.0), settings.get, settings.set
+    │   ├── artifacts.py           artifact rows and versions: publish, list, get, delete
+    │   ├── cmd_artifact.py        artifact.list, artifact.get, artifact.delete
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
     └── routers/
         ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
@@ -51,6 +53,7 @@ backend/
 - [app/engine/cmd_chat.py](#app-engine-cmd-chat)
 - [app/engine/cmd_message.py](#app-engine-cmd-message)
 - [app/engine/tools.py and the tool loop](#app-engine-tools)
+- [app/engine/artifacts.py and serving](#app-engine-artifacts)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -322,6 +325,24 @@ The three tools that make the work visible, from the plan's tool list (DEV_PLAN,
 - logged: v0.4.2 · 2026-10-11
 
 A sub-agent is a second loop inside the parent's `spawn_agent` call, not a chat in the sidebar: its history starts from the task alone, which keeps it cheap and focused, and the task description tells Claude to write tasks that stand alone. It shares the chat's folder and the parent's message for statuses and approvals, so its waiting calls appear and are answered exactly like the parent's; it cannot ask questions, keep the plan, send files or start sub-agents, because those speak to the person and only the main Claude does that. It does not stream text deltas: each block is published once at `block_stop` with `parent` set, which is enough to follow it and cheaper than a second delta stream. Its blocks live in `meta.agents[tool_use_id]`, saved with the parent at each round. The report is its last text after its last tool call. Sub-agents run one after another within a reply (the loop runs parallel calls in order); `agentLimit` caps them per reply and 0 removes the tool; `agentModel` lets them run on a faster model.
+
+---
+
+## app/engine/artifacts.py and serving {#app-engine-artifacts}
+
+### app/engine/artifacts.py · storage and versions
+- refers-to: app/engine/store.py :: SCHEMA (artifacts, artifact_versions); app/engine/artifacts.py :: publish, list_, get, version, versions, delete; app/engine/cmd_artifact.py; app/engine/chat.py :: _call_tool (publish_artifact), tool_view (publish_artifact)
+- kind: rationale
+- logged: v0.5.0 · 2026-10-11
+
+An artifact is a row per page and a row per version; a version is never changed, a revision is a new row with the next number, so every card in the thread keeps opening exactly what it published. Publishing with `artifact_id` is confined to the same chat, so a model cannot write into another chat's page. Each version keeps the message that made it; `_call_tool` finds the version by that message after the tool runs and stores `{id, version, title}` in `meta.artifacts` under the call id, then publishes `message.artifact`, so the window's card learns its artifact without parsing the result text. `tool_view` trims the HTML out of the `publish_artifact` input sent to the window (only title, artifact_id and size): a 2 MB page would otherwise travel in every `message.block` and every `conversation.get`. The cap is 2 MB per version. Schema version 4. The tool is read-only for approvals because it touches nothing on disk, and sub-agents cannot use it because only the main Claude speaks to the person.
+
+### app/routers/files.py · the artifact page and its CSP
+- refers-to: app/routers/files.py :: artifact_csp, artifact_page; app/engine/cmd_settings.py :: artifactNetwork
+- kind: warning-context
+- logged: v0.5.0 · 2026-10-11
+
+`GET /api/artifacts/{id}/v/{n}` serves a version as its own HTML document with a Content-Security-Policy that carries a `sandbox` directive. The directive is the important part: the window's iframe is also sandboxed without `allow-same-origin`, but a page opened in a new tab (Pop out) has no iframe, and without the header it would run on the engine's own origin with access to `/api/commands`. With it, the page gets an opaque origin wherever it is opened. `connect-src 'none'` blocks fetch and WebSocket unless `artifactNetwork` is on (then https only); scripts, styles and fonts may come from cdnjs, jsdelivr, unpkg and Google Fonts, as claude.ai allows. `frame-ancestors 'self'` keeps other sites from framing it; `form-action 'none'` and `base-uri 'none'` close the remaining exits. `?download=1` sends it as an attachment named after the title and version.
 
 ---
 

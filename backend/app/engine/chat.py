@@ -169,6 +169,11 @@ def tool_view(block: dict, meta: dict) -> dict:
         view = {"type": t, "id": block.get("id"), "name": block.get("name"), "input": block.get("input") or {}, "status": status}
         if block.get("id") in (meta.get("answers") or {}):
             view["answer"] = meta["answers"][block["id"]]
+        if block.get("name") == "publish_artifact":
+            inp = block.get("input") or {}
+            view["input"] = {"title": inp.get("title"), "artifact_id": inp.get("artifact_id"), "size": len(inp.get("html") or "")}
+            if block.get("id") in (meta.get("artifacts") or {}):
+                view["artifact"] = meta["artifacts"][block["id"]]
         return view
     if t in RESULT_TYPES:
         content = block.get("content")
@@ -246,6 +251,13 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
             last[0] = time.monotonic()
 
     text, is_error = tools.run(name, args, conversation_id, on_output, cancel, mid)
+    if name == "publish_artifact" and not is_error:
+        from app.engine import store
+        row = store.row("SELECT v.artifact_id, v.version, a.title FROM artifact_versions v JOIN artifacts a ON a.id = v.artifact_id WHERE v.message_id = ? ORDER BY v.created DESC LIMIT 1", (mid,))
+        if row:
+            info = {"id": row["artifact_id"], "version": row["version"], "title": row["title"]}
+            meta.setdefault("artifacts", {})[tid] = info
+            events.publish("message.artifact", id=mid, conversationId=conversation_id, toolUseId=tid, artifact=info)
     if buf:
         events.publish("tool.output", id=mid, conversationId=conversation_id, toolUseId=tid, text="".join(buf))
     return result(text, is_error, "error" if is_error else "done")

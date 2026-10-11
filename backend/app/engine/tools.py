@@ -12,8 +12,8 @@ from pathlib import Path
 from app.core import config
 from app.engine import events
 
-READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user", "spawn_agent"}
-AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list"}
+READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user", "spawn_agent", "publish_artifact"}
+AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list", "publish_artifact"}
 TASK_STATES = ("pending", "in_progress", "completed")
 OUTPUT_CAP = 30_000
 READ_CAP = 200_000
@@ -57,6 +57,11 @@ DEFINITIONS = [
      "input_schema": {"type": "object", "properties": {"task": {"type": "string", "description": "The complete task, standing alone"},
                                                         "title": {"type": "string", "description": "A few words naming the task, shown to the person"}},
                       "required": ["task"]}},
+    {"name": "publish_artifact", "description": "Publish a self-contained HTML page (an app, a visualisation, a document, a small tool) that opens in a panel beside the chat for the person to use, copy or download. Put all CSS and JavaScript inline; scripts may load from cdnjs.cloudflare.com, cdn.jsdelivr.net or unpkg.com; the page has no network access otherwise. To revise a page you published, pass its artifact_id: that adds a new version and keeps the earlier ones.",
+     "input_schema": {"type": "object", "properties": {"title": {"type": "string", "description": "A short name for the page"},
+                                                        "html": {"type": "string", "description": "The complete HTML document"},
+                                                        "artifact_id": {"type": "string", "description": "The id of an artifact from this chat to add a version to"}},
+                      "required": ["title", "html"]}},
     {"name": "send_file", "description": "Give the person a file from the workspace folder: it appears in the conversation as a file card they can download, and in the Outputs panel. Use it for every file that is a deliverable, after writing it.",
      "input_schema": {"type": "object", "properties": {"path": {"type": "string", "description": "Path relative to the workspace folder"},
                                                         "caption": {"type": "string", "description": "One line of context, optional"}},
@@ -232,6 +237,13 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
             events.publish("tasks.changed", conversationId=conversation_id, tasks=tasks)
             done = sum(1 for t in tasks if t["status"] == "completed")
             return f"Task list updated: {done} of {len(tasks)} done.", False
+        if name == "publish_artifact":
+            from app.engine import artifacts
+            try:
+                a = artifacts.publish(conversation_id, message_id, str(args.get("title") or ""), args.get("html"), args.get("artifact_id") or None)
+            except artifacts.ArtifactError as exc:
+                raise ToolError(f"Not published: {exc}") from None
+            return f"Published \"{a['title']}\" as artifact {a['id']}, version {a['version']}. The person sees it as a card in your reply and opens it beside the chat from there; to revise it, call publish_artifact again with artifact_id {a['id']}.", False
         if name == "send_file":
             path = _inside(root, args.get("path", ""))
             if not path.is_file():
