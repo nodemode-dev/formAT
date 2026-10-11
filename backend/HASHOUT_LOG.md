@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.1.0
-Last updated: 2026-10-11 · scaffold: registry, events, store, conversation commands
+Current build version: v0.2.0
+Last updated: 2026-10-11 · real terminals, messages, models and chat settings
 
 ---
 
@@ -25,13 +25,18 @@ backend/
     │   ├── commands.py            @command registry, parameter checks, dispatch, catalogue
     │   ├── events.py              publish to WebSocket subscribers, thread-safe
     │   ├── store.py               SQLite (WAL): conversations, messages, meta
+    │   ├── terminal.py            PTY sessions: spawn, pump thread, scrollback, write, resize, close
     │   ├── cmd_app.py             app.info
-    │   └── cmd_conversation.py    conversation.create, list, get, rename, pin, delete
+    │   ├── cmd_conversation.py    conversation.create, list, get, rename, pin, delete
+    │   ├── cmd_message.py         message.add; messages_of for conversation.get
+    │   ├── cmd_settings.py        models.list (fixture until v0.3.0), settings.get, settings.set
+    │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
     └── routers/
-        ├── __init__.py            router list, startup binds the loop and opens the store
+        ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
         ├── system.py              GET /api/health
         ├── commands.py            GET /api/commands, GET and POST /api/commands/{id}
-        └── stream.py              WS /api/events
+        ├── stream.py              WS /api/events
+        └── terminal_socket.py     WS /api/terminal/{id}: scrollback, then live output; input and resize in
 ```
 
 ---
@@ -44,6 +49,8 @@ backend/
 - [app/engine/store.py](#app-engine-store)
 - [app/engine/cmd_conversation.py](#app-engine-cmd-conversation)
 - [app/routers/__init__.py](#app-routers-init)
+- [app/engine/terminal.py](#app-engine-terminal)
+- [app/engine/cmd_settings.py](#app-engine-cmd-settings)
 - [app/routers/stream.py](#app-routers-stream)
 
 ---
@@ -125,6 +132,42 @@ Pinned first, then most recent, matching the sidebar's Pinned group above the da
 - logged: v0.1.0 · 2026-10-11
 
 Importing the `cmd_*` modules is what registers their commands; naming them in a tuple makes the import a used name instead of a side-effect import.
+
+---
+
+## app/engine/terminal.py {#app-engine-terminal}
+
+### app/engine/terminal.py · the shell and its environment
+- refers-to: app/engine/terminal.py :: _shell, _env
+- kind: rationale
+- logged: v0.2.0 · 2026-10-11
+
+The person's own login shell (`$SHELL -l`, else bash, else sh; `COMSPEC` on Windows) in the workspace folder, with `TERM=xterm-256color`, `FORMAT_TERMINAL=1`, `FORMAT_ENGINE_URL`, and the repo folder first on `PATH` on macOS and Linux so `format cli ...` works inside the terminal. Not on Windows, where `format` must never shadow the disk formatter for other programs.
+
+### app/engine/terminal.py · _pump
+- refers-to: app/engine/terminal.py :: _pump, Session.keep
+- kind: explainer
+- logged: v0.2.0 · 2026-10-11
+
+One reader thread per PTY: output goes into a 256 KB scrollback (replayed to a window that attaches later, so reopening the dock is never blank) and to each attached socket's queue through `call_soon_threadsafe`. `None` on the queue means the shell exited.
+
+### app/engine/cmd_terminal.py · terminal.read
+- refers-to: app/engine/cmd_terminal.py :: read, ANSI
+- kind: rationale
+- logged: v0.2.0 · 2026-10-11
+
+Agents read the terminal as plain text: colour and cursor sequences are removed and line endings normalised. Writes go through `terminal.write`, so an agent's typing appears live in the window's tab.
+
+---
+
+## app/engine/cmd_settings.py {#app-engine-cmd-settings}
+
+### app/engine/cmd_settings.py · MODELS
+- refers-to: app/engine/cmd_settings.py :: MODELS
+- kind: todo
+- logged: v0.2.0 · 2026-10-11
+
+A built-in list (ids claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5, claude-fable-5-1) reported as `source: fixture`. v0.3.0 replaces it with the provider's models endpoint and keeps this list only as the offline fallback. Effort levels follow the claude.ai menu: low, medium, high, extra, max.
 
 ---
 

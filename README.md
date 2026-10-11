@@ -13,7 +13,18 @@ Format is the form family's chat and agent workspace for the Claude API. It foll
 
 Format is not affiliated with Anthropic and uses none of its logos, fonts or styles.
 
-**Status.** v0.1.0 is the scaffold: the engine with its command registry, event stream and conversation store, the CLI, and a boot window that reports the engine's state. The shell arrives in v0.2.0 and chat on the Claude API in v0.3.0 (see the roadmap in the planning sidecar).
+**Status.** v0.2.0 is the shell: the sidebar that folds to a mini rail (Mod+B), the conversation view and composer with the + menu, model, effort and permission menus, an Outputs side panel, a terminal dock running real shells, a command palette (Mod+K), and the Projects, Artifacts, Scheduled, Customize and Settings pages. Messages you send are stored; Claude's replies arrive in v0.3.0 (see the roadmap in the planning sidecar).
+
+| Shortcut | Does |
+| --- | --- |
+| Mod+B | sidebar open or rail |
+| Mod+K | command palette |
+| Mod+J | terminal dock |
+| Mod+. | side panel |
+| Mod+Shift+O | new chat |
+| Mod+U | add files |
+
+Mod is Cmd on macOS and Ctrl elsewhere. Inside the terminal the shell keeps its own Ctrl keys.
 
 **Stack.** Vanilla TypeScript 7 and Vite 8 · Python 3.12 and FastAPI · Rust (wgpu) for the native crate · Tauri 2 for the desktop app from v0.7.0.
 
@@ -58,7 +69,7 @@ format/
   format, format.bat          launcher
   setup/                      install, boot, build, serve, doctor, clean, cli.py
   backend/app/                engine: core/config, engine/ (commands, events, store, cmd_*), routers/
-  frontend/src/               window: styles (family sheets plus ft-*), engine-client/, ui/
+  frontend/src/               window: app.ts, state/, engine-client/, ui/ (sidebar, composer, chat, panel, terminal, palette), styles
   native/format-render/       Rust crate on wgpu, used where the engine measures a need
 ```
 

@@ -13,6 +13,9 @@ Format · Copyright 2026 nodemode-ai · Licensed under the Apache License, Versi
 | Inter (`@fontsource/inter`) | OFL-1.1 | frontend fonts |
 | JetBrains Mono (`@fontsource/jetbrains-mono`) | OFL-1.1 | frontend fonts |
 | Vite, TypeScript | MIT, Apache-2.0 | frontend build only |
+| xterm.js (`@xterm/xterm`, `@xterm/addon-fit`) | MIT | terminal dock |
+| ptyprocess | ISC | engine terminals on macOS and Linux |
+| pywinpty | MIT | engine terminals on Windows |
 | FastAPI, Starlette, Pydantic | MIT | engine |
 | Uvicorn, httpx | BSD-3-Clause | engine |
 | wgpu, pollster, bytemuck, sysinfo | MIT or Apache-2.0 | native crate |
