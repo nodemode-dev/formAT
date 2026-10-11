@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.0
-Last updated: 2026-10-11 · real terminals, messages, models and chat settings
+Current build version: v0.3.1
+Last updated: 2026-10-11 · v0.3.1: chat.edit and search by message text
 
 ---
 
@@ -48,6 +48,7 @@ backend/
 - [app/engine/events.py](#app-engine-events)
 - [app/engine/store.py](#app-engine-store)
 - [app/engine/cmd_conversation.py](#app-engine-cmd-conversation)
+- [app/engine/cmd_chat.py](#app-engine-cmd-chat)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -121,6 +122,24 @@ An `RLock`, not a `Lock`: `rows` and `run` hold it and call `conn()`, which take
 - logged: v0.1.0 · 2026-10-11
 
 Pinned first, then most recent, matching the sidebar's Pinned group above the day-grouped recents. Search by message content arrives with messages in v0.3.0.
+
+### app/engine/cmd_conversation.py · query
+- refers-to: app/engine/cmd_conversation.py :: list_
+- kind: warning-context
+- logged: v0.3.1 · 2026-10-11
+
+`query` matches the title or `messages.content` with `LIKE`. `content` is the JSON of the content blocks, so a query that is also a JSON key (`text`, `type`, `thinking`) matches nearly every chat; the window only asks from three characters on and marks chats that matched only by content with "in messages". An FTS5 table over the extracted text replaces this when chats grow large (DEV_PLAN Phase 3, remaining).
+
+---
+
+## app/engine/cmd_chat.py {#app-engine-cmd-chat}
+
+### app/engine/cmd_chat.py · edit
+- refers-to: app/engine/cmd_chat.py :: edit
+- kind: rationale
+- logged: v0.3.1 · 2026-10-11
+
+Edit replaces rather than branches: it deletes the person's last message and everything after it (publishing `message.deleted` for each), inserts the new text with the old message's attachments and `edited: true` in `meta`, and starts a reply. claude.ai keeps the old path as a branch; `parent_id` already makes the store a tree, and branch navigation is the remaining half of this row. It refuses with 409 while a reply runs, so a reply can never land after its question was removed.
 
 ---
 

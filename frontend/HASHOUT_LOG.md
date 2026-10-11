@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.0
-Last updated: 2026-10-11 · the shell: sidebar and rail, chat view, composer and menus, side panel, terminal dock, palette, pages
+Current build version: v0.3.1
+Last updated: 2026-10-11 · v0.3.1: edit the last message, palette content search, syntax colours, paste, context meter, shortcut sheet
 
 ---
 
@@ -125,6 +125,13 @@ At 760 px and below the open sidebar becomes a drawer over the page (fixed, `--z
 
 A streaming reply is split into blocks at blank lines outside code fences. Every finished block is rendered once with markdown-it into its own element and never touched again; only the tail element is re-rendered as text arrives, and when the reply finishes the tail element is kept and renamed to a block rather than replaced. The check counts removed `.ft-md-block`, `.ft-msg` and `.ft-thinking` nodes in the thread while a reply streams: 0. Raw HTML in Markdown is off (`html: false`); links open in a new tab with `noopener`. A list interrupted by a blank line becomes two lists (numbering continues because markdown-it keeps the start number).
 
+### src/ui/markdown.ts · syntax colours
+- refers-to: src/ui/markdown.ts :: fence renderer; src/styles/ft-tokens.css :: --ft-syn-*
+- kind: rationale
+- logged: v0.3.1 · 2026-10-11
+
+highlight.js 11.12 (BSD-3-Clause), `lib/common` only (about 35 languages), runs inside the fence renderer, so a code block is coloured once when its block finishes and never again; the streaming tail shows plain text until its fence closes. Only a named language is highlighted (no auto-detection, which is slow and guesses wrong on short snippets). Its classes map to `--ft-syn-*` tokens drawn from the family's handle and status colours, so no highlight.js theme sheet is loaded. Those colours are tuned for Studio Dark; a light-theme pass on them is open (`--ft-syn-type` is the one raw value, a sky blue the family has no token for).
+
 ### src/app.ts · claimNext
 - refers-to: src/app.ts :: send, onEvent (conversation.created)
 - kind: rationale
@@ -181,6 +188,20 @@ The conversation is fetched before `activeId` changes, then active and messages 
 
 Mod+B sidebar (as claude.ai), Mod+K palette (first row New chat, as claude.ai's), Mod+J terminal, Mod+. side panel, Mod+Shift+O new chat, Mod+U add files. The listener is on bubbling `keydown`, so inside the terminal the shell keeps Ctrl+B, Ctrl+K and Ctrl+J (readline); on macOS the Cmd shortcuts still reach the app.
 
+### src/app.ts · updateContext
+- refers-to: src/app.ts :: updateContext; src/ui/composer.ts :: setContext
+- kind: rationale
+- logged: v0.3.1 · 2026-10-11
+
+The meter beside the model is the last reply's `usage` (input, cache creation, cache read and output tokens) over the model's `contextWindow` from `/v1/models`: that sum is what the next turn starts from. It hides when there is no usage or no window, shows at least 1 percent, and turns to the warning colour at 80 percent. It runs on `messages`, `active` and `settings`, and on `message.completed`, because a finished reply patches its message in place rather than emitting `messages`; the first build missed that and the check caught the meter not moving.
+
+### src/app.ts · shortcuts
+- refers-to: src/app.ts :: shortcuts
+- kind: explainer
+- logged: v0.3.1 · 2026-10-11
+
+The sheet is built once on first open into `#overlay-root` and toggled with `hidden` after that. Mod+/ toggles it, Esc or a click on the scrim closes it. The list is the same set `keys` handles, plus Enter and Shift+Enter in the composer.
+
 ---
 
 ## src/ui/sidebar.ts {#src-ui-sidebar}
@@ -217,6 +238,20 @@ The attachment row is rebuilt with `replaceChildren` when the file list changes 
 
 The menu follows claude.ai's model menu (UI_STUDY § Composer): current model with its description, Effort with a submenu (an explainer, Low, Medium marked Recommended, High, Extra, Max marked as most usage), then More models. Format adds Extended thinking as a row. Choices go through `settings.set`; the button patches its two spans when `settings.changed` arrives.
 
+### src/ui/composer.ts · startEdit
+- refers-to: src/ui/composer.ts :: startEdit, submit; src/ui/chat-view.ts :: edit button
+- kind: rationale
+- logged: v0.3.1 · 2026-10-11
+
+Edit sits only on the most recent user message, because `chat.edit` replaces that message and its reply; claude.ai branches on edit, which needs the message tree navigation of a later release. Edit puts the text back in the box and shows the editing bar; Send then calls `chat.edit`, Cancel or an empty send leaves editing. The engine deletes the old pair with `message.deleted` events and adds the new message, so the view removes two nodes and appends, as on any send.
+
+### src/ui/composer.ts · paste
+- refers-to: src/ui/composer.ts :: paste listener
+- kind: explainer
+- logged: v0.3.1 · 2026-10-11
+
+Pasted files (screenshots from the clipboard included) go through `addFiles` like picked ones. Pasted text without files is left to the browser.
+
 ---
 
 ## src/ui/terminal-dock.ts {#src-ui-terminal-dock}
@@ -247,6 +282,13 @@ xterm's own sheet (imported from the package, not in `src/styles`) sets small z-
 - logged: v0.2.0 · 2026-10-11
 
 The result list is re-rendered per keystroke inside the open overlay (not a live part of the page). It is small and bounded at 50 rows; keyed rows come with full-text search in v0.3.0.
+
+### src/ui/palette.ts · content search
+- refers-to: src/ui/palette.ts :: search
+- kind: rationale
+- logged: v0.3.1 · 2026-10-11
+
+Titles are matched in the window at once from the chats already loaded. From three characters on, `conversation.list` with `query` also asks the engine, which matches message text; chats found only that way join the list in their sidebar order with the hint "in messages". The engine call waits 180 ms after the last keystroke, and a reply that arrives after a newer keystroke is dropped, so results never jump back to an older query.
 
 ---
 

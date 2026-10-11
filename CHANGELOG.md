@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.3.1 · 2026-10-11
+
+Chat on the Claude API (DEV_PLAN Phase 3, second part).
+
+- Edit on the most recent message: the text returns to the composer with an editing bar, and sending replaces the message and its reply (`chat.edit`). Branching on edit comes later.
+- Search by message text: the palette matches titles at once and, from three characters, message text through the engine, marking those chats "in messages".
+- Code blocks coloured by highlight.js (common languages) through Format's `--ft-syn-*` tokens.
+- Files pasted into the composer upload like picked ones.
+- A context meter beside the model: the last turn's tokens against the model's context window.
+- A keyboard shortcut sheet on Mod+/ and in the palette.
+- The parity tracker's Format page grades v0.3.1, v0.3.0 and v0.2.1 against claude.ai over 50 rows (37, 33 and 21 percent).
+
 ## 0.3.0 · 2026-10-11
 
 Chat on the Claude API (DEV_PLAN Phase 3, first part).
