@@ -3,7 +3,7 @@ import type { Composer } from './composer';
 import { el, esc, q, setText } from './dom';
 import { ui } from './icons-ft';
 import { StreamRenderer } from './markdown';
-import { type Approve, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
+import { type Answer, type Approve, FileCard, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
 
 interface PartApi {
   set(text: string, done: boolean): void;
@@ -18,6 +18,7 @@ interface AssistantView {
   actions: HTMLElement;
   group: ToolGroup | null;
   cards: Map<string, { card: ToolCard; group: ToolGroup }>;
+  files: Map<string, FileCard>;
 }
 
 export interface ChatHooks {
@@ -25,6 +26,8 @@ export interface ChatHooks {
   edit(text: string, id: string): void;
   branch(id: string): void;
   approve: Approve;
+  answer: Answer;
+  chatId(): string;
 }
 
 const NOOP: PartApi = { set: () => undefined, value: () => '' };
@@ -117,7 +120,7 @@ export class ChatView {
           <button type="button" class="ft-icon-btn ft-act-retry" title="Retry" aria-label="Retry reply">${ui('retry', 16)}</button>
           <span class="ft-msg-model"></span>
         </div></article>`);
-      const view: AssistantView = { root: n, blocks: q(n, '.ft-msg-blocks'), parts: [], status: q(n, '.ft-msg-status'), actions: q(n, '.ft-msg-actions'), group: null, cards: new Map() };
+      const view: AssistantView = { root: n, blocks: q(n, '.ft-msg-blocks'), parts: [], status: q(n, '.ft-msg-status'), actions: q(n, '.ft-msg-actions'), group: null, cards: new Map(), files: new Map() };
       this.assistants.set(m.id, view);
       q(n, '.ft-act-copy').addEventListener('click', () => void navigator.clipboard?.writeText(this.plainText(m.id)));
       q(n, '.ft-act-retry').addEventListener('click', () => this.hooks.retry());
@@ -130,12 +133,26 @@ export class ChatView {
   }
 
   private applyStatuses(view: AssistantView, m: Message): void {
-    for (const [id, s] of Object.entries(m.meta?.tools ?? {})) view.cards.get(id)?.card.setStatus(s.status);
+    for (const [id, s] of Object.entries(m.meta?.tools ?? {})) {
+      view.cards.get(id)?.card.setStatus(s.status);
+      if (s.status !== 'done') view.files.get(id)?.setStatus(s.status);
+    }
+    for (const [id, a] of Object.entries(m.meta?.answers ?? {})) view.cards.get(id)?.card.setAnswer(a);
   }
 
   private ensurePart(view: AssistantView, index: number, type: string, block?: ContentBlock): { set(text: string, done: boolean): void } {
     while (view.parts.length <= index) view.parts.push(null);
     const existing = view.parts[index];
+    if (type === 'tool_use' && block?.name === 'send_file' && block.id) {
+      const known = view.files.get(block.id);
+      if (known) { known.update(block); return NOOP; }
+      const file = new FileCard(block, this.hooks.chatId());
+      view.group = null;
+      view.blocks.appendChild(file.root);
+      view.files.set(block.id, file);
+      view.parts[index] = { type, api: NOOP };
+      return NOOP;
+    }
     if (TOOL_TYPES.has(type) && block?.id) {
       const known = view.cards.get(block.id);
       if (known) { known.card.update(block); return NOOP; }
@@ -144,14 +161,17 @@ export class ChatView {
         view.blocks.appendChild(view.group.root);
       }
       const group = view.group;
-      const card = new ToolCard(block, this.hooks.approve, () => group.refresh());
+      const card = new ToolCard(block, this.hooks.approve, () => group.refresh(), this.hooks.answer);
       group.add(card);
       view.cards.set(block.id, { card, group });
       view.parts[index] = { type, api: NOOP };
       return NOOP;
     }
     if (RESULT_TYPES.has(type)) {
-      if (block?.tool_use_id) view.cards.get(block.tool_use_id)?.card.setResult(resultView(block));
+      if (block?.tool_use_id) {
+        view.cards.get(block.tool_use_id)?.card.setResult(resultView(block));
+        view.files.get(block.tool_use_id)?.setResult(resultView(block));
+      }
       view.parts[index] = { type, api: NOOP };
       return NOOP;
     }
@@ -231,6 +251,7 @@ export class ChatView {
     const m = this.state.messages.find((x) => x.id === id);
     if (m) m.meta.tools = { ...(m.meta.tools ?? {}), [toolUseId]: { status } };
     this.assistants.get(id)?.cards.get(toolUseId)?.card.setStatus(status);
+    if (status !== 'done') this.assistants.get(id)?.files.get(toolUseId)?.setStatus(status);
   }
 
   toolOutput(id: string, toolUseId: string, text: string): void {

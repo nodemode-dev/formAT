@@ -3,6 +3,67 @@ import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
 export type Approve = (toolUseId: string, decision: 'allow' | 'always' | 'deny') => void;
+export type Answer = (toolUseId: string, answer: string | string[]) => void;
+export interface TaskItem { title: string; status: 'pending' | 'in_progress' | 'completed' }
+
+export function taskListHtml(tasks: TaskItem[]): string {
+  return tasks.map((t) => `<li class="ft-task" data-s="${esc(t.status)}"><span class="ft-task-box">${t.status === 'completed' ? ui('check', 12) : ''}</span><span>${esc(t.title)}</span></li>`).join('');
+}
+
+function size(n: number | undefined): string {
+  if (n === undefined) return '';
+  return n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1024 / 1024).toFixed(1)} MB`;
+}
+
+export class FileCard {
+  readonly root: HTMLElement;
+  readonly id: string;
+  private name: HTMLElement;
+  private meta: HTMLElement;
+  private caption: HTMLElement;
+  private link: HTMLAnchorElement;
+  private path = '';
+
+  constructor(b: ContentBlock, private chatId: string) {
+    this.id = b.id ?? '';
+    this.root = el(`<div class="ft-file-card" data-status="input"><span class="ft-file-card-icon">${ui('file', 20)}</span>
+      <div class="ft-file-card-text"><span class="ft-file-card-name"></span><span class="ft-file-card-meta"></span><span class="ft-file-card-caption" hidden></span></div>
+      <a class="ft-btn ft-file-card-dl" download aria-disabled="true" tabindex="-1">Download</a></div>`);
+    this.name = q(this.root, '.ft-file-card-name');
+    this.meta = q(this.root, '.ft-file-card-meta');
+    this.caption = q(this.root, '.ft-file-card-caption');
+    this.link = q<HTMLAnchorElement>(this.root, '.ft-file-card-dl');
+    this.update(b);
+  }
+
+  update(b: ContentBlock): void {
+    const input = b.input ?? {};
+    if (input.path) this.path = String(input.path);
+    setText(this.name, this.path.split(/[\\/]/).pop() || 'Preparing a file');
+    const cap = String(input.caption ?? '');
+    setText(this.caption, cap);
+    if (this.caption.hidden === !!cap) this.caption.hidden = !cap;
+    if (b.status) this.setStatus(b.status);
+  }
+
+  setStatus(status: string, bytes?: number): void {
+    if (this.root.dataset.status !== status) this.root.dataset.status = status;
+    const ok = status === 'done';
+    const kind = (this.path.split('.').pop() ?? '').toUpperCase();
+    setText(this.meta, status === 'error' ? 'Could not send this file' : [kind, size(bytes)].filter(Boolean).join(' · '));
+    if (ok && this.path) {
+      const href = `/api/chats/${encodeURIComponent(this.chatId)}/files/${this.path.split('/').map(encodeURIComponent).join('/')}`;
+      if (this.link.getAttribute('href') !== href) this.link.setAttribute('href', href);
+      this.link.removeAttribute('aria-disabled');
+      this.link.removeAttribute('tabindex');
+    }
+  }
+
+  setResult(v: ContentBlock): void {
+    const m = /\((\d+) bytes\)/.exec(v.text ?? '');
+    this.setStatus(v.is_error ? 'error' : 'done', m ? Number(m[1]) : undefined);
+  }
+}
 
 export const TOOL_TYPES = new Set(['tool_use', 'server_tool_use']);
 export const RESULT_TYPES = new Set(['tool_result', 'web_search_tool_result', 'web_fetch_tool_result', 'code_execution_tool_result',
@@ -10,9 +71,10 @@ export const RESULT_TYPES = new Set(['tool_result', 'web_search_tool_result', 'w
 
 const ICON: Record<string, Parameters<typeof ui>[0]> = {
   bash: 'terminal', write: 'file', edit: 'pencil', read: 'file', glob: 'search', grep: 'search', web_search: 'globe', web_fetch: 'globe',
+  ask_user: 'chat', task_list: 'check',
 };
 const STATE_TEXT: Record<string, string> = {
-  input: 'preparing', waiting: 'needs approval', running: 'running', done: '', error: 'failed', denied: 'not run',
+  input: 'preparing', waiting: 'needs approval', asking: 'waiting for you', running: 'running', done: '', error: 'failed', denied: 'not run',
 };
 
 function base(path: unknown): string {
@@ -34,6 +96,12 @@ export function describe(name: string, input: Record<string, unknown>): { title:
     case 'grep': return { title: 'Searched files', sub: String(input.pattern ?? ''), short: 'searched files' };
     case 'web_search': return { title: 'Searched the web', sub: String(input.query ?? ''), short: 'searched the web' };
     case 'web_fetch': return { title: 'Read a page', sub: String(input.url ?? ''), short: `read ${host(input.url)}` };
+    case 'ask_user': return { title: 'Asked you', sub: String(input.question ?? ''), short: 'asked you' };
+    case 'task_list': {
+      const tasks = (Array.isArray(input.tasks) ? input.tasks : []) as TaskItem[];
+      const done = tasks.filter((t) => t.status === 'completed').length;
+      return { title: 'Updated the plan', sub: tasks.length ? `${done} of ${tasks.length} done` : '', short: 'updated the plan' };
+    }
     default: return { title: `Used ${name.replace(/_/g, ' ')}`, sub: '', short: `used ${name.replace(/_/g, ' ')}` };
   }
 }
@@ -69,14 +137,59 @@ export class ToolCard {
   private outBox: HTMLElement;
   private links: HTMLElement;
 
-  constructor(b: ContentBlock, private approve: Approve, private changed: () => void) {
+  private question!: HTMLElement;
+  private multi = false;
+  private builtQuestion = false;
+  private answered: string[] = [];
+
+  setAnswer(value: string[]): void {
+    if (!value.length || value.join('\u0000') === this.answered.join('\u0000')) return;
+    this.answered = value;
+    setText(this.sub, `${describe(this.name, this.input).sub} · ${value.join(', ')}`);
+  }
+
+  private sendAnswer(value: string | string[]): void {
+    this.question.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button, input').forEach((x) => { x.disabled = true; });
+    this.answered = Array.isArray(value) ? value : [value];
+    this.answer(this.id, value);
+  }
+
+  private buildQuestion(): void {
+    const opts = (Array.isArray(this.input.options) ? this.input.options : []) as Array<{ label?: string; description?: string }>;
+    if (this.builtQuestion || !opts.length) return;
+    this.builtQuestion = true;
+    this.multi = !!this.input.multiSelect;
+    setText(q(this.question, '.ft-tool-q-text'), String(this.input.question ?? ''));
+    q(this.question, '.ft-tool-q-opts').innerHTML = opts.map((o) => this.multi
+      ? `<label class="ft-tool-q-opt"><input type="checkbox" value="${esc(o.label ?? '')}"><span><b>${esc(o.label ?? '')}</b>${o.description ? `<small>${esc(o.description)}</small>` : ''}</span></label>`
+      : `<button type="button" class="ft-tool-q-opt" data-o="${esc(o.label ?? '')}"><b>${esc(o.label ?? '')}</b>${o.description ? `<small>${esc(o.description)}</small>` : ''}</button>`).join('');
+  }
+
+  constructor(b: ContentBlock, private approve: Approve, private changed: () => void, private answer: Answer = () => undefined) {
     this.id = b.id ?? '';
     this.name = b.name ?? 'tool';
     this.root = el(`<div class="ft-tool" data-status="input">
       <details class="ft-tool-d"><summary class="ft-tool-head"><span class="ft-tool-icon">${ui(ICON[this.name] ?? 'skills', 14)}</span><span class="ft-tool-title"></span><span class="ft-tool-sub"></span><span class="ft-tool-state"></span></summary>
         <div class="ft-tool-body"><pre class="ft-tool-input" hidden></pre><pre class="ft-tool-out" hidden></pre><ul class="ft-tool-links" hidden></ul></div></details>
       <div class="ft-tool-ask" hidden><span class="ft-tool-ask-text"></span><button type="button" class="ft-btn ft-btn-primary" data-d="allow">Allow once</button><button type="button" class="ft-btn" data-d="always">Always allow</button><button type="button" class="ft-btn" data-d="deny">Deny</button></div>
+      <div class="ft-tool-q" hidden><p class="ft-tool-q-text"></p><div class="ft-tool-q-opts"></div>
+        <div class="ft-tool-q-other"><input class="ft-input" maxlength="2000" placeholder="Or type your own answer" aria-label="Your own answer"><button type="button" class="ft-btn ft-btn-primary ft-tool-q-send">Send</button></div></div>
     </div>`);
+    this.question = q(this.root, '.ft-tool-q');
+    this.question.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const opt = t.closest<HTMLButtonElement>('button[data-o]');
+      if (opt && !this.multi) { this.sendAnswer(opt.dataset.o as string); return; }
+      if (t.closest('.ft-tool-q-send')) {
+        const picked = [...this.question.querySelectorAll<HTMLInputElement>('input[type=checkbox]:checked')].map((x) => x.value);
+        const own = q<HTMLInputElement>(this.question, '.ft-tool-q-other input').value.trim();
+        if (own) picked.push(own);
+        if (picked.length) this.sendAnswer(this.multi ? picked : picked[picked.length - 1]);
+      }
+    });
+    q<HTMLInputElement>(this.question, '.ft-tool-q-other input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); (q(this.question, '.ft-tool-q-send') as HTMLButtonElement).click(); }
+    });
     this.title = q(this.root, '.ft-tool-title');
     this.sub = q(this.root, '.ft-tool-sub');
     this.state = q(this.root, '.ft-tool-state');
@@ -104,6 +217,21 @@ export class ToolCard {
     const detail = this.name === 'bash' ? String(this.input.command ?? '') : this.name === 'write' ? String(this.input.content ?? '') : this.name === 'edit' ? `${String(this.input.old_string ?? '')}\n\n${String(this.input.new_string ?? '')}` : '';
     setText(this.inputEl, detail.slice(0, 20000));
     if (this.inputEl.hidden === !!detail) this.inputEl.hidden = !detail;
+    if (this.name === 'ask_user') {
+      this.buildQuestion();
+      const got = (b as ContentBlock & { answer?: string[] }).answer;
+      if (got?.length) this.answered = got;
+      if (this.answered.length) setText(this.sub, `${d.sub} · ${this.answered.join(', ')}`);
+    }
+    if (this.name === 'task_list' && Array.isArray(this.input.tasks)) {
+      const html = taskListHtml(this.input.tasks as TaskItem[]);
+      if (this.links.dataset.v !== html) {
+        this.links.dataset.v = html;
+        this.links.innerHTML = html;
+        this.links.classList.add('ft-tasks');
+      }
+      if (this.links.hidden) this.links.hidden = false;
+    }
     if (b.status) this.setStatus(b.status);
     else if (this.status === 'input' && Object.keys(this.input).length) this.setStatus(this.name.startsWith('web_') ? 'running' : 'input');
     this.changed();
@@ -115,6 +243,12 @@ export class ToolCard {
     setText(this.state, STATE_TEXT[status] ?? status);
     const waiting = status === 'waiting';
     if (this.ask.hidden === waiting) this.ask.hidden = !waiting;
+    const asking = status === 'asking';
+    if (this.question && this.question.hidden === asking) this.question.hidden = !asking;
+    if (asking) {
+      this.buildQuestion();
+      this.question.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button, input').forEach((x) => { x.disabled = false; });
+    }
     if (waiting) {
       setText(q(this.ask, '.ft-tool-ask-text'), this.name === 'bash' ? 'Allow Claude to run this command?' : `Allow Claude to ${this.name} ${base(this.input.path)}?`);
       this.ask.querySelectorAll('button').forEach((x) => { x.disabled = false; });
@@ -132,7 +266,7 @@ export class ToolCard {
     if (v.text !== undefined) {
       const t = v.text.slice(-20000);
       if (this.out.data !== t) this.out.data = t;
-      if (this.outBox.hidden === !t) this.outBox.hidden = !t;
+      if (this.outBox.hidden !== !t) this.outBox.hidden = !t;
     }
     if (v.results?.length) {
       this.links.innerHTML = v.results.map((r) => `<li><a href="${esc(r.url ?? '')}" target="_blank" rel="noopener noreferrer">${esc(r.title || r.url || '')}</a><span>${esc(host(r.url))}${r.page_age ? ` · ${esc(r.page_age)}` : ''}</span></li>`).join('');
@@ -167,8 +301,8 @@ export class ToolGroup {
   refresh(): void {
     const shorts = this.cards.map((c) => describe(c.name, c.input).short);
     const failed = this.cards.filter((c) => c.status === 'error').length;
-    const busy = this.cards.some((c) => c.status === 'running' || c.status === 'input' || c.status === 'waiting');
-    const waiting = this.cards.some((c) => c.status === 'waiting');
+    const busy = this.cards.some((c) => c.status === 'running' || c.status === 'input' || c.status === 'waiting' || c.status === 'asking');
+    const waiting = this.cards.some((c) => c.status === 'waiting' || c.status === 'asking');
     let text = shorts.slice(0, 2).join(', ');
     const more = shorts.length - 2;
     if (more > 0) text += `, and ${more} more step${more === 1 ? '' : 's'}`;

@@ -7,7 +7,8 @@ import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
 import { ui } from './ui/icons-ft';
 import { closeMenus, openMenu } from './ui/menu';
 import { Palette } from './ui/palette';
-import { SidePanel } from './ui/side-panel';
+import { type OutputFile, SidePanel, type Used } from './ui/side-panel';
+import type { TaskItem } from './ui/tool-cards';
 import { Sidebar } from './ui/sidebar';
 import { TerminalDock } from './ui/terminal-dock';
 import { pageView, SettingsView, type InfoLike } from './ui/views';
@@ -23,6 +24,8 @@ export class App {
   private chat: ChatView;
   private dock: TerminalDock;
   private palette: Palette;
+  private panel: SidePanel;
+  private outputsSeq = 0;
   private settingsView: SettingsView;
   private pages = new Map<View, HTMLElement>();
   private title: HTMLElement;
@@ -73,12 +76,18 @@ export class App {
       approve: (toolUseId, decision) => {
         run('tool.approve', { toolUseId, decision }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
       },
+      answer: (toolUseId, answer) => {
+        run('tool.answer', { toolUseId, answer }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+      },
+      chatId: () => this.state.activeId ?? '',
     });
     this.state.on('messages', () => this.updateContext());
     this.state.on('active', () => this.updateContext());
     this.state.on('settings', () => this.updateContext());
     this.settingsView = new SettingsView(this.state);
     const panel = new SidePanel(() => this.toggle('panel', false));
+    this.panel = panel;
+    this.state.on('active', () => this.refreshOutputs());
     this.dock = new TerminalDock(() => this.toggle('term', false));
     this.palette = new Palette(this.state, () => [
       { label: 'New chat', icon: 'plus', hint: `${modKey}⇧O`, run: () => this.newChat() },
@@ -181,6 +190,18 @@ export class App {
     this.settingsView.scrollTo(section);
   }
 
+  private refreshOutputs(): void {
+    const cid = this.state.activeId;
+    const seq = ++this.outputsSeq;
+    if (!cid) { this.panel.setTasks([]); this.panel.setOutputs([], null, { uploads: 0, web_search: 0, web_fetch: 0, bash: 0, files: 0 }); return; }
+    void Promise.all([run<{ tasks: TaskItem[] }>('tasks.get', { conversationId: cid }), run<{ files: OutputFile[]; zip: string | null; used: Used }>('outputs.list', { conversationId: cid })])
+      .then(([t, o]) => {
+        if (seq !== this.outputsSeq || cid !== this.state.activeId) return;
+        this.panel.setTasks(t.tasks);
+        this.panel.setOutputs(o.files, o.zip, o.used);
+      }).catch(() => undefined);
+  }
+
   private compactNow(): void {
     if (!this.state.activeId) { this.composer.showError('Open a chat to summarize it'); return; }
     run('chat.compact', { conversationId: this.state.activeId }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
@@ -224,6 +245,10 @@ export class App {
       if (e.conversationId === this.state.activeId) this.chat.toolStatus(e.id as string, e.toolUseId as string, e.status as string);
     } else if (e.type === 'tool.output') {
       if (e.conversationId === this.state.activeId) this.chat.toolOutput(e.id as string, e.toolUseId as string, e.text as string);
+    } else if (e.type === 'tasks.changed') {
+      if (e.conversationId === this.state.activeId) this.panel.setTasks(e.tasks as TaskItem[]);
+    } else if (e.type === 'outputs.changed') {
+      if (e.conversationId === this.state.activeId) this.refreshOutputs();
     } else if (e.type === 'message.delta') {
       if (e.conversationId === this.state.activeId) this.chat.applyDelta(e.id as string, e.index as number, e.kind as string, e.text as string);
     } else if (e.type === 'message.completed') {
@@ -235,6 +260,7 @@ export class App {
         if (i >= 0) this.state.messages[i] = m;
         this.chat.complete(m);
         this.updateContext();
+        this.refreshOutputs();
         const next = more ? undefined : this.composer.nextQueued();
         if (next) void this.send(next.text, next.files);
       }

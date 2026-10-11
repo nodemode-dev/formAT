@@ -43,6 +43,7 @@ export interface MessageMeta {
   compaction?: boolean;
   compactNext?: boolean;
   tools?: Record<string, { status: string }>;
+  answers?: Record<string, string[]>;
 }
 
 export interface Message {
