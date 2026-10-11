@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 · 2026-10-11
+
+- Narrow windows (760 px and below): the open sidebar is a drawer over the page, the side panel takes the full width, and the main area keeps its column.
+
 ## 0.2.0 · 2026-10-11
 
 The shell (DEV_PLAN Phase 2).

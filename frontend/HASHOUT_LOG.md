@@ -2,7 +2,7 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.2.0
+Current build version: v0.2.1
 Last updated: 2026-10-11 · the shell: sidebar and rail, chat view, composer and menus, side panel, terminal dock, palette, pages
 
 ---
