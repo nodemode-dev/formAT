@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+[ -f "$FORMAT_ROOT/frontend/dist/index.html" ] || ft_die "no frontend build, run ./format build"
+cd "$FORMAT_ROOT/backend"
+py="$(ft_venv_python)"
+FORMAT_SERVE_DIST=1 exec "$py" -m uvicorn app.main:app --host 127.0.0.1 --port "$FORMAT_ENGINE_PORT"

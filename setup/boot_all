@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+cd "$FORMAT_ROOT"
+pids=()
+( cd backend && ./boot_backend ) &
+pids+=($!)
+( cd frontend && ./boot_frontend ) &
+pids+=($!)
+trap 'kill "${pids[@]}" 2>/dev/null' EXIT INT TERM
+ft_say "frontend http://localhost:$FORMAT_FRONTEND_PORT · engine http://127.0.0.1:$FORMAT_ENGINE_PORT"
+wait

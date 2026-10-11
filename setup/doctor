@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+source "$(dirname "$0")/lib.sh"
+fail=0
+ok() { printf '  ok     %s\n' "$1"; }
+bad() { printf '  FAIL   %s · %s\n' "$1" "$2"; fail=1; }
+warn() { printf '  warn   %s · %s\n' "$1" "$2"; }
+ft_say "doctor · $(ft_os)"
+if command -v node >/dev/null 2>&1 && node -e 'const [m,n]=process.versions.node.split(".").map(Number);process.exit((m===20&&n>=19)||(m===22&&n>=12)||m>=23?0:1)'; then ok "node $(node -v)"; else bad "node" "Node 20.19+ or 22.12+ is required"; fi
+if command -v npm >/dev/null 2>&1; then ok "npm"; else bad "npm" "install npm"; fi
+if py="$(ft_python)"; then ok "python $("$py" -V 2>&1 | awk '{print $2}')"; else bad "python" "Python 3.12+ is required"; fi
+if [ -x "$FORMAT_ROOT/backend/venv/bin/python" ]; then ok "engine venv"; else warn "engine venv" "run ./format install"; fi
+if [ -d "$FORMAT_ROOT/frontend/node_modules" ]; then ok "frontend node_modules"; else warn "frontend deps" "run ./format install"; fi
+if [ -f "$FORMAT_ROOT/backend/.env" ] && grep -q '^ANTHROPIC_API_KEY=.\+' "$FORMAT_ROOT/backend/.env"; then ok "Anthropic API key in backend/.env"; else warn "Anthropic API key" "copy backend/.env.example to backend/.env and set ANTHROPIC_API_KEY (chat needs it from v0.3.0)"; fi
+if command -v git >/dev/null 2>&1; then ok "git"; else warn "git" "repositories cannot be cloned without git"; fi
+if command -v ffmpeg >/dev/null 2>&1; then ok "ffmpeg for video and audio"; else warn "ffmpeg" "video frames and audio need ffmpeg on the PATH"; fi
+if command -v cargo >/dev/null 2>&1; then ok "rust $(rustc --version | awk '{print $2}') for the native crate"; else warn "rust" "the native crate needs https://rustup.rs"; fi
+for port in "$FORMAT_FRONTEND_PORT" "$FORMAT_ENGINE_PORT"; do
+  if (exec 3<>"/dev/tcp/127.0.0.1/$port") 2>/dev/null; then warn "port $port" "already in use"; else ok "port $port free"; fi
+done
+if [ "$fail" = 0 ]; then ft_say "ready"; else ft_say "fix the FAIL lines above"; fi
+exit "$fail"
