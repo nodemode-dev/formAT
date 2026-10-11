@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.0 · 2026-10-11
+
+Artifacts (DEV_PLAN Phase 5, first part).
+
+- Claude can publish a page, an app or a small tool as an artifact. It shows in the reply as a card; Open puts it beside the chat, where it runs, and the version picker, Code view, Copy, Download and Pop out sit in its header.
+- Revisions are new versions of the same artifact; every card opens the version it published, and an open artifact follows to a new version while you are on the latest.
+- Artifacts run sealed off from Format and your files. They load scripts and fonts from the common CDNs; anything else from the internet only with Settings, Tools, Artifacts can load images and data from the internet.
+- The Artifacts page lists every artifact with its chat and versions; a row opens it, and its menu goes to the chat or deletes it.
+- Engine: `publish_artifact`; `artifact.list`, `artifact.get`, `artifact.delete`; the page at `/api/artifacts/{id}/v/{n}`; setting `artifactNetwork`. 37 commands.
+
 ## 0.4.2 · 2026-10-11
 
 Tools and approvals (DEV_PLAN Phase 4, last part).
