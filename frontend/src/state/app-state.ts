@@ -30,6 +30,8 @@ export interface MessageMeta {
   stopReason?: string;
   files?: FileInfo[];
   usage?: Record<string, number>;
+  compaction?: boolean;
+  compactNext?: boolean;
 }
 
 export interface Message {
@@ -72,6 +74,8 @@ export interface Settings {
   effort: string;
   thinking: boolean;
   permissionMode: string;
+  autoCompact?: boolean;
+  compactAt?: number;
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';

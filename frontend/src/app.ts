@@ -83,6 +83,7 @@ export class App {
       { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
       { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
+      { label: 'Summarize earlier messages', icon: 'compress', run: () => this.compactNow() },
       { label: 'Account', icon: 'user', run: () => this.openSettings('account') },
       { label: 'Toggle terminal', icon: 'terminal', hint: `${modKey}J`, run: () => this.toggle('term') },
       { label: 'Settings', icon: 'settings', run: () => this.setView('settings') },
@@ -177,6 +178,11 @@ export class App {
     this.settingsView.scrollTo(section);
   }
 
+  private compactNow(): void {
+    if (!this.state.activeId) { this.composer.showError('Open a chat to summarize it'); return; }
+    run('chat.compact', { conversationId: this.state.activeId }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+  }
+
   private setRunning(conversationId: string, on: boolean): void {
     if (this.state.running.has(conversationId) === on) return;
     if (on) this.state.running.add(conversationId);
@@ -215,13 +221,14 @@ export class App {
       if (e.conversationId === this.state.activeId) this.chat.applyDelta(e.id as string, e.index as number, e.kind as string, e.text as string);
     } else if (e.type === 'message.completed') {
       const m = e.message as Message;
-      this.setRunning(m.conversation_id, false);
+      const more = !!m.meta?.compactNext;
+      if (!more) this.setRunning(m.conversation_id, false);
       if (m.conversation_id === this.state.activeId) {
         const i = this.state.messages.findIndex((x) => x.id === m.id);
         if (i >= 0) this.state.messages[i] = m;
         this.chat.complete(m);
         this.updateContext();
-        const next = this.composer.nextQueued();
+        const next = more ? undefined : this.composer.nextQueued();
         if (next) void this.send(next.text, next.files);
       }
     } else if (e.type === 'message.deleted') {

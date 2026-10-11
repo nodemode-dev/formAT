@@ -271,6 +271,16 @@
 .ft-file-chip-kind { font: 500 var(--fs-10) var(--font-mono); color: var(--text-muted); }
 
 .ft-msg.is-assistant { display: grid; gap: var(--space-2); }
+.ft-msg.is-compaction { display: grid; gap: var(--space-2); }
+.ft-compact-line { display: flex; align-items: center; gap: var(--space-3); font-size: var(--fs-12); color: var(--text-muted); }
+.ft-compact-rule { flex: 1; height: 1px; background: var(--border-soft); }
+.ft-compact-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
+.ft-msg.is-compaction.is-streaming .ft-compact-label { color: var(--text-secondary); }
+.ft-msg.is-compaction.is-error .ft-compact-label { color: var(--danger-text); white-space: normal; }
+.ft-compact-body { font-size: var(--fs-13); color: var(--text-secondary); }
+.ft-compact-body[hidden] { display: none; }
+.ft-compact-body summary { cursor: pointer; color: var(--text-muted); font-size: var(--fs-12); justify-self: center; width: fit-content; margin: 0 auto; }
+.ft-compact-text { margin-top: var(--space-2); padding: var(--space-3); border-radius: var(--radius-md); background: var(--ft-code-fill); white-space: pre-wrap; }
 .ft-msg-blocks { display: grid; gap: var(--space-3); min-width: 0; }
 .ft-msg.is-streaming .ft-md-tail > :last-child::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; border-radius: 1px; background: var(--accent-color); animation: ft-caret 1s steps(1) infinite; }
 @keyframes ft-caret { 50% { opacity: 0; } }

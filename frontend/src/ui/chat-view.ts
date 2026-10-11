@@ -98,6 +98,12 @@ export class ChatView {
       q(n, '.ft-branch-prev').addEventListener('click', () => step(-1));
       q(n, '.ft-branch-next').addEventListener('click', () => step(1));
       if (!text) (q(n, '.ft-msg-bubble') as HTMLElement).hidden = true;
+    } else if (m.meta?.compaction) {
+      n = el(`<article class="ft-msg is-compaction" data-id="${esc(m.id)}"><div class="ft-compact-line"><span class="ft-compact-rule"></span><span class="ft-compact-label"></span><span class="ft-compact-rule"></span></div>
+        <details class="ft-compact-body" hidden><summary>Show the summary</summary><div class="ft-compact-text"></div></details></article>`);
+      this.nodes.set(m.id, n);
+      this.paintCompaction(n, m);
+      return n;
     } else {
       n = el(`<article class="ft-msg is-assistant" data-id="${esc(m.id)}"><div class="ft-msg-blocks"></div><div class="ft-msg-status" hidden></div>
         <div class="ft-msg-actions" hidden>
@@ -187,7 +193,27 @@ export class ChatView {
     this.ensurePart(view, index, type);
   }
 
+  private paintCompaction(n: HTMLElement, m: Message): void {
+    const status = m.meta?.status;
+    const summary = m.content.find((b) => b.type === 'compaction') as { content?: string } | undefined;
+    const label = status === 'streaming' ? 'Summarizing earlier messages' : status === 'done' ? 'Earlier messages summarized; Claude continues from the summary'
+      : status === 'stopped' ? 'Summary stopped' : (m.meta?.error ?? 'Earlier messages were not summarized');
+    n.classList.toggle('is-streaming', status === 'streaming');
+    n.classList.toggle('is-error', status === 'error');
+    setText(q(n, '.ft-compact-label'), label);
+    const body = q(n, '.ft-compact-body') as HTMLDetailsElement;
+    const text = summary?.content ?? '';
+    setText(q(body, '.ft-compact-text'), text);
+    if (body.hidden === !!text) body.hidden = !text;
+  }
+
   complete(m: Message): void {
+    const shown = this.nodes.get(m.id);
+    if (shown && m.meta?.compaction) {
+      this.paintCompaction(shown, m);
+      this.render();
+      return;
+    }
     const view = this.assistants.get(m.id);
     if (!view) return;
     m.content.forEach((b, i) => this.ensurePart(view, i, b.type).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', true));

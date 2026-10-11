@@ -53,6 +53,14 @@ export class SettingsView {
         </div>
         <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-save-account">Save</button><span class="ft-saved" aria-live="polite"></span></div>
       </section>
+      <section class="ft-set-section" id="ft-set-chats" aria-labelledby="ft-set-chats-h">
+        <h2 id="ft-set-chats-h">${ui('compress', 16)}<span>Long chats</span></h2>
+        <p class="ft-set-note">When a chat fills most of the model's context window, Claude summarizes the earlier messages after a reply and continues from the summary. The earlier messages stay on screen; images and files in them are not carried into the summary. You can also run it from the command palette.</p>
+        <div class="ft-field-row">
+          <label class="ft-field ft-check"><input type="checkbox" data-s="autoCompact"><span>Summarize long chats automatically</span></label>
+          <label class="ft-field"><span>Summarize at</span><select class="ft-input" data-s="compactAt"><option value="0.5">50% of the context window</option><option value="0.65">65% of the context window</option><option value="0.75">75% of the context window</option><option value="0.85">85% of the context window</option></select></label>
+        </div>
+      </section>
       <section class="ft-set-section" id="ft-set-keys" aria-labelledby="ft-set-keys-h">
         <h2 id="ft-set-keys-h">${ui('key', 16)}<span>API keys</span></h2>
         <p class="ft-set-note">A key saved here is stored in Format's data folder with owner-only permissions and takes precedence over <code>backend/.env</code>. You can keep keys in <code>backend/.env</code> instead (copy <code>backend/.env.example</code>); remove the saved key here and the .env one is used again. Keys never come back to this window.</p>
@@ -97,8 +105,26 @@ export class SettingsView {
         setText(msg, 'Removed from Format.');
       });
     });
+    const auto = q<HTMLInputElement>(this.root, '[data-s="autoCompact"]');
+    const at = q<HTMLSelectElement>(this.root, '[data-s="compactAt"]');
+    auto.addEventListener('change', () => void run('settings.set', { key: 'autoCompact', value: auto.checked }).catch(() => undefined));
+    at.addEventListener('change', () => void run('settings.set', { key: 'compactAt', value: Number(at.value) }).catch(() => undefined));
     state.on('account', () => this.fillAccount());
     state.on('keys', () => this.fillKeys());
+    state.on('settings', () => this.fillChats());
+    this.fillChats();
+  }
+
+  private fillChats(): void {
+    const s = this.state.settings;
+    const auto = q<HTMLInputElement>(this.root, '[data-s="autoCompact"]');
+    const at = q<HTMLSelectElement>(this.root, '[data-s="compactAt"]');
+    const on = s.autoCompact !== false;
+    if (auto.checked !== on) auto.checked = on;
+    const want = String(s.compactAt ?? 0.75);
+    if (![...at.options].some((o) => o.value === want)) at.add(new Option(`${Math.round(Number(want) * 100)}% of the context window`, want));
+    if (at.value !== want) at.value = want;
+    if (at.disabled === on) at.disabled = !on;
   }
 
   private async saveAccount(): Promise<void> {
