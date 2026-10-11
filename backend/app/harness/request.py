@@ -1,7 +1,20 @@
 from app.harness import content, prompt
 
 EFFORT_ORDER = ["low", "medium", "high", "xhigh", "max"]
-KEEP_BLOCKS = {"text", "thinking", "redacted_thinking", "image", "document", "tool_use", "tool_result"}
+KEEP_BLOCKS = {"text", "thinking", "redacted_thinking", "image", "document", "tool_use", "tool_result", "compaction"}
+COMPACT_BETA = "compact-2026-09-04"
+COMPACT_MAX_TOKENS = 16000
+
+
+def _is_summary(m: dict) -> bool:
+    return any(b.get("type") == "compaction" and b.get("signature") for b in m.get("content") or [])
+
+
+def since_summary(history: list[dict]) -> list[dict]:
+    for i in range(len(history) - 1, -1, -1):
+        if _is_summary(history[i]):
+            return history[i:]
+    return history
 
 
 def _supported(caps: dict, *path: str) -> bool | None:
@@ -49,17 +62,21 @@ def _max_tokens(model: dict, effort: str | None) -> int:
     return int(min(want, cap))
 
 
-def api_messages(history: list[dict], model: dict, accepts) -> list[dict]:
+def api_messages(history: list[dict], model: dict, accepts, provider=None) -> list[dict]:
     out: list[dict] = []
-    for m in history:
+    for m in since_summary(history):
         blocks: list[dict] = []
         if m["role"] == "user":
             for fid in (m.get("meta") or {}).get("attachments", []):
-                blocks.extend(content.blocks_for(fid, model, accepts))
+                blocks.extend(content.blocks_for(fid, model, accepts, provider))
         for b in m["content"]:
             if b.get("type") not in KEEP_BLOCKS:
                 continue
             if b["type"] == "text" and not b.get("text"):
+                continue
+            if b["type"] == "compaction":
+                if b.get("signature"):
+                    blocks.append({k: b[k] for k in ("type", "content", "signature") if k in b})
                 continue
             clean = {k: v for k, v in b.items() if k not in ("citations",) or v}
             blocks.append(clean)
@@ -72,14 +89,14 @@ def api_messages(history: list[dict], model: dict, accepts) -> list[dict]:
     return out
 
 
-def build(history: list[dict], model: dict, settings: dict, account: dict, accepts) -> dict:
+def build(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None) -> dict:
     effort = _effort(model, settings.get("effort", "medium"))
     max_tokens = _max_tokens(model, effort)
     req: dict = {
         "model": model["id"],
         "max_tokens": max_tokens,
         "system": prompt.system_prompt(account),
-        "messages": api_messages(history, model, accepts),
+        "messages": api_messages(history, model, accepts, provider),
         "cache_control": {"type": "ephemeral"},
     }
     if effort:
@@ -87,4 +104,15 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     thinking = _thinking(model, bool(settings.get("thinking", True)), max_tokens)
     if thinking:
         req["thinking"] = thinking
+    if any(b.get("type") == "compaction" for msg in req["messages"] for b in msg["content"]):
+        req["betas"] = [COMPACT_BETA]
+    return req
+
+
+def build_compaction(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None) -> dict:
+    req = build(history, model, settings, account, accepts, provider)
+    req["max_tokens"] = int(min(COMPACT_MAX_TOKENS, model.get("max_tokens") or COMPACT_MAX_TOKENS))
+    if req.get("thinking", {}).get("type") == "enabled":
+        req["thinking"]["budget_tokens"] = max(1024, min(req["thinking"]["budget_tokens"], req["max_tokens"] // 2))
+    req.pop("betas", None)
     return req

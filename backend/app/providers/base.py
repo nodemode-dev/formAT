@@ -30,6 +30,21 @@ class Provider:
     def stream(self, request: dict, cancel: threading.Event) -> Iterator[StreamEvent]:
         raise NotImplementedError
 
+    def key_tag(self) -> str | None:
+        return None
+
+    def upload_file(self, path: str, name: str, mime: str) -> str:
+        raise ProviderError(f"{self.name} has no file store", 400)
+
+    def delete_file(self, file_id: str) -> None:
+        return None
+
+    def can_compact(self, model: dict) -> bool:
+        return False
+
+    def compact(self, request: dict) -> dict:
+        raise ProviderError(f"{self.name} has no compaction", 400)
+
     def accepts(self, model: dict, kind: str) -> bool:
         caps: Any = model.get("capabilities") or {}
         if kind == "image":

@@ -1,3 +1,4 @@
+import hashlib
 import threading
 import time
 from typing import Iterator
@@ -13,6 +14,22 @@ FALLBACK_MODELS = [
     {"id": "claude-haiku-5-5", "display_name": "Claude Haiku 5.5", "line": "haiku"},
     {"id": "claude-fable-5-1", "display_name": "Claude Fable 5.1", "line": "fable"},
 ]
+COMPACT_BETA = "compact-2026-09-04"
+COMPACTION_MODELS = {"claude-fable-5-1", "claude-mythos-5-1", "claude-fable-5", "claude-mythos-5", "claude-mythos-preview", "claude-opus-5-5",
+                     "claude-opus-5", "claude-opus-4-8", "claude-opus-4-7", "claude-opus-4-6", "claude-sonnet-5-5", "claude-sonnet-5",
+                     "claude-sonnet-4-6", "claude-haiku-5-5"}
+
+
+def _api_error(exc: Exception) -> ProviderError:
+    if isinstance(exc, anthropic.AuthenticationError):
+        return ProviderError("The Anthropic API refused the key (401): check it in Settings > API keys", 401)
+    if isinstance(exc, anthropic.BadRequestError):
+        return ProviderError(f"The Anthropic API refused the request (400): {exc.message}", 400)
+    if isinstance(exc, anthropic.RateLimitError):
+        return ProviderError("Rate limited by the Anthropic API (429); try again shortly", 429)
+    if isinstance(exc, anthropic.APIConnectionError):
+        return ProviderError("Could not reach the Anthropic API; check the network")
+    return ProviderError(f"Anthropic API error: {exc}")
 
 
 class AnthropicProvider(Provider):
@@ -46,10 +63,44 @@ class AnthropicProvider(Provider):
         self._models, self._models_at, self._models_key = models, time.time(), key
         return models
 
+    def key_tag(self) -> str | None:
+        key = secrets.api_key("anthropic")
+        return hashlib.sha256(key.encode()).hexdigest()[:16] if key else None
+
+    def upload_file(self, path: str, name: str, mime: str) -> str:
+        try:
+            with open(path, "rb") as fh:
+                return self._client().files.upload(file=(name, fh, mime)).id
+        except anthropic.APIError as exc:
+            raise _api_error(exc) from None
+
+    def delete_file(self, file_id: str) -> None:
+        try:
+            self._client().files.delete(file_id)
+        except anthropic.NotFoundError:
+            return
+        except anthropic.APIError as exc:
+            raise _api_error(exc) from None
+
+    def can_compact(self, model: dict) -> bool:
+        caps = model.get("capabilities") or {}
+        if isinstance(caps.get("compaction"), dict) and "supported" in caps["compaction"]:
+            return bool(caps["compaction"]["supported"])
+        return model.get("id") in COMPACTION_MODELS
+
+    def compact(self, request: dict) -> dict:
+        req = {k: v for k, v in request.items() if k not in ("betas", "stream")}
+        try:
+            res = self._client().beta.messages.create(betas=[COMPACT_BETA], compaction={"type": "summarize"}, **req)
+        except anthropic.APIError as exc:
+            raise _api_error(exc) from None
+        return {"stop_reason": res.stop_reason, "content": [b.to_dict() for b in res.content], "usage": res.usage.to_dict()}
+
     def stream(self, request: dict, cancel: threading.Event) -> Iterator[StreamEvent]:
         client = self._client()
         try:
-            with client.messages.create(stream=True, **request) as events:
+            opened = client.beta.messages.create(stream=True, **request) if request.get("betas") else client.messages.create(stream=True, **request)
+            with opened as events:
                 for ev in events:
                     if cancel.is_set():
                         yield StreamEvent("stopped")
@@ -77,13 +128,5 @@ class AnthropicProvider(Provider):
                         yield StreamEvent("message_delta", data={"stop_reason": ev.delta.stop_reason, "usage": ev.usage.model_dump(mode="json")})
                     elif t == "message_stop":
                         yield StreamEvent("stop")
-        except anthropic.AuthenticationError:
-            raise ProviderError("The Anthropic API refused the key (401): check it in Settings > API keys", 401) from None
-        except anthropic.BadRequestError as exc:
-            raise ProviderError(f"The Anthropic API refused the request (400): {exc.message}", 400) from None
-        except anthropic.RateLimitError:
-            raise ProviderError("Rate limited by the Anthropic API (429); try again shortly", 429) from None
-        except anthropic.APIConnectionError:
-            raise ProviderError("Could not reach the Anthropic API; check the network") from None
         except anthropic.APIError as exc:
-            raise ProviderError(f"Anthropic API error: {exc}") from None
+            raise _api_error(exc) from None

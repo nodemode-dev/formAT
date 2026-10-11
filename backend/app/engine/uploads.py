@@ -77,5 +77,17 @@ def get(fid: str) -> dict | None:
     return json.loads(meta.read_text(encoding="utf-8"))
 
 
+def remember_remote(fid: str, remote: dict | None) -> None:
+    path = root() / Path(fid).name / "meta.json"
+    if not path.is_file():
+        return
+    meta = json.loads(path.read_text(encoding="utf-8"))
+    if remote is None:
+        meta.pop("remote", None)
+    else:
+        meta["remote"] = remote
+    path.write_text(json.dumps(meta), encoding="utf-8")
+
+
 def public(meta: dict) -> dict:
     return {k: meta[k] for k in ("id", "name", "mime", "size", "kind") if k in meta} | ({"entries": meta["entries"]} if "entries" in meta else {})

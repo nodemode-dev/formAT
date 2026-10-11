@@ -1,8 +1,12 @@
 import base64
+import logging
 from pathlib import Path
 
 from app.engine import uploads
+from app.providers.base import ProviderError
 
+log = logging.getLogger("format.harness")
+FILES_API_MIN = 1_000_000
 TEXT_LIMIT = 200_000
 ZIP_TEXT_LIMIT = 400_000
 ZIP_FILE_LIMIT = 60_000
@@ -41,15 +45,39 @@ def _zip_blocks(meta: dict) -> list[dict]:
     return [{"type": "text", "text": "\n\n".join(parts)}]
 
 
-def blocks_for(file_id: str, model: dict, accepts) -> list[dict]:
+def remote_id(meta: dict, provider) -> str | None:
+    if provider is None or meta.get("size", 0) < FILES_API_MIN:
+        return None
+    tag = provider.key_tag()
+    if not tag:
+        return None
+    known = meta.get("remote") or {}
+    if known.get("provider") == provider.name and known.get("key") == tag and known.get("id"):
+        return known["id"]
+    try:
+        rid = provider.upload_file(meta["path"], meta["name"], meta["mime"] if meta["kind"] == "image" else "application/pdf")
+    except ProviderError as exc:
+        log.warning("Files API upload of %s failed, sending inline: %s", meta["name"], exc)
+        return None
+    uploads.remember_remote(meta["id"], {"provider": provider.name, "key": tag, "id": rid})
+    return rid
+
+
+def blocks_for(file_id: str, model: dict, accepts, provider=None) -> list[dict]:
     meta = uploads.get(file_id)
     if meta is None:
         return [{"type": "text", "text": f"[Attachment {file_id} is no longer available]"}]
     path, kind, name = Path(meta["path"]), meta["kind"], meta["name"]
     if kind == "image" and accepts(model, "image"):
+        rid = remote_id(meta, provider)
+        if rid:
+            return [{"type": "image", "source": {"type": "file", "file_id": rid}}]
         data = base64.standard_b64encode(path.read_bytes()).decode()
         return [{"type": "image", "source": {"type": "base64", "media_type": meta["mime"], "data": data}}]
     if kind == "pdf" and accepts(model, "pdf"):
+        rid = remote_id(meta, provider)
+        if rid:
+            return [{"type": "document", "source": {"type": "file", "file_id": rid}, "title": name}]
         data = base64.standard_b64encode(path.read_bytes()).decode()
         return [{"type": "document", "source": {"type": "base64", "media_type": "application/pdf", "data": data}, "title": name}]
     if kind == "text":

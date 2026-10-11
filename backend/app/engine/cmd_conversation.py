@@ -1,7 +1,12 @@
+import json
+import logging
+import threading
+
 from app.engine import events, store
 from app.engine.commands import CommandError, command
 
-ID = {"type": "string", "required": True, "description": "conversation id"}
+log = logging.getLogger("format.conversation")
+ID ={"type": "string", "required": True, "description": "conversation id"}
 
 
 def _get(cid: str) -> dict:
@@ -66,9 +71,34 @@ def pin(id: str, pinned: bool) -> dict:
     return conv
 
 
-@command("conversation.delete", "Delete chat", {"id": ID}, description="Deletes a conversation and its messages. Not undoable.")
+@command("conversation.delete", "Delete chat", {"id": ID},
+         description="Deletes a conversation and its messages, and removes its attachments from the Anthropic Files API where they were uploaded. Not undoable.")
 def delete(id: str) -> dict:
     _get(id)
+    fids = set()
+    for r in store.rows("SELECT meta FROM messages WHERE conversation_id = ?", (id,)):
+        try:
+            fids.update((json.loads(r["meta"] or "{}") or {}).get("attachments") or [])
+        except (TypeError, ValueError):
+            continue
     store.run("DELETE FROM conversations WHERE id = ?", (id,))
     events.publish("conversation.deleted", id=id)
+    if fids:
+        threading.Thread(target=_forget_remote, args=(sorted(fids),), name="files-cleanup", daemon=True).start()
     return {"deleted": id}
+
+
+def _forget_remote(fids: list[str]) -> None:
+    from app import providers
+    from app.engine import uploads
+    provider = providers.get("anthropic")
+    for fid in fids:
+        meta = uploads.get(fid)
+        remote = (meta or {}).get("remote") or {}
+        if not remote.get("id") or remote.get("key") != provider.key_tag():
+            continue
+        try:
+            provider.delete_file(remote["id"])
+            uploads.remember_remote(fid, None)
+        except providers.ProviderError as exc:
+            log.warning("could not delete remote file %s: %s", remote["id"], exc)

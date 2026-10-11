@@ -98,6 +98,23 @@ def branch(conversationId: str, messageId: str) -> dict:
     return {"conversationId": conversationId, "messages": _publish_path(conversationId)}
 
 
+@command("chat.compact", "Summarize earlier messages", {"conversationId": {"type": "string", "required": True}},
+         description="Asks Claude to summarize the chat so far (the API's compaction). The summary is kept as a message on the path and later turns start from it instead of the full history; the earlier messages stay visible. Runs like a reply: chat.wait waits for it. Also runs on its own after a reply once the chat passes compactAt of the context window, unless autoCompact is off.")
+def compact(conversationId: str) -> dict:
+    if store.row("SELECT id FROM conversations WHERE id = ?", (conversationId,)) is None:
+        raise CommandError(f"No conversation {conversationId}; conversation.list gives the ids", 404)
+    msgs = messages_of(conversationId)
+    if not any(m["role"] == "assistant" and m["content"] and not (m.get("meta") or {}).get("compaction") for m in msgs):
+        raise CommandError("chat.compact: there is nothing to summarize yet")
+    if msgs and (msgs[-1].get("meta") or {}).get("compaction") and msgs[-1]["content"]:
+        raise CommandError("chat.compact: the chat was just summarized")
+    try:
+        chat.start_compaction(conversationId)
+    except RuntimeError as exc:
+        raise CommandError(str(exc), 409) from None
+    return {"conversationId": conversationId, "started": True}
+
+
 @command("chat.wait", "Wait for the reply", {"conversationId": {"type": "string", "required": True}, "timeout": {"type": "number"}}, mutates=False,
          description="Waits (up to timeout seconds, default 300) for the running reply to finish and returns the last message. For agents and the CLI.")
 def wait(conversationId: str, timeout: float | None = None) -> dict:
