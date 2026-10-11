@@ -111,6 +111,13 @@ Each status cell keeps its own Text node and dot; `set` writes `data-state` and 
 
 The sidebar (open or rail), the side panel and the terminal dock are three attributes on `documentElement` (`data-ft-sidebar`, `data-ft-panel`, `data-ft-term`), set from localStorage by an inline script before any stylesheet, so a reload paints the remembered layout in its first frame. CSS grid tracks read the attributes; `toggle` changes one attribute and the stored preference, nothing else. Panels stay mounted when closed (zero-width track, `visibility: hidden`) so opening one never rebuilds it and the terminal keeps its session.
 
+### src/styles/ft-shell.css · narrow windows
+- refers-to: src/styles/ft-shell.css :: @media (max-width: 760px)
+- kind: rationale
+- logged: v0.2.1 · 2026-10-11
+
+At 760 px and below the open sidebar becomes a drawer over the page (fixed, `--z-companion`) while the grid keeps a rail-wide first column, the side panel takes the whole body, and the composer's notice hides. `.ft-main` is pinned to grid column 2: once the sidebar left the grid, auto-placement had put the main area into the 52 px column. Checked at 360, 768, 1024 and 1920 px with the sidebar open and as a rail, panel and terminal open: no visible scrollbar, no horizontal page overflow, no page errors.
+
 ### src/app.ts · openChat
 - refers-to: src/app.ts :: openChat, send
 - kind: rationale
