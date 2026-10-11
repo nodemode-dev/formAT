@@ -1,15 +1,27 @@
 import { run } from '../engine-client/api';
-import type { AppState, Settings } from '../state/app-state';
-import { el, esc, modKey, q, setText } from './dom';
+import type { AppState, FileInfo, Settings } from '../state/app-state';
+import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { openMenu, type MenuItem } from './menu';
+import { Dictation } from './dictation';
 
 export interface ComposerHooks {
-  send(text: string): Promise<void>;
+  send(text: string, files: FileInfo[]): Promise<void>;
+  stop(): void;
+  isRunning(): boolean;
   openCustomize(): void;
+  openKeys(): void;
 }
 
-const EFFORT_LABEL: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High', extra: 'Extra', max: 'Max' };
+interface Pending {
+  key: string;
+  name: string;
+  file?: FileInfo;
+  error?: string;
+  card?: HTMLElement;
+}
+
+const EFFORT_LABEL: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra', max: 'Max' };
 const MODES: Array<[string, string, string]> = [
   ['ask', 'Ask', 'Asks before each tool runs'],
   ['auto', 'Auto', 'Runs tools you have allowed without asking'],
@@ -24,12 +36,18 @@ export class Composer {
   private modeBtn: HTMLButtonElement;
   private notice: HTMLElement;
   private attachRow: HTMLElement;
-  private files: File[] = [];
+  private files: Pending[] = [];
   private research = false;
   private picker: HTMLInputElement;
+  private queueRow: HTMLElement;
+  private queued: Array<{ text: string; files: FileInfo[] }> = [];
+  private micBtn: HTMLButtonElement;
+  private dictation: Dictation;
+  private seq = 0;
 
   constructor(private state: AppState, private hooks: ComposerHooks) {
     this.root = el(`<div class="ft-composer">
+      <div class="ft-queue" hidden></div>
       <div class="ft-composer-box">
         <div class="ft-attach-row" hidden></div>
         <textarea class="ft-composer-input" rows="1" placeholder="How can Format help?" aria-label="Message"></textarea>
@@ -38,7 +56,7 @@ export class Composer {
       <div class="ft-composer-bar">
         <div class="ft-bar-left">
           <button type="button" class="ft-icon-btn ft-plus" data-menu-anchor aria-label="Add" title="Add files, skills, connectors">${ui('plus')}</button>
-          <button type="button" class="ft-icon-btn" disabled aria-label="Dictation" title="Dictation arrives in v0.6.0">${ui('mic')}</button>
+          <button type="button" class="ft-icon-btn ft-mic" aria-label="Dictation" aria-pressed="false" title="Dictation">${ui('mic')}</button>
         </div>
         <div class="ft-bar-notice"></div>
         <div class="ft-bar-right">
@@ -55,14 +73,41 @@ export class Composer {
     this.notice = q(this.root, '.ft-bar-notice');
     this.attachRow = q(this.root, '.ft-attach-row');
     this.picker = q(this.root, '.ft-hidden-file');
+    this.queueRow = q(this.root, '.ft-queue');
+    this.micBtn = q(this.root, '.ft-mic');
+    this.dictation = new Dictation(() => this.state.account.voiceLanguage, {
+      state: (on, label) => {
+        this.micBtn.classList.toggle('is-live', on);
+        setAttr(this.micBtn, 'aria-pressed', String(on));
+        setAttr(this.micBtn, 'title', label);
+      },
+      text: (t) => this.insertText(t),
+      error: (msg) => this.flash(msg),
+    });
+    this.micBtn.addEventListener('click', () => this.dictation.toggle());
     this.input.addEventListener('input', () => this.autosize());
     this.input.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) {
-        e.preventDefault();
-        void this.submit();
-      }
+      if (e.key !== 'Enter' || e.isComposing) return;
+      const modWanted = this.state.account.sendKey === 'modEnter';
+      const mod = e.metaKey || e.ctrlKey;
+      if (e.shiftKey || (modWanted && !mod)) return;
+      e.preventDefault();
+      void this.submit();
     });
-    this.sendBtn.addEventListener('click', () => void this.submit());
+    this.sendBtn.addEventListener('click', () => {
+      if (this.hooks.isRunning() && !this.input.value.trim()) this.hooks.stop();
+      else void this.submit();
+    });
+    this.queueRow.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const row = t.closest<HTMLElement>('[data-q]');
+      if (!row) return;
+      const i = Number(row.dataset.q);
+      if (t.closest('.ft-queue-now')) this.hooks.stop();
+      else if (t.closest('.ft-queue-x')) { this.queued.splice(i, 1); this.renderQueue(); }
+    });
+    state.on('running', () => this.renderRunning());
+    state.on('keys', () => this.renderSettings());
     q(this.root, '.ft-plus').addEventListener('click', (e) => this.plusMenu(e.currentTarget as HTMLElement));
     this.modelBtn.addEventListener('click', () => this.modelMenu());
     this.modeBtn.addEventListener('click', () => this.modeMenu());
@@ -89,39 +134,119 @@ export class Composer {
   private autosize(): void {
     this.input.style.height = 'auto';
     this.input.style.height = `${Math.min(this.input.scrollHeight, 240)}px`;
-    this.sendBtn.disabled = !this.input.value.trim();
+    this.renderRunning();
+  }
+
+  private insertText(t: string): void {
+    const start = this.input.selectionStart ?? this.input.value.length;
+    const end = this.input.selectionEnd ?? start;
+    const before = this.input.value.slice(0, start);
+    const glue = before && !/\s$/.test(before) ? ' ' : '';
+    this.input.setRangeText(glue + t, start, end, 'end');
+    this.autosize();
+    this.input.focus();
+  }
+
+  showError(msg: string): void {
+    this.flash(msg);
+  }
+
+  private flash(msg: string): void {
+    setText(this.notice, msg);
+    this.notice.classList.add('is-alert');
+    window.setTimeout(() => { this.notice.classList.remove('is-alert'); this.renderSettings(); }, 6000);
+  }
+
+  renderRunning(): void {
+    const running = this.hooks.isRunning();
+    const typed = !!this.input.value.trim();
+    const uploading = this.files.some((f) => !f.file && !f.error);
+    const stopMode = running && !typed;
+    this.sendBtn.classList.toggle('is-stop', stopMode);
+    setAttr(this.sendBtn, 'aria-label', stopMode ? 'Stop' : running ? 'Queue message' : 'Send');
+    setAttr(this.sendBtn, 'title', stopMode ? 'Stop the reply' : running ? 'Queue (sends when the reply finishes)' : 'Send (Enter)');
+    const want = stopMode ? 'stop' : 'send';
+    if (this.sendBtn.dataset.icon !== want) { this.sendBtn.dataset.icon = want; this.sendBtn.innerHTML = ui(want); }
+    this.sendBtn.disabled = !stopMode && (!(typed || this.files.some((f) => f.file)) || uploading);
   }
 
   private async submit(): Promise<void> {
     const text = this.input.value.trim();
-    if (!text) return;
+    const files = this.files.filter((f) => f.file).map((f) => f.file as FileInfo);
+    if ((!text && !files.length) || this.files.some((f) => !f.file && !f.error)) return;
     this.input.value = '';
-    this.autosize();
     this.files = [];
     this.renderFiles();
-    await this.hooks.send(text);
+    this.autosize();
+    if (this.hooks.isRunning()) {
+      this.queued.push({ text, files });
+      this.renderQueue();
+      return;
+    }
+    await this.hooks.send(text, files);
+  }
+
+  nextQueued(): { text: string; files: FileInfo[] } | undefined {
+    const next = this.queued.shift();
+    this.renderQueue();
+    return next;
+  }
+
+  private renderQueue(): void {
+    this.queueRow.hidden = this.queued.length === 0;
+    this.queueRow.innerHTML = this.queued.map((m, i) => `<div class="ft-queue-row" data-q="${i}"><span class="ft-queue-text">${esc(m.text || `${m.files.length} file(s)`)}</span>${i === 0 ? '<button type="button" class="ft-text-btn ft-queue-now">Send now</button>' : ''}<button type="button" class="ft-icon-btn ft-queue-x" aria-label="Remove from queue">${ui('close', 14)}</button></div>`).join('');
   }
 
   private addFiles(files: File[]): void {
-    if (!files.length) return;
-    this.files.push(...files);
+    for (const f of files) {
+      const p: Pending = { key: `f${++this.seq}`, name: f.name };
+      this.files.push(p);
+      void this.upload(p, f);
+    }
     this.renderFiles();
+    this.renderRunning();
+  }
+
+  private async upload(p: Pending, f: File): Promise<void> {
+    const form = new FormData();
+    form.append('file', f, f.name);
+    try {
+      const res = await fetch('/api/uploads', { method: 'POST', body: form });
+      const body = await res.json();
+      if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
+      p.file = body.file as FileInfo;
+    } catch (e) {
+      p.error = e instanceof Error ? e.message : String(e);
+    }
+    this.renderCard(p);
+    this.renderRunning();
+  }
+
+  private renderCard(p: Pending): void {
+    if (!p.card) return;
+    p.card.classList.toggle('is-loading', !p.file && !p.error);
+    p.card.classList.toggle('is-error', !!p.error);
+    const label = p.error ? 'FAILED' : p.file ? (p.file.kind === 'zip' ? `ZIP ${p.file.entries ?? 0}` : p.file.kind.toUpperCase()) : 'UPLOADING';
+    setText(q(p.card, '.ft-attach-type'), label);
+    if (p.error) setAttr(p.card, 'title', p.error);
   }
 
   private renderFiles(): void {
-    this.attachRow.hidden = this.files.length === 0;
-    const want = this.files.map((f, i) => `${i}:${f.name}`);
-    const have = [...this.attachRow.children].map((c) => (c as HTMLElement).dataset.key);
-    if (want.join('|') === have.join('|')) return;
-    this.attachRow.replaceChildren(...this.files.map((f, i) => {
-      const ext = (f.name.split('.').pop() || 'file').slice(0, 4).toUpperCase();
-      const card = el(`<div class="ft-attach" data-key="${esc(`${i}:${f.name}`)}"><span class="ft-attach-name">${esc(f.name)}</span><span class="ft-attach-type">${esc(ext)}</span><button type="button" class="ft-attach-x" aria-label="Remove ${esc(f.name)}">${ui('close', 12)}</button></div>`);
-      q(card, '.ft-attach-x').addEventListener('click', () => {
-        this.files.splice(i, 1);
-        this.renderFiles();
-      });
-      return card;
-    }));
+    if (this.attachRow.hidden !== (this.files.length === 0)) this.attachRow.hidden = this.files.length === 0;
+    const wanted = new Set(this.files.map((p) => p.key));
+    [...this.attachRow.children].forEach((c) => { if (!wanted.has((c as HTMLElement).dataset.key ?? '')) c.remove(); });
+    for (const p of this.files) {
+      if (!p.card) {
+        p.card = el(`<div class="ft-attach" data-key="${p.key}"><span class="ft-attach-name">${esc(p.name)}</span><span class="ft-attach-type"></span><button type="button" class="ft-attach-x" aria-label="Remove ${esc(p.name)}">${ui('close', 12)}</button></div>`);
+        q(p.card, '.ft-attach-x').addEventListener('click', () => {
+          this.files = this.files.filter((x) => x !== p);
+          this.renderFiles();
+          this.renderRunning();
+        });
+        this.attachRow.appendChild(p.card);
+      }
+      this.renderCard(p);
+    }
   }
 
   private plusMenu(anchor: HTMLElement): void {
@@ -139,24 +264,32 @@ export class Composer {
     const s = this.state.settings;
     const model = this.state.model();
     const set = (key: keyof Settings, value: unknown) => void run('settings.set', { key, value });
-    openMenu(this.modelBtn, [
-      { label: model?.name ?? s.model, desc: model?.description, checked: true },
-      {
+    const levels = model?.efforts?.length ? model.efforts : this.state.efforts;
+    const items: MenuItem[] = [
+      { label: model?.name ?? s.model, desc: model?.description || model?.id, checked: true },
+    ];
+    if (levels.length) {
+      items.push({
         label: 'Effort', value: EFFORT_LABEL[s.effort] ?? s.effort, submenu: () => [
           { note: 'Higher effort means more thorough answers, but takes longer and uses more tokens.' },
-          ...this.state.efforts.map((e) => ({
+          ...levels.map((e) => ({
             label: EFFORT_LABEL[e] ?? e, checked: e === s.effort,
             chip: e === 'medium' ? 'Recommended' : e === 'max' ? 'Most usage' : undefined,
             chipTone: e === 'max' ? 'warn' as const : 'plain' as const,
             action: () => set('effort', e),
           })),
         ],
-      },
-      { label: 'Extended thinking', checked: s.thinking, action: () => set('thinking', !s.thinking) },
-      {
-        label: 'More models', submenu: () => this.state.models.map((m) => ({ label: m.name, desc: m.id, checked: m.id === s.model, action: () => set('model', m.id) })),
-      },
-    ], 'up');
+      });
+    }
+    items.push({ label: 'Show thinking', desc: 'Summaries of Claude’s reasoning, above the reply', checked: s.thinking, action: () => set('thinking', !s.thinking) });
+    items.push({
+      label: 'More models', submenu: () => [
+        ...(this.state.modelSource === 'fallback' ? [{ note: this.state.modelError ? `Built-in list: ${this.state.modelError}` : 'Built-in list until an API key is added' }] : []),
+        ...this.state.models.map((m) => ({ label: m.name, desc: m.id, checked: m.id === s.model, action: () => set('model', m.id) })),
+      ],
+    });
+    if (!this.state.anthropicKey) items.push({ divider: true }, { label: 'Add an API key', icon: 'key', action: () => this.hooks.openKeys() });
+    openMenu(this.modelBtn, items, 'up');
   }
 
   private modeMenu(): void {
@@ -174,6 +307,7 @@ export class Composer {
     setText(q(this.modelBtn, '.ft-model-effort'), EFFORT_LABEL[s.effort] ?? s.effort);
     const mode = MODES.find(([id]) => id === s.permissionMode);
     setText(this.modeBtn, mode ? mode[1] : s.permissionMode);
-    setText(this.notice, `${name} through the Anthropic API can make mistakes.`);
+    if (this.notice.classList.contains('is-alert')) return;
+    setText(this.notice, this.state.anthropicKey ? `${name} through the Anthropic API can make mistakes.` : 'Add an Anthropic API key in Settings to start chatting.');
   }
 }

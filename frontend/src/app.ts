@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Conversation, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -23,7 +23,7 @@ export class App {
   private chat: ChatView;
   private dock: TerminalDock;
   private palette: Palette;
-  private settingsView = new SettingsView();
+  private settingsView: SettingsView;
   private pages = new Map<View, HTMLElement>();
   private title: HTMLElement;
   private stream = new EventStream();
@@ -36,7 +36,7 @@ export class App {
           <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span>${ui('chevronDown', 14)}</button>
           <span class="ft-topbar-spacer"></span>
           <button type="button" class="ft-icon-btn ft-term-toggle" aria-label="Toggle terminal" title="Terminal (${modKey}J)">${ui('terminal')}</button>
-          <button type="button" class="ft-icon-btn ft-panel-toggle" aria-label="Toggle side panel" title="Side panel (${modKey}.)">${ui('panelRight')}</button>
+          <button type="button" class="ft-icon-btn ft-panel-toggle" aria-label="Outputs" title="Outputs (${modKey}.)">${ui('outputs')}</button>
         </header>
         <div class="ft-body"><div class="ft-center"></div></div>
       </div>
@@ -50,15 +50,25 @@ export class App {
       toggleTerminal: () => this.toggle('term'),
       openPalette: () => this.palette.open(),
       renamed: () => undefined,
+      openSettings: (s) => this.openSettings(s),
     });
-    this.composer = new Composer(this.state, { send: (t) => this.send(t), openCustomize: () => this.setView('customize') });
-    this.chat = new ChatView(this.state, this.composer);
+    this.composer = new Composer(this.state, {
+      send: (t, f) => this.send(t, f),
+      stop: () => { if (this.state.activeId) void run('chat.stop', { conversationId: this.state.activeId }); },
+      isRunning: () => !!this.state.activeId && this.state.running.has(this.state.activeId),
+      openCustomize: () => this.setView('customize'),
+      openKeys: () => this.openSettings('keys'),
+    });
+    this.chat = new ChatView(this.state, this.composer, { retry: () => { if (this.state.activeId) void run('chat.retry', { conversationId: this.state.activeId }); } });
+    this.settingsView = new SettingsView(this.state);
     const panel = new SidePanel(() => this.toggle('panel', false));
     this.dock = new TerminalDock(() => this.toggle('term', false));
     this.palette = new Palette(this.state, () => [
       { label: 'New chat', icon: 'plus', hint: `${modKey}⇧O`, run: () => this.newChat() },
       { label: 'Toggle sidebar', icon: 'sidebar', hint: `${modKey}B`, run: () => this.toggle('sidebar') },
-      { label: 'Toggle side panel', icon: 'panelRight', hint: `${modKey}.`, run: () => this.toggle('panel') },
+      { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
+      { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
+      { label: 'Account', icon: 'user', run: () => this.openSettings('account') },
       { label: 'Toggle terminal', icon: 'terminal', hint: `${modKey}J`, run: () => this.toggle('term') },
       { label: 'Settings', icon: 'settings', run: () => this.setView('settings') },
       { label: 'Customize', icon: 'customize', run: () => this.setView('customize') },
@@ -91,30 +101,63 @@ export class App {
   }
 
   async load(): Promise<void> {
-    const [list, models, settings, info] = await Promise.all([
+    const [list, settings, info, account, keys, voice] = await Promise.all([
       run<{ conversations: Conversation[] }>('conversation.list'),
-      run<{ models: Model[]; efforts: string[] }>('models.list'),
       run<Settings>('settings.get'),
       run<InfoLike>('app.info'),
+      run<Account>('account.get'),
+      run<Record<string, KeyStatus>>('keys.status'),
+      fetch('/api/voice').then((r) => r.json()).catch(() => ({ engines: undefined })),
     ]);
     list.conversations.forEach((c) => this.state.conversations.set(c.id, c));
-    this.state.models = models.models;
-    this.state.efforts = models.efforts;
     this.state.settings = settings;
-    this.state.anthropicKey = !!info.providers.anthropic;
+    this.state.account = account;
+    this.state.keys = keys;
+    this.state.anthropicKey = !!keys.anthropic?.set;
     this.sidebar.setKey(this.state.anthropicKey);
-    this.settingsView.fill(info);
+    this.sidebar.setAccount(account);
+    this.settingsView.fill(info, voice.engines);
+    await this.loadModels();
     this.state.emit('conversations');
-    this.state.emit('settings');
+    this.state.emit('account');
+    this.state.emit('keys');
     this.state.emit('view');
     this.stream.on((e) => this.onEvent(e));
     this.stream.start();
+  }
+
+  private async loadModels(): Promise<void> {
+    const models = await run<{ models: Model[]; efforts: string[]; source: string; error: string | null }>('models.list');
+    this.state.models = models.models;
+    this.state.efforts = models.efforts;
+    this.state.modelSource = models.source;
+    this.state.modelError = models.error;
+    this.state.emit('settings');
+  }
+
+  openSettings(section: 'account' | 'keys' | 'about'): void {
+    this.setView('settings');
+    this.settingsView.scrollTo(section);
+  }
+
+  private setRunning(conversationId: string, on: boolean): void {
+    if (this.state.running.has(conversationId) === on) return;
+    if (on) this.state.running.add(conversationId);
+    else this.state.running.delete(conversationId);
+    this.state.emit('running');
   }
 
   private onEvent(e: EngineEvent): void {
     if (e.type === 'conversation.created' || e.type === 'conversation.updated') {
       const c = e.conversation as Conversation;
       this.state.conversations.set(c.id, c);
+      if (e.type === 'conversation.created' && this.claimNext) {
+        this.claimNext = false;
+        this.state.activeId = c.id;
+        this.state.messages = [];
+        this.setView('chat');
+        this.state.emit('active');
+      }
       this.state.emit('conversations');
     } else if (e.type === 'conversation.deleted') {
       this.state.conversations.delete(e.id as string);
@@ -124,13 +167,43 @@ export class App {
       const m = e.message as Message;
       const c = this.state.conversations.get(m.conversation_id);
       if (c) { c.updated = m.created; this.state.emit('conversations'); }
+      if (m.role === 'assistant' && m.meta?.status === 'streaming') this.setRunning(m.conversation_id, true);
       if (m.conversation_id === this.state.activeId && !this.state.messages.some((x) => x.id === m.id)) {
         this.state.messages.push(m);
+        this.state.emit('messages');
+      }
+    } else if (e.type === 'message.block') {
+      if (e.conversationId === this.state.activeId) this.chat.applyBlock(e.id as string, e.index as number, (e.block as { type: string }).type);
+    } else if (e.type === 'message.delta') {
+      if (e.conversationId === this.state.activeId) this.chat.applyDelta(e.id as string, e.index as number, e.kind as string, e.text as string);
+    } else if (e.type === 'message.completed') {
+      const m = e.message as Message;
+      this.setRunning(m.conversation_id, false);
+      if (m.conversation_id === this.state.activeId) {
+        const i = this.state.messages.findIndex((x) => x.id === m.id);
+        if (i >= 0) this.state.messages[i] = m;
+        this.chat.complete(m);
+        const next = this.composer.nextQueued();
+        if (next) void this.send(next.text, next.files);
+      }
+    } else if (e.type === 'message.deleted') {
+      if (e.conversationId === this.state.activeId) {
+        this.state.messages = this.state.messages.filter((x) => x.id !== e.id);
         this.state.emit('messages');
       }
     } else if (e.type === 'settings.changed') {
       this.state.settings = e.settings as Settings;
       this.state.emit('settings');
+    } else if (e.type === 'account.changed') {
+      this.state.account = e.account as Account;
+      this.sidebar.setAccount(this.state.account);
+      this.state.emit('account');
+    } else if (e.type === 'keys.changed') {
+      this.state.keys = e.keys as Record<string, KeyStatus>;
+      this.state.anthropicKey = !!this.state.keys.anthropic?.set;
+      this.sidebar.setKey(this.state.anthropicKey);
+      this.state.emit('keys');
+      void this.loadModels();
     }
   }
 
@@ -183,26 +256,22 @@ export class App {
     const conv = await run<Conversation & { messages: Message[] }>('conversation.get', { id });
     this.state.activeId = id;
     this.state.messages = conv.messages;
+    const last = conv.messages[conv.messages.length - 1];
+    this.setRunning(id, !!last && last.role === 'assistant' && last.meta?.status === 'streaming');
     this.setView('chat');
     this.state.emit('active');
   }
 
-  private async send(text: string): Promise<void> {
-    let id = this.state.activeId;
-    if (!id) {
-      const title = text.split('\n')[0].slice(0, 60);
-      const conv = await run<Conversation>('conversation.create', { title });
-      this.state.conversations.set(conv.id, conv);
-      this.state.activeId = conv.id;
-      this.state.messages = [];
-      id = conv.id;
-      this.state.emit('conversations');
-      this.state.emit('active');
-    }
-    const message = await run<Message>('message.add', { conversationId: id, text });
-    if (!this.state.messages.some((m) => m.id === message.id)) {
-      this.state.messages.push(message);
-      this.state.emit('messages');
+  private claimNext = false;
+
+  private async send(text: string, files: FileInfo[] = []): Promise<void> {
+    const id = this.state.activeId;
+    if (!id) this.claimNext = true;
+    try {
+      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id) });
+    } catch (err) {
+      this.claimNext = false;
+      this.composer.showError(err instanceof Error ? err.message : String(err));
     }
   }
 

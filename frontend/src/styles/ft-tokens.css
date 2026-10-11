@@ -15,6 +15,7 @@
   --ft-code-ink: var(--accent-ink);
   --ft-code-fill: var(--surface-2);
   --ft-dock-h: 280px;
+  --ft-outputs-w: 304px;
   --ft-sidebar-bg: color-mix(in srgb, var(--bg-primary) 72%, #000);
   --ft-bubble: var(--surface-2);
   --ft-menu-bg: color-mix(in srgb, var(--bg-node) 92%, var(--text-primary) 8%);

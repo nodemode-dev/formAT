@@ -142,12 +142,10 @@
 
 .ft-body {
   min-height: 0;
+  position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 0;
-  transition: grid-template-columns var(--ft-side-motion);
+  grid-template-columns: minmax(0, 1fr);
 }
-
-:root[data-ft-panel="open"] .ft-body { grid-template-columns: minmax(0, 1fr) clamp(var(--ft-panel-min-w), var(--ft-panel-w), 760px); }
 
 .ft-center { min-width: 0; min-height: 0; position: relative; }
 .ft-center > [hidden] { display: none; }
@@ -199,6 +197,34 @@
 .ft-page-note { max-width: var(--ft-column-w); margin: var(--space-4) auto 0; font-size: var(--fs-12); color: var(--text-secondary); line-height: 1.6; }
 .ft-page-note code { font-family: var(--font-mono); color: var(--ft-code-ink); }
 
+.ft-settings .ft-set-section { max-width: var(--ft-column-w); margin: 0 auto var(--space-8); display: grid; gap: var(--space-4); scroll-margin-top: var(--space-6); }
+.ft-set-section h2 { display: flex; align-items: center; gap: var(--space-2); margin: 0; padding-bottom: var(--space-2); border-bottom: 1px solid var(--line-1); font: 600 var(--fs-14) var(--font-ui); color: var(--text-primary); }
+.ft-set-section h2 .ft-ico { color: var(--text-secondary); }
+.ft-set-note { margin: 0; font-size: var(--fs-12); line-height: 1.6; color: var(--text-secondary); }
+.ft-set-note code { font-family: var(--font-mono); color: var(--ft-code-ink); }
+.ft-field { display: grid; gap: 6px; font-size: var(--fs-13); color: var(--text-secondary); }
+.ft-field small { font-size: var(--fs-11); color: var(--text-muted); }
+.ft-field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); }
+.ft-input { width: 100%; box-sizing: border-box; min-height: var(--ctl); padding: 6px var(--space-3); border: 1px solid var(--line-2); border-radius: var(--radius-md); background: var(--surface-field); color: var(--text-primary); font: var(--fs-13) var(--font-ui); outline: none; }
+textarea.ft-input { resize: vertical; line-height: 1.5; overflow-y: auto; }
+.ft-input:focus { border-color: var(--accent-line); }
+.ft-set-actions { display: flex; align-items: center; gap: var(--space-3); }
+.ft-saved, .ft-key-msg { font-size: var(--fs-12); color: var(--text-muted); min-height: 1em; }
+.ft-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--ctl); padding: 0 var(--space-4); border: 1px solid var(--line-2); border-radius: var(--radius-md); background: var(--surface-2); color: var(--text-primary); font: 500 var(--fs-13) var(--font-ui); cursor: pointer; white-space: nowrap; }
+.ft-btn:hover { background: var(--surface-raised); }
+.ft-btn[hidden] { display: none; }
+.ft-btn-primary { border-color: transparent; background: var(--accent-color); color: var(--text-on-accent); }
+.ft-btn-primary:hover { background: var(--accent-color-hover); }
+.ft-key-row { display: grid; gap: var(--space-2); padding: var(--space-3) var(--space-4); border: 1px solid var(--line-1); border-radius: var(--radius-lg); background: var(--surface-1); }
+.ft-key-head { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); }
+.ft-key-name { font: 600 var(--fs-13) var(--font-ui); }
+.ft-key-status { font: var(--fs-12) var(--font-mono); color: var(--text-muted); }
+.ft-key-status.is-set { color: var(--ok); }
+.ft-key-note { font-size: var(--fs-12); color: var(--text-muted); }
+.ft-key-form { display: flex; gap: var(--space-2); }
+.ft-key-form .ft-input { flex: 1; min-width: 0; font-family: var(--font-mono); }
+.ft-account-chev { margin-left: auto; color: var(--text-muted); display: inline-grid; }
+
 .ft-boot-note {
   margin: 0;
   font-size: var(--fs-12);
@@ -216,8 +242,7 @@
     box-shadow: var(--shadow-window);
   }
   .ft-main { grid-column: 2; grid-row: 1; }
-  :root[data-ft-panel="open"] .ft-body { grid-template-columns: 0 minmax(0, 1fr); }
-  .ft-panel-head, .ft-panel-body { min-width: 0; }
+  .ft-panel { left: var(--space-2); width: auto; }
   .ft-bar-notice { visibility: hidden; }
   .ft-chat-scroll, .ft-chat-dock { padding-left: var(--space-4); padding-right: var(--space-4); }
   .ft-page { padding: var(--space-6) var(--space-4); }

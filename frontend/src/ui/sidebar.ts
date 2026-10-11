@@ -1,5 +1,5 @@
 import { run } from '../engine-client/api';
-import type { AppState, Conversation, View } from '../state/app-state';
+import type { Account, AppState, Conversation, View } from '../state/app-state';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { icon, ui, type UiIcon } from './icons-ft';
 import { openMenu } from './menu';
@@ -12,6 +12,7 @@ export interface SidebarHooks {
   toggleTerminal(): void;
   openPalette(): void;
   renamed(id: string): void;
+  openSettings(section: 'account' | 'keys' | 'about'): void;
 }
 
 const NAV: Array<[View | 'new', string, UiIcon]> = [
@@ -62,9 +63,10 @@ export class Sidebar {
       </nav>
       <div class="ft-recents ft-label" role="list" aria-label="Chats"></div>
       <div class="ft-side-foot">
-        <button type="button" class="ft-account" data-nav="settings" title="Settings">
+        <button type="button" class="ft-account" data-menu-anchor title="Account and settings" aria-label="Account and settings">
           <span class="ft-avatar">F</span>
           <span class="ft-account-text ft-label"><span class="ft-account-name">Local</span><span class="ft-account-sub">checking key</span></span>
+          <span class="ft-account-chev ft-label">${ui('chevronDown', 14)}</span>
         </button>
       </div>
     </aside>`);
@@ -72,6 +74,7 @@ export class Sidebar {
     this.keyLine = q(this.root, '.ft-account-sub');
     q(this.root, '.ft-side-toggle').addEventListener('click', () => hooks.toggle());
     q(this.root, '.ft-search').addEventListener('click', () => hooks.openPalette());
+    q(this.root, '.ft-account').addEventListener('click', (e) => this.accountMenu(e.currentTarget as HTMLElement));
     this.root.querySelectorAll<HTMLButtonElement>('.ft-seg-btn').forEach((b) =>
       b.addEventListener('click', () => (b.dataset.mode === 'terminal' ? hooks.toggleTerminal() : hooks.setView('chat'))),
     );
@@ -110,6 +113,23 @@ export class Sidebar {
 
   setKey(present: boolean): void {
     setText(this.keyLine, present ? 'Anthropic key set' : 'No API key yet');
+  }
+
+  setAccount(a: Account): void {
+    const name = a.displayName.trim() || 'Local';
+    setText(q(this.root, '.ft-account-name'), name);
+    setText(q(this.root, '.ft-avatar'), name.slice(0, 1).toUpperCase());
+  }
+
+  private accountMenu(anchor: HTMLElement): void {
+    openMenu(anchor, [
+      { note: this.state.account.displayName || 'Local account' },
+      { label: 'Account', icon: 'user', action: () => this.hooks.openSettings('account') },
+      { label: 'API keys', icon: 'key', value: this.state.anthropicKey ? 'set' : 'add', action: () => this.hooks.openSettings('keys') },
+      { label: 'Settings', icon: 'settings', action: () => this.hooks.openSettings('about') },
+      { divider: true },
+      { label: 'Command palette', icon: 'search', hint: `${modKey}K`, action: () => this.hooks.openPalette() },
+    ], 'up');
   }
 
   private toggleMore(btn: HTMLElement): void {

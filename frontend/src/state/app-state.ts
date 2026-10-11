@@ -11,6 +11,25 @@ export interface Conversation {
 export interface ContentBlock {
   type: string;
   text?: string;
+  thinking?: string;
+}
+
+export interface FileInfo {
+  id: string;
+  name: string;
+  mime: string;
+  size: number;
+  kind: string;
+  entries?: number;
+}
+
+export interface MessageMeta {
+  status?: 'streaming' | 'done' | 'stopped' | 'error';
+  error?: string;
+  model?: string;
+  stopReason?: string;
+  files?: FileInfo[];
+  usage?: Record<string, number>;
 }
 
 export interface Message {
@@ -20,13 +39,31 @@ export interface Message {
   role: 'user' | 'assistant';
   content: ContentBlock[];
   created: number;
+  meta: MessageMeta;
 }
 
 export interface Model {
   id: string;
   name: string;
+  displayName?: string;
   provider: string;
   description: string;
+  efforts: string[];
+  maxTokens?: number | null;
+  contextWindow?: number | null;
+}
+
+export interface Account {
+  displayName: string;
+  preferences: string;
+  sendKey: 'enter' | 'modEnter';
+  voiceLanguage: string;
+}
+
+export interface KeyStatus {
+  set: boolean;
+  source: string | null;
+  hint: string | null;
 }
 
 export interface Settings {
@@ -38,7 +75,7 @@ export interface Settings {
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
 
-type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view';
+type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models';
 
 export class AppState {
   conversations = new Map<string, Conversation>();
@@ -49,6 +86,11 @@ export class AppState {
   settings: Settings = { model: '', effort: 'medium', thinking: true, permissionMode: 'ask' };
   view: View = 'chat';
   anthropicKey = false;
+  modelSource = 'fallback';
+  modelError: string | null = null;
+  account: Account = { displayName: '', preferences: '', sendKey: 'enter', voiceLanguage: 'en-US' };
+  keys: Record<string, KeyStatus> = {};
+  running = new Set<string>();
   private subs = new Map<Topic, Set<() => void>>();
 
   on(topic: Topic, fn: () => void): void {

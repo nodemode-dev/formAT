@@ -12,7 +12,7 @@ export class SidePanel {
       </div>
       <div class="ft-panel-body">
         <section class="ft-panel-section">
-          <div class="ft-panel-empty">${ui('file', 28)}<p>Files and artifacts made in this chat appear here, with a preview, the source and a download.</p></div>
+          <div class="ft-panel-empty">${ui('outputs', 20)}<p>Files and artifacts made in this chat appear here.</p></div>
         </section>
         <section class="ft-panel-section">
           <h3 class="ft-panel-sub">Used in this session</h3>

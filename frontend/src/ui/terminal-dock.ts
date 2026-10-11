@@ -33,7 +33,7 @@ export class TerminalDock {
         <div class="ft-dock-tabs" role="tablist"></div>
         <button type="button" class="ft-icon-btn ft-dock-new" aria-label="New terminal" title="New terminal">${ui('plus', 16)}</button>
         <span class="ft-dock-spacer"></span>
-        <button type="button" class="ft-icon-btn ft-dock-close" aria-label="Hide terminal" title="Hide terminal (${modKey}J)">${ui('close', 16)}</button>
+        <button type="button" class="ft-text-btn ft-dock-close" aria-label="Hide terminal" title="Hide terminal (${modKey}J); the shells keep running">${ui('hide', 16)}<span>Hide</span></button>
       </div>
       <div class="ft-dock-stage"></div>
     </section>`);

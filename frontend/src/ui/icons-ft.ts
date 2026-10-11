@@ -36,6 +36,13 @@ const UI: Record<string, string> = {
   filter: `<path d="M4 6h12M6.5 10h7M9 14h2" ${S}/>`,
   pencil: `<path d="M12.5 4.5l3 3L8 15H5v-3z" ${S}/>`,
   trash: `<path d="M4.5 6h11M8 6V4.5h4V6M6 6l.7 9.5h6.6L14 6" ${S}/>`,
+  copy: `<rect x="7" y="7" width="9" height="9" rx="1.5" ${S}/><path d="M13 7V5.5A1.5 1.5 0 0 0 11.5 4h-6A1.5 1.5 0 0 0 4 5.5v6A1.5 1.5 0 0 0 5.5 13H7" ${S}/>`,
+  retry: `<path d="M15.5 10a5.5 5.5 0 1 1-1.6-3.9M15.5 4v3.5H12" ${S}/>`,
+  key: `<circle cx="7" cy="12" r="3" ${S}/><path d="M9.2 9.8L16 3M13.5 5.5l2 2M12 7l1.5 1.5" ${S}/>`,
+  user: `<circle cx="10" cy="7" r="3" ${S}/><path d="M4.5 16.5a5.5 5.5 0 0 1 11 0" ${S}/>`,
+  hide: `<path d="M5 8l5 5 5-5" ${S}/><path d="M4.5 16h11" ${S}/>`,
+  palette: `<path d="M10 3a7 7 0 1 0 0 14c1 0 1.5-.7 1.5-1.4 0-1.2-1-1.6-1-2.6 0-.8.7-1.5 1.5-1.5H14a3 3 0 0 0 3-3C17 5.5 14 3 10 3z" ${S}/><circle cx="6.5" cy="9" r="1" fill="currentColor"/><circle cx="9" cy="6" r="1" fill="currentColor"/><circle cx="12.5" cy="6.5" r="1" fill="currentColor"/>`,
+  outputs: `<path d="M6 3h5.5L15 6.5V16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" ${S}/><path d="M8 10h4M8 13h4" ${S}/>`,
 };
 
 export type UiIcon = keyof typeof UI;
