@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.4.0
-Last updated: 2026-10-11 · v0.4.0: tool cards, the summary line, approval cards, live output, Tools settings, the meter's box
+Current build version: v0.4.1
+Last updated: 2026-10-11 · v0.4.1: the question card, the plan checklist, file cards, the Outputs panel, two hidden-toggle fixes
 
 ---
 
@@ -229,6 +229,27 @@ Once the meter could show (v0.3.3), its first appearance in a new chat widened t
 - logged: v0.4.0 · 2026-10-11
 
 claude.ai folds a run of tool calls into one line ("Used Clock, read 8 pages, and 21 more steps, 1 failed", UI_STUDY); Format does the same: consecutive tool blocks in a reply join one `details` group whose summary names the first two steps, counts the rest and the failures, and is closed by default. A text or thinking block ends the group, so a reply reads text, steps, text. The group opens itself only when a call waits for approval, because the approval must be seen; nothing closes on its own, so the thread never moves under the reader. Each card is created once per `tool_use` id and updated in place: the title and input when the input finishes, the state from `message.tool`, output appended to one Text node from `tool.output`, the result or links when the result block arrives (matched by `tool_use_id`, the result block itself draws nothing). The state label has a fixed 9em box so changing it does not move the line. Reloaded chats build the same cards from the stored blocks through `resultView`, which mirrors the engine's `tool_view`.
+
+### src/ui/tool-cards.ts · question, plan and file cards
+- refers-to: src/ui/tool-cards.ts :: ToolCard (buildQuestion, sendAnswer, setAnswer), FileCard, taskListHtml; src/ui/chat-view.ts :: ensurePart (send_file), applyStatuses
+- kind: rationale
+- logged: v0.4.1 · 2026-10-11
+
+The question card is part of its step card, shown outside the step's `details` while the status is `asking`, and its group opens for it as for an approval. A single-choice option answers on one tap; several-choice uses checkboxes and Send; the own-answer field always sends. Afterwards the step line carries the answer, from the live view or from `meta.answers` on reload. A sent file is not a step: it gets its own card in the reply, as claude.ai shows file cards, ending the step group before it. Its size comes from the result text ("(35 bytes)") so no extra request is made. The plan's checklist is the same markup in the step and in the Outputs panel.
+
+### src/ui/side-panel.ts · Outputs
+- refers-to: src/ui/side-panel.ts :: setTasks, setOutputs; src/app.ts :: refreshOutputs
+- kind: explainer
+- logged: v0.4.1 · 2026-10-11
+
+Progress, Files (Download each, Download all as a zip) and Used in this session. Each list is rebuilt only when its HTML changes, which happens on events, not while streaming. `refreshOutputs` drops a reply that arrives after the chat changed (a sequence number), so a slow answer cannot paint another chat's files.
+
+### src/ui · hidden toggles, checked by hand
+- refers-to: src/ui/tool-cards.ts :: setResult; src/ui/side-panel.ts :: setOutputs
+- kind: warning-context
+- logged: v0.4.1 · 2026-10-11
+
+Two more inverted `hidden` checks were found in v0.4.1 (a step's result that was not streamed never showed; the Files empty note stayed beside a file), the same mistake as the context meter in v0.3.3. Every toggle in `src/ui` was then read by hand. The two correct shapes: `if (el.hidden !== want) el.hidden = want`, or `if (el.hidden === show) el.hidden = !show`.
 
 ### src/ui/chat-view.ts · summaries
 - refers-to: src/ui/chat-view.ts :: node (compaction), paintCompaction, complete; src/app.ts :: message.completed (compactNext), compactNow

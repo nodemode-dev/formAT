@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.4.0
-Last updated: 2026-10-11 · v0.4.0: the tool loop, workspace tools, web search and fetch, approvals
+Current build version: v0.4.1
+Last updated: 2026-10-11 · v0.4.1: ask_user, task_list, send_file, downloads, outputs.list
 
 ---
 
@@ -308,6 +308,13 @@ Each chat has its own folder, `workspace/chats/<id>`; `read`, `write`, `edit`, `
 - logged: v0.4.0 · 2026-10-11
 
 `web_search_20260318` and `web_fetch_20260318`: the current versions, with dynamic filtering (the API provisions the code execution it needs) and no beta header. They are offered unless the model's `capabilities.server_tools` says otherwise or `webTools` is off. Web search is billed by Anthropic per search ($10 per 1,000 on 2026-10-11); the Tools settings say so. Web fetch only fetches URLs that already appeared in the conversation, which is the API's own guard against exfiltration.
+
+### app/engine/tools.py · ask_user, task_list, send_file
+- refers-to: app/engine/tools.py :: wait_for_answer, kind_of_wait, tasks_of, outputs_of, output_path, run (task_list, send_file); app/engine/chat.py :: _call_tool (ask_user); app/engine/cmd_chat.py :: answer_question, tasks_get, outputs_list
+- kind: rationale
+- logged: v0.4.1 · 2026-10-11
+
+The three tools that make the work visible, from the plan's tool list (DEV_PLAN, Architecture decisions). `ask_user` shares the wait machinery with approvals but is a different kind of wait, so `tool.approve` refuses it and `tool.answer` refuses an approval; the answer is stored in `meta.answers` because the stored `tool_use` block must stay exactly as the model sent it. `task_list` replaces the whole list on each call (simplest for the model to keep right) and is stored in the `meta` table under `tasks.<chat>`. `send_file` only registers a file that already exists in the chat's folder, under `outputs.<chat>`; downloads go through `/api/chats/{id}/files/{path}`, which resolves the path inside the folder the same way the tools do (`../` answers 403). None of the three asks for approval or is blocked by Plan mode: they read or show, they never change the person's files. Their storage is per chat and is not removed with the chat yet.
 
 ---
 

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.4.1 · 2026-10-11
+
+Tools and approvals (DEV_PLAN Phase 4, second part).
+
+- Claude can ask you a multiple-choice question; pick an option or type your own answer, and the reply continues.
+- Claude keeps a plan as a checklist, shown in its step and in Outputs under Progress.
+- Files Claude makes and sends appear as file cards with Download, and in Outputs with Download all.
+- Outputs now lists what was used in the session: uploads, web searches and pages, commands, file changes.
+- Engine: `tool.answer`, `tasks.get`, `outputs.list`; downloads at `/api/chats/{id}/files/{path}` and `/api/chats/{id}/outputs.zip`.
+- Fixed: results of steps that do not stream (writing or editing a file) now show in their card.
+
 ## 0.4.0 · 2026-10-11
 
 Tools and approvals (DEV_PLAN Phase 4, first part).
