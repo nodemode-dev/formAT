@@ -1,0 +1,101 @@
+#app {
+  height: 100%;
+  font-family: var(--font-ui);
+  color: var(--text-primary);
+  background: var(--surface-0);
+}
+
+.ft-boot {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  box-sizing: border-box;
+}
+
+.ft-boot-card {
+  width: min(440px, 100%);
+  display: grid;
+  gap: var(--space-4);
+  padding: var(--space-6);
+  border: 1px solid var(--line-1);
+  border-radius: var(--radius-xl);
+  background: var(--surface-1);
+  box-sizing: border-box;
+}
+
+.ft-brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.ft-brand-mark {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  color: var(--accent-color);
+}
+
+.ft-brand-name {
+  font-size: var(--fs-18);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.ft-brand-sub {
+  font-size: var(--fs-12);
+  color: var(--text-secondary);
+}
+
+.ft-status {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3) 0 0;
+  border-top: 1px solid var(--line-1);
+}
+
+.ft-status-row {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr);
+  align-items: center;
+  min-height: var(--ctl-sm);
+  font-size: var(--fs-13);
+}
+
+.ft-status-row dt {
+  color: var(--text-muted);
+}
+
+.ft-status-row dd {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  font-family: var(--font-mono);
+  font-size: var(--fs-12);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ft-dot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--text-muted);
+}
+
+.ft-dot[data-state="ok"] { background: var(--ok); }
+.ft-dot[data-state="warn"] { background: var(--warn); }
+.ft-dot[data-state="bad"] { background: var(--danger); }
+
+.ft-boot-note {
+  margin: 0;
+  font-size: var(--fs-12);
+  line-height: 1.5;
+  color: var(--text-secondary);
+}

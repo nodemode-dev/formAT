@@ -1,0 +1,17 @@
+:root {
+  --ft-sidebar-w: 288px;
+  --ft-rail-w: 52px;
+  --ft-column-w: 640px;
+  --ft-composer-w: 704px;
+  --ft-panel-w: 41vw;
+  --ft-panel-min-w: 360px;
+  --ft-topbar-h: 44px;
+  --ft-nav-row-h: 36px;
+  --ft-recent-row-h: 36px;
+  --ft-attach-card: 112px;
+  --ft-reading-face: var(--font-ui);
+  --ft-reading-size: 15px;
+  --ft-reading-leading: 1.65;
+  --ft-code-ink: var(--accent-ink);
+  --ft-code-fill: var(--surface-2);
+}
