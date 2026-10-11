@@ -171,6 +171,45 @@ A built-in list (ids claude-opus-5-5, claude-sonnet-5-5, claude-haiku-5-5, claud
 
 ---
 
+## app/harness and app/providers {#app-harness}
+
+### app/harness/request.py · build
+- refers-to: app/harness/request.py :: build, _effort, _thinking, _max_tokens, api_messages
+- kind: rationale
+- logged: v0.3.0 · 2026-10-11
+
+What the person types becomes a Messages request here and nowhere else. Sources: the effort and thinking pages of the Claude API docs, read 2026-10-11. Effort goes in `output_config.effort` and is clamped to the levels the model's capabilities list (from `/v1/models`), falling back to the nearest lower one. Show thinking sends `thinking: {type: adaptive, display: summarized}` where adaptive is supported, else extended thinking with a budget; with Show thinking off the field is omitted, never `disabled`, because Opus 5.5 answers `disabled` with a 400. `max_tokens` is 64k at high and above, 32k below, capped by the model's own limit. Stored turns are sent back block for block; thinking blocks keep their `signature` unchanged, as the docs require. Top-level `cache_control: {type: ephemeral}` turns on automatic prompt caching.
+
+### app/harness/content.py · attachments
+- refers-to: app/harness/content.py :: blocks_for, _zip_blocks
+- kind: explainer
+- logged: v0.3.0 · 2026-10-11
+
+Images and PDFs go as base64 `image` and `document` blocks when the model accepts them; text and code files are fenced with their name (200k characters); zips are unpacked into the workspace, listed, and their text files inlined to a 400k character budget (60k each), skipping `.git`, `node_modules`, build and venv folders; other media are referenced by their workspace path. Attachments are rebuilt from the workspace on every turn, so the database stores file ids, not bytes.
+
+### app/core/secrets.py · precedence
+- refers-to: app/core/secrets.py :: api_key, source
+- kind: rationale
+- logged: v0.3.0 · 2026-10-11
+
+A key saved in Settings (data folder `secrets.json`, mode 0600, written by a temp file and rename) wins over `backend/.env` and the environment, so a person can switch keys without editing files; removing it falls back to .env. `config.ENV_FILE_KEYS` remembers which variables came from .env, so the window can say where a key comes from.
+
+### app/engine/chat.py · the run thread
+- refers-to: app/engine/chat.py :: start, _run, flush
+- kind: explainer
+- logged: v0.3.0 · 2026-10-11
+
+One thread per running reply. The assistant message is stored empty with status `streaming` first (so the window and agents see it at once), deltas are published in 40 ms batches per block, and the final content blocks, usage, stop reason and status (done, stopped, error) are written once at the end. A stop sets an Event the stream loop checks between events.
+
+### app/engine/voice.py · engines
+- refers-to: app/engine/voice.py :: transcribe
+- kind: warning-context
+- logged: v0.3.0 · 2026-10-11
+
+Local faster-whisper (MIT, optional, `./format install-voice`; model `base` unless `FORMAT_WHISPER_MODEL`) is preferred; otherwise OpenAI's transcription endpoint with `FORMAT_TRANSCRIBE_MODEL` (default `whisper-1`). Neither was run here: no OpenAI key, no network to OpenAI, and the local model downloads on first use. Without either the endpoint answers 503 with how to enable one, which the window shows.
+
+---
+
 ## app/routers/stream.py {#app-routers-stream}
 
 ### app/routers/stream.py · module name

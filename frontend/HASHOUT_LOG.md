@@ -118,6 +118,55 @@ The sidebar (open or rail), the side panel and the terminal dock are three attri
 
 At 760 px and below the open sidebar becomes a drawer over the page (fixed, `--z-companion`) while the grid keeps a rail-wide first column, the side panel takes the whole body, and the composer's notice hides. `.ft-main` is pinned to grid column 2: once the sidebar left the grid, auto-placement had put the main area into the 52 px column. Checked at 360, 768, 1024 and 1920 px with the sidebar open and as a rail, panel and terminal open: no visible scrollbar, no horizontal page overflow, no page errors.
 
+### src/ui/markdown.ts · StreamRenderer
+- refers-to: src/ui/markdown.ts :: splitBlocks, StreamRenderer.set
+- kind: rationale
+- logged: v0.3.0 · 2026-10-11
+
+A streaming reply is split into blocks at blank lines outside code fences. Every finished block is rendered once with markdown-it into its own element and never touched again; only the tail element is re-rendered as text arrives, and when the reply finishes the tail element is kept and renamed to a block rather than replaced. The check counts removed `.ft-md-block`, `.ft-msg` and `.ft-thinking` nodes in the thread while a reply streams: 0. Raw HTML in Markdown is off (`html: false`); links open in a new tab with `noopener`. A list interrupted by a blank line becomes two lists (numbering continues because markdown-it keeps the start number).
+
+### src/app.ts · claimNext
+- refers-to: src/app.ts :: send, onEvent (conversation.created)
+- kind: rationale
+- logged: v0.3.0 · 2026-10-11
+
+`chat.send` without a chat id creates the chat in the engine, and its events can arrive before the HTTP reply. The window sets `claimNext` before sending; the next `conversation.created` becomes the active chat with an empty message list, so the user message, the reply placeholder and the first deltas all land in the view instead of being dropped.
+
+### src/ui/chat-view.ts · finishView
+- refers-to: src/ui/chat-view.ts :: finishView
+- kind: warning-context
+- logged: v0.3.0 · 2026-10-11
+
+The action row shows when the reply is not streaming: `if (actions.hidden !== streaming) actions.hidden = streaming`. The first version compared with `===` and the row never appeared after a reply; the chat check caught it before commit.
+
+### src/ui/composer.ts · uploads and the queue
+- refers-to: src/ui/composer.ts :: addFiles, upload, renderFiles, submit, renderQueue
+- kind: explainer
+- logged: v0.3.0 · 2026-10-11
+
+Files upload on pick (`POST /api/uploads`); each card is keyed and patched (uploading, kind, ZIP with its entry count, or FAILED with the reason as its tooltip). Send waits until uploads finish. While a reply runs, Send with an empty box becomes Stop, and Send with text queues the message above the composer; the queue sends its next message when `message.completed` arrives, and Send now stops the running reply so the queue moves. The queue row is small and re-rendered as a whole when it changes.
+
+### src/ui/dictation.ts · two paths
+- refers-to: src/ui/dictation.ts :: start, transcribe
+- kind: rationale
+- logged: v0.3.0 · 2026-10-11
+
+Chromium-based browsers and Safari have speech recognition built in (`SpeechRecognition` or `webkitSpeechRecognition`), so text arrives with no engine work. Firefox has none, so there the microphone records with `MediaRecorder` and the engine transcribes (local faster-whisper after `./format install-voice`, or OpenAI with an OpenAI key). Recognised text is inserted at the cursor.
+
+### src/ui/views.ts · API keys
+- refers-to: src/ui/views.ts :: SettingsView
+- kind: explainer
+- logged: v0.3.0 · 2026-10-11
+
+Keys are written with `keys.set` and never read back; each row shows only whether a key is set, its last four characters and where it comes from (saved in Format, backend/.env, the environment). Remove appears only for a key saved in Format, because a .env key is the person's file to edit.
+
+### src/styles/ft-chat.css · Outputs floats
+- refers-to: src/styles/ft-chat.css :: .ft-panel
+- kind: rationale
+- logged: v0.3.0 · 2026-10-11
+
+Outputs is a card positioned over the body at `--z-companion`, as in claude.ai's screenshots, so opening it never narrows the conversation. It fades and lifts in with opacity and transform only, and stays mounted when closed. The full file viewer of Phase 5 will be the column; this card lists what the chat made.
+
 ### src/app.ts · openChat
 - refers-to: src/app.ts :: openChat, send
 - kind: rationale

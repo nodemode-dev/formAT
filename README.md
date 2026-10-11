@@ -13,7 +13,7 @@ Format is the form family's chat and agent workspace for the Claude API. It foll
 
 Format is not affiliated with Anthropic and uses none of its logos, fonts or styles.
 
-**Status.** v0.2.0 is the shell: the sidebar that folds to a mini rail (Mod+B), the conversation view and composer with the + menu, model, effort and permission menus, an Outputs side panel, a terminal dock running real shells, a command palette (Mod+K), and the Projects, Artifacts, Scheduled, Customize and Settings pages. Messages you send are stored; Claude's replies arrive in v0.3.0 (see the roadmap in the planning sidecar).
+**Status.** v0.3.0 chats with Claude. The engine's harness turns what you type and attach into a Claude API request (system prompt with your preferences, effort, thinking, prompt caching, images, PDFs, code and zips) and streams the reply into a Markdown view that renders each finished block once. Models and their effort levels come from your key's `/v1/models`. Around it: the sidebar that folds to a mini rail (Mod+B), the composer with the + menu, model, effort and permission menus, Stop and a queue, dictation, a floating Outputs card, a terminal dock with real shells (Hide or Mod+J), a command palette (Mod+K), and Settings for your account and API keys. Tools, artifacts and projects follow (see the roadmap in the planning sidecar).
 
 | Shortcut | Does |
 | --- | --- |
@@ -39,7 +39,9 @@ Requirements: Node 20.19 or newer (22 recommended), Python 3.12 or newer, git. f
 ./format doctor              # toolchain, installs, key and ports
 ```
 
-Put your key in `backend/.env` as `ANTHROPIC_API_KEY=...` (chat uses it from v0.3.0).
+Add your Anthropic key in Settings > API keys (stored in the data folder, owner-only), or put it in `backend/.env` as `ANTHROPIC_API_KEY=...` (the install copies `backend/.env.example` there). A key saved in Settings takes precedence; remove it there to fall back to `.env`.
+
+Dictation uses the browser's speech recognition in Chrome, Edge and Safari. In Firefox it records and the engine transcribes: run `./format install-voice` for local transcription, or add an OpenAI key.
 
 On Windows run `.\format.bat` from this folder, never a bare `format`: outside this folder that name is Windows' disk formatter.
 
@@ -57,6 +59,8 @@ On Windows run `.\format.bat` from this folder, never a bare `format`: outside t
 | --- | --- |
 | `./format` or `./format boot` | engine and window together |
 | `./format install` | engine venv and frontend packages |
+| `./format install-voice` | optional local speech to text for dictation |
+| `./format cli chat.send text="..."` then `chat.wait conversationId=...` | chat from the terminal or an agent |
 | `./format backend`, `./format frontend` | one side only |
 | `./format build`, `./format serve` | build the window, serve it from the engine |
 | `./format cli <command> key=value ...` | run any engine command; `list` and `describe <command>` explore them |

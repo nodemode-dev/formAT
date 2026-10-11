@@ -16,6 +16,11 @@ Format · Copyright 2026 nodemode-ai · Licensed under the Apache License, Versi
 | xterm.js (`@xterm/xterm`, `@xterm/addon-fit`) | MIT | terminal dock |
 | ptyprocess | ISC | engine terminals on macOS and Linux |
 | pywinpty | MIT | engine terminals on Windows |
+| anthropic (Python SDK) | MIT | engine, the Claude API |
+| markdown-it, linkify-it, mdurl, uc.micro, punycode.js | MIT | reply rendering |
+| entities | BSD-2-Clause | reply rendering (markdown-it dependency) |
+| argparse | PSF-2.0 | markdown-it's command line only, not used by Format |
+| faster-whisper (optional, `./format install-voice`) | MIT | local dictation |
 | FastAPI, Starlette, Pydantic | MIT | engine |
 | Uvicorn, httpx | BSD-3-Clause | engine |
 | wgpu, pollster, bytemuck, sysinfo | MIT or Apache-2.0 | native crate |
