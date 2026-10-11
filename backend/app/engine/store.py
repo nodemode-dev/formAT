@@ -22,7 +22,8 @@ CREATE TABLE IF NOT EXISTS messages (
   parent_id TEXT,
   role TEXT NOT NULL,
   content TEXT NOT NULL,
-  created REAL NOT NULL
+  created REAL NOT NULL,
+  meta TEXT
 );
 CREATE INDEX IF NOT EXISTS messages_by_conversation ON messages(conversation_id, created);
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
@@ -45,7 +46,10 @@ def conn() -> sqlite3.Connection:
             c.execute("PRAGMA journal_mode=WAL")
             c.execute("PRAGMA foreign_keys=ON")
             c.executescript(SCHEMA)
-            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '1')")
+            if "meta" not in {r[1] for r in c.execute("PRAGMA table_info(messages)").fetchall()}:
+                c.execute("ALTER TABLE messages ADD COLUMN meta TEXT")
+            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '2')")
+            c.execute("UPDATE meta SET value = '2' WHERE key = 'schema'")
             _conn = c
         return _conn
 

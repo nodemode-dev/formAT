@@ -9,7 +9,24 @@ def _parse(m: dict) -> dict:
         m["content"] = json.loads(m["content"])
     except (TypeError, ValueError):
         m["content"] = [{"type": "text", "text": str(m["content"])}]
+    try:
+        m["meta"] = json.loads(m.get("meta") or "{}")
+    except (TypeError, ValueError):
+        m["meta"] = {}
     return m
+
+
+def insert(conversation_id: str, role: str, content: list[dict], meta: dict | None = None, parent_id: str | None = None) -> dict:
+    mid, t = store.new_id(), store.now()
+    store.run("INSERT INTO messages(id, conversation_id, parent_id, role, content, created, meta) VALUES (?, ?, ?, ?, ?, ?, ?)",
+              (mid, conversation_id, parent_id, role, json.dumps(content), t, json.dumps(meta or {})))
+    store.run("UPDATE conversations SET updated = ? WHERE id = ?", (t, conversation_id))
+    return _parse(store.row("SELECT * FROM messages WHERE id = ?", (mid,)) or {})
+
+
+def update(mid: str, content: list[dict], meta: dict) -> dict:
+    store.run("UPDATE messages SET content = ?, meta = ? WHERE id = ?", (json.dumps(content), json.dumps(meta), mid))
+    return _parse(store.row("SELECT * FROM messages WHERE id = ?", (mid,)) or {})
 
 
 def messages_of(conversation_id: str) -> list[dict]:
@@ -25,11 +42,6 @@ def add(conversationId: str, text: str, role: str | None = None, parentId: str |
         raise CommandError(f"No conversation {conversationId}; conversation.list gives the ids", 404)
     if not text.strip():
         raise CommandError("message.add: text is empty")
-    mid, t = store.new_id(), store.now()
-    content = json.dumps([{"type": "text", "text": text}])
-    store.run("INSERT INTO messages(id, conversation_id, parent_id, role, content, created) VALUES (?, ?, ?, ?, ?, ?)",
-              (mid, conversationId, parentId, role or "user", content, t))
-    store.run("UPDATE conversations SET updated = ? WHERE id = ?", (t, conversationId))
-    message = _parse(store.row("SELECT * FROM messages WHERE id = ?", (mid,)) or {})
+    message = insert(conversationId, role or "user", [{"type": "text", "text": text}], None, parentId)
     events.publish("message.added", message=message)
     return message

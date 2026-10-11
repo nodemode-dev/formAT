@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+py="$(ft_venv_python)"
+ft_say "installing local speech to text (faster-whisper); the model downloads on first use"
+"$py" -m pip install -r "$FORMAT_ROOT/backend/requirements_voice.txt"
+ft_say "done. Restart the engine; the microphone then transcribes on this computer"

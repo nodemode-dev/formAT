@@ -11,6 +11,9 @@ PORT = int(os.environ.get("FORMAT_PORT", "8490"))
 FRONTEND_PORT = 5490
 
 
+ENV_FILE_KEYS: set[str] = set()
+
+
 def _load_env() -> None:
     env = BACKEND_DIR / ".env"
     if not env.is_file():
@@ -23,6 +26,7 @@ def _load_env() -> None:
         key, value = key.strip(), value.strip().strip('"').strip("'")
         if key and value and key not in os.environ:
             os.environ[key] = value
+            ENV_FILE_KEYS.add(key)
 
 
 _load_env()
@@ -54,4 +58,5 @@ def cors_origins() -> list[str]:
 
 
 def providers() -> dict[str, bool]:
-    return {"anthropic": bool(os.environ.get("ANTHROPIC_API_KEY")), "openai": bool(os.environ.get("OPENAI_API_KEY"))}
+    from app.core import secrets
+    return {name: bool(secrets.api_key(name)) for name in secrets.PROVIDERS}
