@@ -1,6 +1,6 @@
 import time
 
-from app.engine import chat, events, store, uploads
+from app.engine import chat, events, store, tools, uploads
 from app.engine.cmd_message import ROOT, deepest, insert, messages_of, set_leaf
 from app.engine.commands import CommandError, command
 
@@ -96,6 +96,24 @@ def branch(conversationId: str, messageId: str) -> dict:
         raise CommandError(f"chat.branch: no message {messageId} in this chat", 404)
     set_leaf(conversationId, deepest(conversationId, messageId))
     return {"conversationId": conversationId, "messages": _publish_path(conversationId)}
+
+
+@command("tool.approve", "Answer a tool approval",
+         {"toolUseId": {"type": "string", "required": True}, "decision": {"type": "string", "required": True, "enum": ["allow", "always", "deny"]}},
+         description="Answers a waiting approval card: allow runs this call, always also allows the tool from now on (setting toolAllow), deny declines it and Claude is told so. tool.pending lists what is waiting.")
+def approve(toolUseId: str, decision: str) -> dict:
+    if decision not in ("allow", "always", "deny"):
+        raise CommandError("tool.approve: decision is allow, always or deny")
+    entry = tools.answer(toolUseId, decision)
+    if entry is None:
+        raise CommandError(f"tool.approve: nothing is waiting for {toolUseId}; tool.pending lists what is", 404)
+    return {"toolUseId": toolUseId, "decision": decision, "name": entry["name"]}
+
+
+@command("tool.pending", "Waiting approvals", {"conversationId": {"type": "string"}}, mutates=False,
+         description="Tool calls waiting for approval, in one chat or all chats, with the tool name and its input.")
+def pending_approvals(conversationId: str | None = None) -> dict:
+    return {"pending": tools.pending(conversationId)}
 
 
 @command("chat.compact", "Summarize earlier messages", {"conversationId": {"type": "string", "required": True}},

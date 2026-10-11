@@ -62,43 +62,72 @@ def _max_tokens(model: dict, effort: str | None) -> int:
     return int(min(want, cap))
 
 
+def _assistant_block(b: dict) -> dict | None:
+    t = b.get("type")
+    if t == "text" and not b.get("text"):
+        return None
+    if t == "compaction":
+        return {k: b[k] for k in ("type", "content", "signature") if k in b} if b.get("signature") else None
+    if t in ("thinking", "redacted_thinking") and not (b.get("signature") or b.get("data")):
+        return None
+    return {k: v for k, v in b.items() if v is not None and not (k == "citations" and not v)}
+
+
 def api_messages(history: list[dict], model: dict, accepts, provider=None) -> list[dict]:
     out: list[dict] = []
-    for m in since_summary(history):
-        blocks: list[dict] = []
-        if m["role"] == "user":
-            for fid in (m.get("meta") or {}).get("attachments", []):
-                blocks.extend(content.blocks_for(fid, model, accepts, provider))
-        for b in m["content"]:
-            if b.get("type") not in KEEP_BLOCKS:
-                continue
-            if b["type"] == "text" and not b.get("text"):
-                continue
-            if b["type"] == "compaction":
-                if b.get("signature"):
-                    blocks.append({k: b[k] for k in ("type", "content", "signature") if k in b})
-                continue
-            clean = {k: v for k, v in b.items() if k not in ("citations",) or v}
-            blocks.append(clean)
+
+    def push(role: str, blocks: list[dict]) -> None:
         if not blocks:
-            continue
-        if out and out[-1]["role"] == m["role"]:
-            out[-1]["content"].extend(blocks)
+            return
+        if out and out[-1]["role"] == role:
+            if role == "user" and any(b.get("type") == "tool_result" for b in blocks):
+                out[-1]["content"] = blocks + out[-1]["content"]
+            else:
+                out[-1]["content"].extend(blocks)
         else:
-            out.append({"role": m["role"], "content": blocks})
+            out.append({"role": role, "content": blocks})
+
+    for m in since_summary(history):
+        if m["role"] == "assistant":
+            segment: list[dict] = []
+            results: list[dict] = []
+            for b in m["content"]:
+                if b.get("type") == "tool_result":
+                    results.append({k: b[k] for k in ("type", "tool_use_id", "content", "is_error") if k in b})
+                    continue
+                if results:
+                    push("assistant", segment)
+                    push("user", results)
+                    segment, results = [], []
+                clean = _assistant_block(b)
+                if clean:
+                    segment.append(clean)
+            push("assistant", segment)
+            push("user", results)
+            continue
+        blocks: list[dict] = []
+        for fid in (m.get("meta") or {}).get("attachments", []):
+            blocks.extend(content.blocks_for(fid, model, accepts, provider))
+        for b in m["content"]:
+            if b.get("type") not in KEEP_BLOCKS or (b["type"] == "text" and not b.get("text")):
+                continue
+            blocks.append({k: v for k, v in b.items() if k not in ("citations",) or v})
+        push("user", blocks)
     return out
 
 
-def build(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None) -> dict:
+def build(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None, tools: list[dict] | None = None, chat_folder: str | None = None) -> dict:
     effort = _effort(model, settings.get("effort", "medium"))
     max_tokens = _max_tokens(model, effort)
     req: dict = {
         "model": model["id"],
         "max_tokens": max_tokens,
-        "system": prompt.system_prompt(account),
+        "system": prompt.system_prompt(account, bool(tools), chat_folder),
         "messages": api_messages(history, model, accepts, provider),
         "cache_control": {"type": "ephemeral"},
     }
+    if tools:
+        req["tools"] = tools
     if effort:
         req["output_config"] = {"effort": effort}
     thinking = _thinking(model, bool(settings.get("thinking", True)), max_tokens)
@@ -109,8 +138,8 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     return req
 
 
-def build_compaction(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None) -> dict:
-    req = build(history, model, settings, account, accepts, provider)
+def build_compaction(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None, tools: list[dict] | None = None, chat_folder: str | None = None) -> dict:
+    req = build(history, model, settings, account, accepts, provider, tools, chat_folder)
     req["max_tokens"] = int(min(COMPACT_MAX_TOKENS, model.get("max_tokens") or COMPACT_MAX_TOKENS))
     if req.get("thinking", {}).get("type") == "enabled":
         req["thinking"]["budget_tokens"] = max(1024, min(req["thinking"]["budget_tokens"], req["max_tokens"] // 2))

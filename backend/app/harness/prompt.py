@@ -11,9 +11,13 @@ Files the person attaches arrive in their message as images, PDF documents or te
 
 Today is {today}. The computer runs {os}."""
 
+TOOLS = """You have tools. bash, read, write, edit, glob and grep work inside this chat's own folder, {chat_folder}; paths are relative to it, and each bash call starts a fresh shell there. The person approves commands and file changes unless they have allowed them, and may decline: if a tool is declined, do not retry it the same way; say what you would have done and continue. web_search and web_fetch reach the internet; cite what you use. Prefer doing the work with the tools over describing it, and report briefly what you did and what you found."""
 
-def system_prompt(account: dict) -> list[dict]:
-    text = BASE.format(workspace=config.workspace_dir(), today=datetime.date.today().strftime("%A, %B %d, %Y"), os=f"{platform.system()} {platform.release()}")
+
+def system_prompt(account: dict, tools: bool = False, chat_folder: str | None = None) -> list[dict]:
+    text = BASE.format(workspace=chat_folder or config.workspace_dir(), today=datetime.date.today().strftime("%A, %B %d, %Y"), os=f"{platform.system()} {platform.release()}")
+    if tools:
+        text += "\n\n" + TOOLS.format(chat_folder=chat_folder or config.workspace_dir())
     name = (account.get("displayName") or "").strip()
     prefs = (account.get("preferences") or "").strip()
     extra = []
