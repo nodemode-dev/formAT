@@ -272,6 +272,34 @@
 
 .ft-msg.is-assistant { display: grid; gap: var(--space-2); }
 .ft-msg.is-compaction { display: grid; gap: var(--space-2); }
+.ft-tools { margin: 0 0 0.9em; font-size: var(--fs-13); }
+.ft-tools-summary { display: flex; align-items: center; gap: var(--space-2); width: fit-content; max-width: 100%; cursor: pointer; list-style: none; color: var(--text-secondary); padding: 2px 0; }
+.ft-tools-summary::-webkit-details-marker { display: none; }
+.ft-tools-summary::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); margin-left: 2px; }
+.ft-tools[open] > .ft-tools-summary::after { transform: rotate(45deg); }
+.ft-tools-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-tools-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok-soft); flex: none; }
+.ft-tools.is-busy .ft-tools-dot { background: var(--accent-color); }
+.ft-tools.has-failed .ft-tools-dot { background: var(--danger-text); }
+.ft-tools-list { display: grid; gap: var(--space-2); margin-top: var(--space-2); padding-left: var(--space-3); border-left: 1px solid var(--border-soft); }
+.ft-tool { display: grid; gap: var(--space-2); }
+.ft-tool-head { display: flex; align-items: center; gap: var(--space-2); cursor: pointer; list-style: none; min-width: 0; color: var(--text-secondary); }
+.ft-tool-head::-webkit-details-marker { display: none; }
+.ft-tool-icon { display: inline-flex; color: var(--text-muted); flex: none; }
+.ft-tool-title { color: var(--text-primary); flex: none; }
+.ft-tool-sub { font: var(--fs-12) var(--font-mono); color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.ft-tool-state { margin-left: auto; flex: none; min-width: 9em; text-align: right; font-size: var(--fs-12); color: var(--text-muted); }
+.ft-tool[data-status="error"] .ft-tool-state, .ft-tool[data-status="denied"] .ft-tool-state { color: var(--danger-text); }
+.ft-tool[data-status="waiting"] .ft-tool-state { color: var(--accent-ink); }
+.ft-tool-body { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+.ft-tool-input, .ft-tool-out { margin: 0; padding: var(--space-2) var(--space-3); border-radius: var(--radius-md); background: var(--ft-code-fill); font: var(--fs-12)/1.5 var(--font-mono); color: var(--text-secondary); white-space: pre-wrap; word-break: break-word; max-height: 320px; overflow: auto; }
+.ft-tool-input[hidden], .ft-tool-out[hidden], .ft-tool-links[hidden], .ft-tool-ask[hidden] { display: none; }
+.ft-tool-links { margin: 0; padding: 0; list-style: none; display: grid; gap: 4px; }
+.ft-tool-links li { display: flex; gap: var(--space-2); align-items: baseline; min-width: 0; }
+.ft-tool-links a { color: var(--accent-ink); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-tool-links span { font-size: var(--fs-12); color: var(--text-muted); flex: none; }
+.ft-tool-ask { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-wash); }
+.ft-tool-ask-text { flex: 1 1 200px; color: var(--text-primary); }
 .ft-compact-line { display: flex; align-items: center; gap: var(--space-3); font-size: var(--fs-12); color: var(--text-muted); }
 .ft-compact-rule { flex: 1; height: 1px; background: var(--border-soft); }
 .ft-compact-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }
@@ -362,7 +390,8 @@
 .ft-editing { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-wash); font-size: var(--fs-12); color: var(--text-secondary); }
 .ft-editing[hidden] { display: none; }
 .ft-editing span { flex: 1; }
-.ft-context { font: var(--fs-11) var(--font-mono); color: var(--text-muted); white-space: nowrap; }
+.ft-context { font: var(--fs-11) var(--font-mono); color: var(--text-muted); white-space: nowrap; min-width: 12ch; text-align: right; }
+.ft-context.is-empty { visibility: hidden; }
 .ft-context.is-high { color: var(--warn); }
 
 .ft-sheet-scrim { position: fixed; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; background: var(--bg-scrim); }

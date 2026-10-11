@@ -1,8 +1,9 @@
-import type { AppState, Message } from '../state/app-state';
+import type { AppState, ContentBlock, Message } from '../state/app-state';
 import type { Composer } from './composer';
 import { el, esc, q, setText } from './dom';
 import { ui } from './icons-ft';
 import { StreamRenderer } from './markdown';
+import { type Approve, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
 
 interface PartApi {
   set(text: string, done: boolean): void;
@@ -15,13 +16,18 @@ interface AssistantView {
   parts: Array<{ type: string; api: PartApi } | null>;
   status: HTMLElement;
   actions: HTMLElement;
+  group: ToolGroup | null;
+  cards: Map<string, { card: ToolCard; group: ToolGroup }>;
 }
 
 export interface ChatHooks {
   retry(): void;
   edit(text: string, id: string): void;
   branch(id: string): void;
+  approve: Approve;
 }
+
+const NOOP: PartApi = { set: () => undefined, value: () => '' };
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -111,21 +117,46 @@ export class ChatView {
           <button type="button" class="ft-icon-btn ft-act-retry" title="Retry" aria-label="Retry reply">${ui('retry', 16)}</button>
           <span class="ft-msg-model"></span>
         </div></article>`);
-      const view: AssistantView = { root: n, blocks: q(n, '.ft-msg-blocks'), parts: [], status: q(n, '.ft-msg-status'), actions: q(n, '.ft-msg-actions') };
+      const view: AssistantView = { root: n, blocks: q(n, '.ft-msg-blocks'), parts: [], status: q(n, '.ft-msg-status'), actions: q(n, '.ft-msg-actions'), group: null, cards: new Map() };
       this.assistants.set(m.id, view);
       q(n, '.ft-act-copy').addEventListener('click', () => void navigator.clipboard?.writeText(this.plainText(m.id)));
       q(n, '.ft-act-retry').addEventListener('click', () => this.hooks.retry());
-      m.content.forEach((b, i) => this.ensurePart(view, i, b.type).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', m.meta?.status !== 'streaming'));
+      m.content.forEach((b, i) => this.ensurePart(view, i, b.type, b).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', m.meta?.status !== 'streaming'));
+      this.applyStatuses(view, m);
       this.finishView(m);
     }
     this.nodes.set(m.id, n);
     return n;
   }
 
-  private ensurePart(view: AssistantView, index: number, type: string): { set(text: string, done: boolean): void } {
+  private applyStatuses(view: AssistantView, m: Message): void {
+    for (const [id, s] of Object.entries(m.meta?.tools ?? {})) view.cards.get(id)?.card.setStatus(s.status);
+  }
+
+  private ensurePart(view: AssistantView, index: number, type: string, block?: ContentBlock): { set(text: string, done: boolean): void } {
     while (view.parts.length <= index) view.parts.push(null);
     const existing = view.parts[index];
+    if (TOOL_TYPES.has(type) && block?.id) {
+      const known = view.cards.get(block.id);
+      if (known) { known.card.update(block); return NOOP; }
+      if (!view.group) {
+        view.group = new ToolGroup();
+        view.blocks.appendChild(view.group.root);
+      }
+      const group = view.group;
+      const card = new ToolCard(block, this.hooks.approve, () => group.refresh());
+      group.add(card);
+      view.cards.set(block.id, { card, group });
+      view.parts[index] = { type, api: NOOP };
+      return NOOP;
+    }
+    if (RESULT_TYPES.has(type)) {
+      if (block?.tool_use_id) view.cards.get(block.tool_use_id)?.card.setResult(resultView(block));
+      view.parts[index] = { type, api: NOOP };
+      return NOOP;
+    }
     if (existing) return existing.api;
+    view.group = null;
     if (type === 'thinking') {
       const box = el(`<details class="ft-thinking"><summary><span>Thinking</span></summary><div class="ft-thinking-body"></div></details>`);
       const body = q(box, '.ft-thinking-body');
@@ -184,13 +215,28 @@ export class ChatView {
     if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
   }
 
-  applyBlock(id: string, index: number, type: string): void {
+  applyBlock(id: string, index: number, block: ContentBlock): void {
     const view = this.assistants.get(id);
     const m = this.state.messages.find((x) => x.id === id);
     if (!view || !m) return;
     while (m.content.length <= index) m.content.push({ type: 'text', text: '' });
-    m.content[index] = { type, text: '', thinking: '' };
-    this.ensurePart(view, index, type);
+    const known = m.content[index];
+    m.content[index] = TOOL_TYPES.has(block.type) || RESULT_TYPES.has(block.type) ? { ...block } : known && known.type === block.type ? known : { type: block.type, text: '', thinking: '' };
+    const stick = this.nearBottom();
+    this.ensurePart(view, index, block.type, block);
+    if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+  }
+
+  toolStatus(id: string, toolUseId: string, status: string): void {
+    const m = this.state.messages.find((x) => x.id === id);
+    if (m) m.meta.tools = { ...(m.meta.tools ?? {}), [toolUseId]: { status } };
+    this.assistants.get(id)?.cards.get(toolUseId)?.card.setStatus(status);
+  }
+
+  toolOutput(id: string, toolUseId: string, text: string): void {
+    const stick = this.nearBottom();
+    this.assistants.get(id)?.cards.get(toolUseId)?.card.appendOutput(text);
+    if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
   }
 
   private paintCompaction(n: HTMLElement, m: Message): void {
@@ -216,7 +262,8 @@ export class ChatView {
     }
     const view = this.assistants.get(m.id);
     if (!view) return;
-    m.content.forEach((b, i) => this.ensurePart(view, i, b.type).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', true));
+    m.content.forEach((b, i) => this.ensurePart(view, i, b.type, b).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', true));
+    this.applyStatuses(view, m);
     this.finishView(m);
     this.render();
   }

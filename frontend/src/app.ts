@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ContentBlock, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -69,6 +69,9 @@ export class App {
       branch: (id) => {
         if (!this.state.activeId) return;
         run('chat.branch', { conversationId: this.state.activeId, messageId: id }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+      },
+      approve: (toolUseId, decision) => {
+        run('tool.approve', { toolUseId, decision }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
       },
     });
     this.state.on('messages', () => this.updateContext());
@@ -216,7 +219,11 @@ export class App {
         this.state.emit('messages');
       }
     } else if (e.type === 'message.block') {
-      if (e.conversationId === this.state.activeId) this.chat.applyBlock(e.id as string, e.index as number, (e.block as { type: string }).type);
+      if (e.conversationId === this.state.activeId) this.chat.applyBlock(e.id as string, e.index as number, e.block as ContentBlock);
+    } else if (e.type === 'message.tool') {
+      if (e.conversationId === this.state.activeId) this.chat.toolStatus(e.id as string, e.toolUseId as string, e.status as string);
+    } else if (e.type === 'tool.output') {
+      if (e.conversationId === this.state.activeId) this.chat.toolOutput(e.id as string, e.toolUseId as string, e.text as string);
     } else if (e.type === 'message.delta') {
       if (e.conversationId === this.state.activeId) this.chat.applyDelta(e.id as string, e.index as number, e.kind as string, e.text as string);
     } else if (e.type === 'message.completed') {

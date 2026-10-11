@@ -12,6 +12,16 @@ export interface ContentBlock {
   type: string;
   text?: string;
   thinking?: string;
+  id?: string;
+  name?: string;
+  input?: Record<string, unknown>;
+  tool_use_id?: string;
+  content?: unknown;
+  is_error?: boolean;
+  status?: string | null;
+  results?: Array<{ title?: string; url?: string; page_age?: string | null }>;
+  url?: string;
+  title?: string;
 }
 
 export interface FileInfo {
@@ -32,6 +42,7 @@ export interface MessageMeta {
   usage?: Record<string, number>;
   compaction?: boolean;
   compactNext?: boolean;
+  tools?: Record<string, { status: string }>;
 }
 
 export interface Message {
@@ -76,6 +87,9 @@ export interface Settings {
   permissionMode: string;
   autoCompact?: boolean;
   compactAt?: number;
+  webTools?: boolean;
+  workspaceTools?: boolean;
+  toolAllow?: string[];
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';

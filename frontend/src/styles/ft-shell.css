@@ -207,6 +207,11 @@
 .ft-field-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--space-4); }
 .ft-field.ft-check { display: flex; align-items: center; gap: var(--space-2); align-self: end; min-height: 36px; cursor: pointer; color: var(--text-primary); }
 .ft-field.ft-check input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent-color); }
+.ft-allowed { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); font-size: var(--fs-13); color: var(--text-secondary); min-height: 28px; }
+.ft-allowed-list { display: inline-flex; flex-wrap: wrap; gap: var(--space-2); }
+.ft-allowed-none { color: var(--text-muted); }
+.ft-chip { display: inline-flex; align-items: center; gap: 4px; padding: 2px 8px; border: 1px solid var(--border-soft); border-radius: 999px; background: var(--surface-2); color: var(--text-primary); font: var(--fs-12) var(--font-mono); cursor: pointer; }
+.ft-chip:hover { border-color: var(--accent-line); }
 .ft-input { width: 100%; box-sizing: border-box; min-height: var(--ctl); padding: 6px var(--space-3); border: 1px solid var(--line-2); border-radius: var(--radius-md); background: var(--surface-field); color: var(--text-primary); font: var(--fs-13) var(--font-ui); outline: none; }
 textarea.ft-input { resize: vertical; line-height: 1.5; overflow-y: auto; }
 .ft-input:focus { border-color: var(--accent-line); }

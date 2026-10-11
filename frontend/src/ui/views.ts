@@ -53,6 +53,15 @@ export class SettingsView {
         </div>
         <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-save-account">Save</button><span class="ft-saved" aria-live="polite"></span></div>
       </section>
+      <section class="ft-set-section" id="ft-set-tools" aria-labelledby="ft-set-tools-h">
+        <h2 id="ft-set-tools-h">${ui('terminal', 16)}<span>Tools</span></h2>
+        <p class="ft-set-note">Workspace tools let Claude run commands and read and change files in the chat's own folder on this computer; commands and file changes ask first in Ask mode, never run in Plan mode, and run without asking in Auto mode. Web search is billed by Anthropic per search.</p>
+        <div class="ft-field-row">
+          <label class="ft-field ft-check"><input type="checkbox" data-t="workspaceTools"><span>Workspace tools (bash, files)</span></label>
+          <label class="ft-field ft-check"><input type="checkbox" data-t="webTools"><span>Web search and fetch</span></label>
+        </div>
+        <div class="ft-allowed"><span class="ft-allowed-label">Always allowed:</span><span class="ft-allowed-list"></span></div>
+      </section>
       <section class="ft-set-section" id="ft-set-chats" aria-labelledby="ft-set-chats-h">
         <h2 id="ft-set-chats-h">${ui('compress', 16)}<span>Long chats</span></h2>
         <p class="ft-set-note">When a chat fills most of the model's context window, Claude summarizes the earlier messages after a reply and continues from the summary. The earlier messages stay on screen; images and files in them are not carried into the summary. You can also run it from the command palette.</p>
@@ -111,8 +120,31 @@ export class SettingsView {
     at.addEventListener('change', () => void run('settings.set', { key: 'compactAt', value: Number(at.value) }).catch(() => undefined));
     state.on('account', () => this.fillAccount());
     state.on('keys', () => this.fillKeys());
-    state.on('settings', () => this.fillChats());
+    this.root.querySelectorAll<HTMLInputElement>('[data-t]').forEach((box) => {
+      box.addEventListener('change', () => void run('settings.set', { key: box.dataset.t, value: box.checked }).catch(() => undefined));
+    });
+    q(this.root, '.ft-allowed-list').addEventListener('click', (e) => {
+      const name = (e.target as HTMLElement).closest<HTMLElement>('[data-tool]')?.dataset.tool;
+      if (!name) return;
+      void run('settings.set', { key: 'toolAllow', value: (this.state.settings.toolAllow ?? []).filter((t) => t !== name) }).catch(() => undefined);
+    });
+    state.on('settings', () => { this.fillChats(); this.fillTools(); });
     this.fillChats();
+    this.fillTools();
+  }
+
+  private fillTools(): void {
+    const s = this.state.settings;
+    this.root.querySelectorAll<HTMLInputElement>('[data-t]').forEach((box) => {
+      const on = (s as unknown as Record<string, unknown>)[box.dataset.t as string] !== false;
+      if (box.checked !== on) box.checked = on;
+    });
+    const list = q(this.root, '.ft-allowed-list');
+    const names = s.toolAllow ?? [];
+    const want = names.join(',');
+    if (list.dataset.v === want) return;
+    list.dataset.v = want;
+    list.innerHTML = names.length ? names.map((n) => `<button type="button" class="ft-chip" data-tool="${esc(n)}" title="Ask again before ${esc(n)}">${esc(n)} ${ui('close', 12)}</button>`).join('') : '<span class="ft-allowed-none">none; every command and file change asks in Ask mode</span>';
   }
 
   private fillChats(): void {
