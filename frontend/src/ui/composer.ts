@@ -67,7 +67,7 @@ export class Composer {
   }
 
   setContext(text: string, title: string, high: boolean): void {
-    if (this.contextEl.hidden === !text) this.contextEl.hidden = !text;
+    if (this.contextEl.hidden !== !text) this.contextEl.hidden = !text;
     setText(this.contextEl, text);
     setAttr(this.contextEl, 'title', title);
     this.contextEl.classList.toggle('is-high', high);
