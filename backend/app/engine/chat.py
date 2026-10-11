@@ -205,6 +205,10 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
         return result(f"Format has no tool named {name}.", True, "error")
     if cancel.is_set():
         return result("Stopped by the person before this ran.", True, "denied")
+    if name == "spawn_agent":
+        _set_status(conversation_id, mid, meta, tid, "running")
+        text, is_error = _run_agent(conversation_id, mid, call, live, cancel, meta)
+        return result(text, is_error, "error" if is_error else "done")
     if name == "ask_user":
         _set_status(conversation_id, mid, meta, tid, "asking")
         update(mid, live, meta)
@@ -245,6 +249,104 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
     if buf:
         events.publish("tool.output", id=mid, conversationId=conversation_id, toolUseId=tid, text="".join(buf))
     return result(text, is_error, "error" if is_error else "done")
+
+
+AGENT_ROUNDS = 20
+AGENT_PROMPT = """You are a sub-agent: the main Claude in this chat handed you one task, and your final message goes back to it as your report, not to the person. You cannot ask the person questions, and ask_user, task_list, send_file and spawn_agent are not available to you. Work through the task with your tools, then end with a concise report: what you did, what you found, the paths of any files you wrote, and anything left undone."""
+
+
+def _agent_view(block: dict, meta: dict) -> dict:
+    if block.get("type") == "text":
+        return {"type": "text", "text": (block.get("text") or "")[:20_000]}
+    return tool_view(block, meta)
+
+
+def _run_agent(conversation_id: str, mid: str, call: dict, live: list[dict], cancel: threading.Event, meta: dict) -> tuple[str, bool]:
+    settings = current()
+    tid, args = call["id"], call.get("input") or {}
+    task = str(args.get("task") or "").strip()
+    if not task:
+        return "spawn_agent needs a task.", True
+    limit = int(settings.get("agentLimit", 4))
+    agents = meta.setdefault("agents", {})
+    if len(agents) >= limit:
+        return f"The limit of {limit} sub-agents for one reply is reached; do this part yourself.", True
+    model = find_model(settings.get("agentModel") or settings["model"])
+    raw = model.get("raw") or {"id": model["id"]}
+    provider = providers.get("anthropic")
+    toolset = tools.definitions(settings, raw, agent=True)
+    folder = str(tools.workspace(conversation_id))
+    record = agents[tid] = {"model": model["id"], "title": str(args.get("title") or "")[:80], "blocks": []}
+    blocks: list[dict] = record["blocks"]
+    first = {"role": "user", "content": [{"type": "text", "text": task}], "meta": {}}
+
+    def publish(i: int) -> None:
+        events.publish("message.block", id=mid, conversationId=conversation_id, index=i, parent=tid, block=_agent_view(blocks[i], meta))
+
+    try:
+        for _ in range(AGENT_ROUNDS):
+            history = [first] + ([{"role": "assistant", "content": blocks, "meta": {}}] if blocks else [])
+            req = harness.build(history, raw, settings, account(), provider.accepts, provider, toolset, folder)
+            req["system"] = list(req["system"]) + [{"type": "text", "text": AGENT_PROMPT}]
+            base, partial, stop_reason = len(blocks), {}, None
+            for ev in provider.stream(req, cancel):
+                i = base + ev.index
+                if ev.kind == "block_start":
+                    block = dict(ev.block)
+                    if block.get("type") == "text":
+                        block["text"] = block.get("text", "")
+                    if block.get("type") == "thinking":
+                        block.setdefault("thinking", "")
+                    while len(blocks) <= i:
+                        blocks.append({"type": "text", "text": ""})
+                    blocks[i] = block
+                    if block.get("type") in RESULT_TYPES:
+                        publish(i)
+                elif ev.kind in ("text", "thinking"):
+                    key = "text" if ev.kind == "text" else "thinking"
+                    blocks[i][key] = blocks[i].get(key, "") + ev.text
+                elif ev.kind == "signature":
+                    blocks[i]["signature"] = blocks[i].get("signature", "") + ev.text
+                elif ev.kind == "citation":
+                    blocks[i].setdefault("citations", []).append(ev.data)
+                elif ev.kind == "input_json":
+                    partial[i] = partial.get(i, "") + ev.text
+                elif ev.kind == "block_stop":
+                    if i in partial:
+                        try:
+                            blocks[i]["input"] = json.loads(partial.pop(i) or "{}")
+                        except ValueError:
+                            blocks[i]["input"] = {}
+                    if blocks[i].get("type") in ("text", "tool_use", "server_tool_use"):
+                        publish(i)
+                elif ev.kind == "message_delta":
+                    stop_reason = ev.data.get("stop_reason")
+                elif ev.kind == "stopped":
+                    break
+            if cancel.is_set():
+                break
+            if stop_reason == "pause_turn":
+                continue
+            if stop_reason != "tool_use":
+                break
+            for c in [b for b in blocks[base:] if b.get("type") == "tool_use"]:
+                blocks.append(_call_tool(conversation_id, mid, c, live, cancel, meta))
+                publish(len(blocks) - 1)
+            update(mid, live, meta)
+    except providers.ProviderError as exc:
+        _close_open_calls(blocks, meta)
+        return f"The sub-agent stopped on an API error: {exc}", True
+    _close_open_calls(blocks, meta)
+    if cancel.is_set():
+        return "The sub-agent was stopped by the person.", True
+    tail = []
+    for b in reversed(blocks):
+        if b.get("type") in RESULT_TYPES or b.get("type") == "tool_use":
+            break
+        if b.get("type") == "text" and b.get("text"):
+            tail.append(b["text"])
+    report = "\n\n".join(reversed(tail)).strip()
+    return (report[:20_000] if report else "The sub-agent finished without writing a report."), False
 
 
 def _close_open_calls(blocks: list[dict], meta: dict) -> None:

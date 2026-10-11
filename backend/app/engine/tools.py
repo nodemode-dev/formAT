@@ -12,7 +12,8 @@ from pathlib import Path
 from app.core import config
 from app.engine import events
 
-READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user"}
+READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user", "spawn_agent"}
+AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list"}
 TASK_STATES = ("pending", "in_progress", "completed")
 OUTPUT_CAP = 30_000
 READ_CAP = 200_000
@@ -52,6 +53,10 @@ DEFINITIONS = [
     {"name": "task_list", "description": "Show the person your plan as a task list and keep it current. Each call replaces the whole list. Use it for work with three or more steps: mark one task in_progress while you work on it and completed as soon as it is done.",
      "input_schema": {"type": "object", "properties": {"tasks": {"type": "array", "items": {"type": "object", "properties": {"title": {"type": "string"}, "status": {"type": "string", "enum": list(TASK_STATES)}}, "required": ["title", "status"]}}},
                       "required": ["tasks"]}},
+    {"name": "spawn_agent", "description": "Hand a self-contained part of the work to a sub-agent: another Claude with the same workspace and tools (no questions to the person, no sub-agents of its own) that works through the task and returns a report. Use it for independent research or a separable piece of work; write the task so it stands alone, with every path and fact it needs. Its commands and file changes follow the same approval rules.",
+     "input_schema": {"type": "object", "properties": {"task": {"type": "string", "description": "The complete task, standing alone"},
+                                                        "title": {"type": "string", "description": "A few words naming the task, shown to the person"}},
+                      "required": ["task"]}},
     {"name": "send_file", "description": "Give the person a file from the workspace folder: it appears in the conversation as a file card they can download, and in the Outputs panel. Use it for every file that is a deliverable, after writing it.",
      "input_schema": {"type": "object", "properties": {"path": {"type": "string", "description": "Path relative to the workspace folder"},
                                                         "caption": {"type": "string", "description": "One line of context, optional"}},
@@ -70,11 +75,11 @@ def workspace(conversation_id: str) -> Path:
     return p
 
 
-def definitions(settings: dict, model: dict) -> list[dict]:
+def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
     caps = (model.get("capabilities") or {}).get("server_tools") or {}
     out: list[dict] = []
     if settings.get("workspaceTools", True):
-        out.extend(DEFINITIONS)
+        out.extend(d for d in DEFINITIONS if not (agent and d["name"] in AGENT_EXCLUDED) and not (d["name"] == "spawn_agent" and int(settings.get("agentLimit", 4)) <= 0))
     if settings.get("webTools", True):
         if (caps.get("web_search") or {}).get("supported", True):
             out.append(dict(WEB_SEARCH))
