@@ -39,7 +39,8 @@ def list_(query: str | None = None, limit: int | None = None) -> dict:
 @command("conversation.get", "Open chat", {"id": ID}, mutates=False, description="One conversation and its messages in order.")
 def get(id: str) -> dict:
     conv = _get(id)
-    conv["messages"] = store.rows("SELECT * FROM messages WHERE conversation_id = ? ORDER BY created", (id,))
+    from app.engine.cmd_message import messages_of
+    conv["messages"] = messages_of(id)
     return conv
 
 

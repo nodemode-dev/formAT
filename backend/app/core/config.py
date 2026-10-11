@@ -34,6 +34,12 @@ def data_dir() -> Path:
     return root
 
 
+def workspace_dir() -> Path:
+    root = data_dir() / "workspace"
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
 def dist_dir() -> Path | None:
     if os.environ.get("FORMAT_SERVE_DIST") != "1":
         return None
