@@ -19,6 +19,7 @@ interface AssistantView {
 
 export interface ChatHooks {
   retry(): void;
+  edit(text: string): void;
 }
 
 function greeting(): string {
@@ -62,6 +63,7 @@ export class ChatView {
     });
     state.on('messages', () => this.render());
     state.on('active', () => this.render());
+    state.on('running', () => this.render());
   }
 
   private nearBottom(): boolean {
@@ -81,8 +83,10 @@ export class ChatView {
       const files = m.meta?.files ?? [];
       n = el(`<article class="ft-msg is-user" data-id="${esc(m.id)}">
         ${files.length ? `<div class="ft-msg-files">${files.map((f) => `<span class="ft-file-chip" title="${esc(f.name)}"><span class="ft-file-chip-name">${esc(f.name)}</span><span class="ft-file-chip-kind">${esc(f.kind.toUpperCase())}</span></span>`).join('')}</div>` : ''}
-        <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div></article>`);
+        <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div>
+        <button type="button" class="ft-icon-btn ft-msg-edit" title="Edit" aria-label="Edit this message" hidden>${ui('pencil', 16)}</button></article>`);
       q(n, '.ft-msg-body').textContent = text;
+      q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(text));
       if (!text) (q(n, '.ft-msg-bubble') as HTMLElement).hidden = true;
     } else {
       n = el(`<article class="ft-msg is-assistant" data-id="${esc(m.id)}"><div class="ft-msg-blocks"></div><div class="ft-msg-status" hidden></div>
@@ -197,6 +201,14 @@ export class ChatView {
       const n = this.node(m);
       if (this.thread.children[i] !== n) this.thread.insertBefore(n, this.thread.children[i] ?? null);
     });
+    const lastUser = [...msgs].reverse().find((m) => m.role === 'user');
+    const busy = !!this.state.activeId && this.state.running.has(this.state.activeId);
+    for (const [id, n] of this.nodes) {
+      const btn = n.querySelector<HTMLElement>('.ft-msg-edit');
+      if (!btn) continue;
+      const hide = busy || id !== lastUser?.id;
+      if (btn.hidden !== hide) btn.hidden = hide;
+    }
     const empty = msgs.length === 0;
     this.root.classList.toggle('is-empty', empty);
     const last = msgs[msgs.length - 1];

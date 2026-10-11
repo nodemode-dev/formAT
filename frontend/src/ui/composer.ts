@@ -7,6 +7,7 @@ import { Dictation } from './dictation';
 
 export interface ComposerHooks {
   send(text: string, files: FileInfo[]): Promise<void>;
+  edit(text: string): Promise<void>;
   stop(): void;
   isRunning(): boolean;
   openCustomize(): void;
@@ -44,10 +45,36 @@ export class Composer {
   private micBtn: HTMLButtonElement;
   private dictation: Dictation;
   private seq = 0;
+  private editBar!: HTMLElement;
+  private contextEl!: HTMLElement;
+  private editing = false;
+
+  startEdit(text: string): void {
+    this.editing = true;
+    this.editBar.hidden = false;
+    this.input.value = text;
+    this.autosize();
+    this.input.focus();
+  }
+
+  private cancelEdit(): void {
+    this.editing = false;
+    this.editBar.hidden = true;
+    this.input.value = '';
+    this.autosize();
+  }
+
+  setContext(text: string, title: string, high: boolean): void {
+    if (this.contextEl.hidden === !text) this.contextEl.hidden = !text;
+    setText(this.contextEl, text);
+    setAttr(this.contextEl, 'title', title);
+    this.contextEl.classList.toggle('is-high', high);
+  }
 
   constructor(private state: AppState, private hooks: ComposerHooks) {
     this.root = el(`<div class="ft-composer">
       <div class="ft-queue" hidden></div>
+      <div class="ft-editing" hidden><span>Editing your last message; sending replaces it and its reply.</span><button type="button" class="ft-text-btn ft-edit-cancel">Cancel</button></div>
       <div class="ft-composer-box">
         <div class="ft-attach-row" hidden></div>
         <textarea class="ft-composer-input" rows="1" placeholder="How can Format help?" aria-label="Message"></textarea>
@@ -60,6 +87,7 @@ export class Composer {
         </div>
         <div class="ft-bar-notice"></div>
         <div class="ft-bar-right">
+          <span class="ft-context" hidden></span>
           <button type="button" class="ft-text-btn ft-model" data-menu-anchor aria-label="Model and effort"><span class="ft-model-name"></span><span class="ft-muted ft-model-effort"></span>${ui('chevronDown', 14)}</button>
           <button type="button" class="ft-text-btn ft-mode" data-menu-anchor aria-label="Permission mode"></button>
         </div>
@@ -85,6 +113,15 @@ export class Composer {
       error: (msg) => this.flash(msg),
     });
     this.micBtn.addEventListener('click', () => this.dictation.toggle());
+    this.editBar = q(this.root, '.ft-editing');
+    this.contextEl = q(this.root, '.ft-context');
+    q(this.root, '.ft-edit-cancel').addEventListener('click', () => this.cancelEdit());
+    this.input.addEventListener('paste', (e) => {
+      const files = [...(e.clipboardData?.files ?? [])];
+      if (!files.length) return;
+      e.preventDefault();
+      this.addFiles(files);
+    });
     this.input.addEventListener('input', () => this.autosize());
     this.input.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter' || e.isComposing) return;
@@ -174,6 +211,15 @@ export class Composer {
     const text = this.input.value.trim();
     const files = this.files.filter((f) => f.file).map((f) => f.file as FileInfo);
     if ((!text && !files.length) || this.files.some((f) => !f.file && !f.error)) return;
+    if (this.editing) {
+      if (!text || this.hooks.isRunning()) return;
+      this.editing = false;
+      this.editBar.hidden = true;
+      this.input.value = '';
+      this.autosize();
+      await this.hooks.edit(text);
+      return;
+    }
     this.input.value = '';
     this.files = [];
     this.renderFiles();

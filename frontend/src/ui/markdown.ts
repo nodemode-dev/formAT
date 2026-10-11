@@ -1,3 +1,4 @@
+import hljs from 'highlight.js/lib/common';
 import MarkdownIt from 'markdown-it';
 
 const md = new MarkdownIt({ html: false, linkify: true, breaks: false, typographer: false });
@@ -12,7 +13,15 @@ md.renderer.rules.link_open = (tokens, idx, options, env, self) => {
 md.renderer.rules.fence = (tokens, idx) => {
   const t = tokens[idx];
   const lang = (t.info || '').trim().split(/\s+/)[0];
-  const body = md.utils.escapeHtml(t.content.replace(/\n$/, ''));
+  const source = t.content.replace(/\n$/, '');
+  let body = md.utils.escapeHtml(source);
+  if (lang && hljs.getLanguage(lang)) {
+    try {
+      body = hljs.highlight(source, { language: lang, ignoreIllegals: true }).value;
+    } catch {
+      body = md.utils.escapeHtml(source);
+    }
+  }
   return `<div class="ft-code"><div class="ft-code-head"><span>${md.utils.escapeHtml(lang || 'text')}</span><button type="button" class="ft-code-copy">Copy</button></div><pre><code>${body}</code></pre></div>`;
 };
 

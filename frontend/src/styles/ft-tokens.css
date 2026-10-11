@@ -16,6 +16,13 @@
   --ft-code-fill: var(--surface-2);
   --ft-dock-h: 280px;
   --ft-outputs-w: 304px;
+  --ft-syn-keyword: var(--handle-mask);
+  --ft-syn-string: var(--ok-soft);
+  --ft-syn-number: var(--warn);
+  --ft-syn-comment: var(--text-muted);
+  --ft-syn-title: var(--accent-ink);
+  --ft-syn-attr: var(--handle-image);
+  --ft-syn-type: #7dd3fc;
   --ft-sidebar-bg: color-mix(in srgb, var(--bg-primary) 72%, #000);
   --ft-bubble: var(--surface-2);
   --ft-menu-bg: color-mix(in srgb, var(--bg-node) 92%, var(--text-primary) 8%);

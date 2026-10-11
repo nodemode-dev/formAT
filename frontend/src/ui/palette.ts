@@ -1,3 +1,4 @@
+import { run } from '../engine-client/api';
 import type { AppState } from '../state/app-state';
 import { el, esc, modKey, q } from './dom';
 import { ui, type UiIcon } from './icons-ft';
@@ -15,6 +16,8 @@ export class Palette {
   private list: HTMLElement;
   private items: PaletteAction[] = [];
   private index = 0;
+  private hits = new Set<string>();
+  private searchTimer = 0;
 
   constructor(private state: AppState, private actions: () => PaletteAction[], private openChat: (id: string) => void) {
     this.root = el(`<div class="ft-palette-scrim" hidden>
@@ -26,7 +29,20 @@ export class Palette {
     this.input = q(this.root, '.ft-palette-input');
     this.list = q(this.root, '.ft-palette-list');
     this.root.addEventListener('pointerdown', (e) => { if (e.target === this.root) this.close(); });
-    this.input.addEventListener('input', () => { this.index = 0; this.render(); });
+    this.input.addEventListener('input', () => {
+      this.index = 0;
+      this.render();
+      window.clearTimeout(this.searchTimer);
+      const needle = this.input.value.trim();
+      if (needle.length < 3) { this.hits = new Set(); return; }
+      this.searchTimer = window.setTimeout(() => {
+        void run<{ conversations: Array<{ id: string }> }>('conversation.list', { query: needle, limit: 50 }).then((res) => {
+          if (this.input.value.trim() !== needle) return;
+          this.hits = new Set(res.conversations.map((c) => c.id));
+          this.render();
+        }).catch(() => undefined);
+      }, 180);
+    });
     this.input.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowDown') { e.preventDefault(); this.move(1); }
       else if (e.key === 'ArrowUp') { e.preventDefault(); this.move(-1); }
@@ -71,9 +87,11 @@ export class Palette {
 
   private render(): void {
     const needle = this.input.value.trim().toLowerCase();
-    const chats: PaletteAction[] = this.state.sortedConversations().map((c) => ({ label: c.title, icon: 'chat' as const, run: () => this.openChat(c.id) }));
-    const all = [...this.actions(), ...chats];
-    this.items = (needle ? all.filter((a) => a.label.toLowerCase().includes(needle)) : all).slice(0, 50);
+    const convs = this.state.sortedConversations();
+    const chats: PaletteAction[] = convs.filter((c) => !needle || c.title.toLowerCase().includes(needle) || this.hits.has(c.id))
+      .map((c) => ({ label: c.title, icon: 'chat' as const, hint: needle && !c.title.toLowerCase().includes(needle) ? 'in messages' : undefined, run: () => this.openChat(c.id) }));
+    const actions = this.actions().filter((a) => !needle || a.label.toLowerCase().includes(needle));
+    this.items = [...actions, ...chats].slice(0, 50);
     this.list.innerHTML = this.items.length
       ? this.items.map((a, i) => `<button type="button" class="ft-palette-row${i === this.index ? ' is-on' : ''}" data-i="${i}" role="option">${ui(a.icon, 16)}<span>${esc(a.label)}</span>${a.hint ? `<kbd>${esc(a.hint)}</kbd>` : ''}</button>`).join('')
       : `<div class="ft-palette-none">Nothing matches. ${esc(modKey)}K closes.</div>`;

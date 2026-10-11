@@ -54,12 +54,22 @@ export class App {
     });
     this.composer = new Composer(this.state, {
       send: (t, f) => this.send(t, f),
+      edit: async (t) => {
+        if (!this.state.activeId) return;
+        try { await run('chat.edit', { conversationId: this.state.activeId, text: t }); } catch (err) { this.composer.showError(err instanceof Error ? err.message : String(err)); }
+      },
       stop: () => { if (this.state.activeId) void run('chat.stop', { conversationId: this.state.activeId }); },
       isRunning: () => !!this.state.activeId && this.state.running.has(this.state.activeId),
       openCustomize: () => this.setView('customize'),
       openKeys: () => this.openSettings('keys'),
     });
-    this.chat = new ChatView(this.state, this.composer, { retry: () => { if (this.state.activeId) void run('chat.retry', { conversationId: this.state.activeId }); } });
+    this.chat = new ChatView(this.state, this.composer, {
+      retry: () => { if (this.state.activeId) void run('chat.retry', { conversationId: this.state.activeId }); },
+      edit: (t) => this.composer.startEdit(t),
+    });
+    this.state.on('messages', () => this.updateContext());
+    this.state.on('active', () => this.updateContext());
+    this.state.on('settings', () => this.updateContext());
     this.settingsView = new SettingsView(this.state);
     const panel = new SidePanel(() => this.toggle('panel', false));
     this.dock = new TerminalDock(() => this.toggle('term', false));
@@ -68,6 +78,7 @@ export class App {
       { label: 'Toggle sidebar', icon: 'sidebar', hint: `${modKey}B`, run: () => this.toggle('sidebar') },
       { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
+      { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
       { label: 'Account', icon: 'user', run: () => this.openSettings('account') },
       { label: 'Toggle terminal', icon: 'terminal', hint: `${modKey}J`, run: () => this.toggle('term') },
       { label: 'Settings', icon: 'settings', run: () => this.setView('settings') },
@@ -135,6 +146,28 @@ export class App {
     this.state.emit('settings');
   }
 
+  private updateContext(): void {
+    const last = [...this.state.messages].reverse().find((m) => m.role === 'assistant' && m.meta?.usage);
+    const u = (last?.meta?.usage ?? {}) as Record<string, number | null>;
+    const used = ['input_tokens', 'cache_creation_input_tokens', 'cache_read_input_tokens', 'output_tokens'].reduce((a, k) => a + (Number(u[k]) || 0), 0);
+    const windowSize = this.state.models.find((m) => m.id === (last?.meta?.model ?? this.state.settings.model))?.contextWindow ?? 0;
+    if (!used || !windowSize) { this.composer.setContext('', '', false); return; }
+    const pct = Math.max(1, Math.round((100 * used) / windowSize));
+    this.composer.setContext(`${pct}% context`, `${used.toLocaleString()} of ${windowSize.toLocaleString()} tokens used by the last turn`, pct >= 80);
+  }
+
+  private shortcuts(): void {
+    let sheet = document.getElementById('ft-shortcuts');
+    if (!sheet) {
+      const rows: Array<[string, string]> = [['New chat', `${modKey}⇧O`], ['Command palette and search', `${modKey}K`], ['Sidebar open or rail', `${modKey}B`], ['Terminal', `${modKey}J`], ['Outputs', `${modKey}.`], ['Add files', `${modKey}U`], ['Keyboard shortcuts', `${modKey}/`], ['Send', 'Enter'], ['New line', '⇧Enter'], ['Close a menu or dialog', 'Esc']];
+      sheet = el(`<div class="ft-sheet-scrim" id="ft-shortcuts" hidden><div class="ft-sheet" role="dialog" aria-label="Keyboard shortcuts"><h2>Keyboard shortcuts</h2><dl>${rows.map(([a, k]) => `<dt>${a}</dt><dd>${k}</dd>`).join('')}</dl></div></div>`);
+      sheet.addEventListener('pointerdown', (e) => { if (e.target === sheet) sheet!.hidden = true; });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet && !sheet.hidden) sheet.hidden = true; });
+      (document.getElementById('overlay-root') as HTMLElement).appendChild(sheet);
+    }
+    sheet.hidden = !sheet.hidden;
+  }
+
   openSettings(section: 'account' | 'keys' | 'about'): void {
     this.setView('settings');
     this.settingsView.scrollTo(section);
@@ -183,6 +216,7 @@ export class App {
         const i = this.state.messages.findIndex((x) => x.id === m.id);
         if (i >= 0) this.state.messages[i] = m;
         this.chat.complete(m);
+        this.updateContext();
         const next = this.composer.nextQueued();
         if (next) void this.send(next.text, next.files);
       }
@@ -303,6 +337,7 @@ export class App {
     else if (k === 'j') { e.preventDefault(); this.toggle('term'); }
     else if (k === '.') { e.preventDefault(); this.toggle('panel'); }
     else if (k === 'o' && e.shiftKey) { e.preventDefault(); this.newChat(); }
+    else if (k === '/') { e.preventDefault(); this.shortcuts(); }
     else if (k === 'u' && !e.shiftKey && this.state.view === 'chat') { e.preventDefault(); this.composer.openFilePicker(); }
   }
 }
