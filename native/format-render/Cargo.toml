@@ -1,0 +1,16 @@
+[package]
+name = "format-render"
+version = "0.1.0"
+edition = "2021"
+license = "Apache-2.0"
+description = "Format's native engine crate on wgpu (Metal, Vulkan, Direct3D 12), used where the engine measures a need"
+publish = false
+
+[dependencies]
+wgpu = "30"
+pollster = "1"
+bytemuck = { version = "1", features = ["derive"] }
+sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+
+[profile.dev]
+debug = 0
