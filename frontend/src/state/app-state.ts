@@ -44,6 +44,7 @@ export interface MessageMeta {
   compactNext?: boolean;
   tools?: Record<string, { status: string }>;
   answers?: Record<string, string[]>;
+  agents?: Record<string, { model: string; title?: string; blocks: ContentBlock[] }>;
 }
 
 export interface Message {
@@ -91,6 +92,8 @@ export interface Settings {
   webTools?: boolean;
   workspaceTools?: boolean;
   toolAllow?: string[];
+  agentLimit?: number;
+  agentModel?: string;
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';

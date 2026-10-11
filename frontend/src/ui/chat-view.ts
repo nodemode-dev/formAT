@@ -133,6 +133,9 @@ export class ChatView {
   }
 
   private applyStatuses(view: AssistantView, m: Message): void {
+    for (const [parent, a] of Object.entries(m.meta?.agents ?? {})) {
+      a.blocks.forEach((b, i) => this.nested(view, parent, i, RESULT_TYPES.has(b.type) ? resultView(b) : b));
+    }
     for (const [id, s] of Object.entries(m.meta?.tools ?? {})) {
       view.cards.get(id)?.card.setStatus(s.status);
       if (s.status !== 'done') view.files.get(id)?.setStatus(s.status);
@@ -235,10 +238,40 @@ export class ChatView {
     if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
   }
 
-  applyBlock(id: string, index: number, block: ContentBlock): void {
+  private nested(view: AssistantView, parent: string, index: number, block: ContentBlock): void {
+    const owner = view.cards.get(parent);
+    if (!owner) return;
+    const agent = owner.card;
+    if (block.type === 'text') { agent.agentText(index, block.text ?? ''); return; }
+    if (RESULT_TYPES.has(block.type)) {
+      if (block.tool_use_id) view.cards.get(block.tool_use_id)?.card.setResult(resultView(block));
+      return;
+    }
+    if (!TOOL_TYPES.has(block.type) || !block.id) return;
+    const known = view.cards.get(block.id);
+    if (known) { known.card.update(block); return; }
+    const group = agent.agentSteps();
+    const outer = owner.group;
+    let made: ToolCard | null = null;
+    const card = new ToolCard(block, this.hooks.approve, () => {
+      group.refresh();
+      if (made && (made.status === 'waiting' || made.status === 'asking') && !outer.root.open) outer.root.open = true;
+    }, this.hooks.answer);
+    made = card;
+    group.add(card);
+    view.cards.set(block.id, { card, group });
+  }
+
+  applyBlock(id: string, index: number, block: ContentBlock, parent?: string): void {
     const view = this.assistants.get(id);
     const m = this.state.messages.find((x) => x.id === id);
     if (!view || !m) return;
+    if (parent) {
+      const stick = this.nearBottom();
+      this.nested(view, parent, index, block);
+      if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+      return;
+    }
     while (m.content.length <= index) m.content.push({ type: 'text', text: '' });
     const known = m.content[index];
     m.content[index] = TOOL_TYPES.has(block.type) || RESULT_TYPES.has(block.type) ? { ...block } : known && known.type === block.type ? known : { type: block.type, text: '', thinking: '' };

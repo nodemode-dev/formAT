@@ -240,7 +240,7 @@ export class App {
         this.state.emit('messages');
       }
     } else if (e.type === 'message.block') {
-      if (e.conversationId === this.state.activeId) this.chat.applyBlock(e.id as string, e.index as number, e.block as ContentBlock);
+      if (e.conversationId === this.state.activeId) this.chat.applyBlock(e.id as string, e.index as number, e.block as ContentBlock, e.parent as string | undefined);
     } else if (e.type === 'message.tool') {
       if (e.conversationId === this.state.activeId) this.chat.toolStatus(e.id as string, e.toolUseId as string, e.status as string);
     } else if (e.type === 'tool.output') {

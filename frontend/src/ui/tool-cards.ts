@@ -71,7 +71,7 @@ export const RESULT_TYPES = new Set(['tool_result', 'web_search_tool_result', 'w
 
 const ICON: Record<string, Parameters<typeof ui>[0]> = {
   bash: 'terminal', write: 'file', edit: 'pencil', read: 'file', glob: 'search', grep: 'search', web_search: 'globe', web_fetch: 'globe',
-  ask_user: 'chat', task_list: 'check',
+  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills',
 };
 const STATE_TEXT: Record<string, string> = {
   input: 'preparing', waiting: 'needs approval', asking: 'waiting for you', running: 'running', done: '', error: 'failed', denied: 'not run',
@@ -97,6 +97,7 @@ export function describe(name: string, input: Record<string, unknown>): { title:
     case 'web_search': return { title: 'Searched the web', sub: String(input.query ?? ''), short: 'searched the web' };
     case 'web_fetch': return { title: 'Read a page', sub: String(input.url ?? ''), short: `read ${host(input.url)}` };
     case 'ask_user': return { title: 'Asked you', sub: String(input.question ?? ''), short: 'asked you' };
+    case 'spawn_agent': return { title: 'Ran a sub-agent', sub: String(input.title || String(input.task ?? '').split('\n')[0]), short: 'ran a sub-agent' };
     case 'task_list': {
       const tasks = (Array.isArray(input.tasks) ? input.tasks : []) as TaskItem[];
       const done = tasks.filter((t) => t.status === 'completed').length;
@@ -141,6 +142,39 @@ export class ToolCard {
   private multi = false;
   private builtQuestion = false;
   private answered: string[] = [];
+
+  private agentEl: HTMLElement | null = null;
+  private agentGroup: ToolGroup | null = null;
+  private agentTexts = new Map<number, Text>();
+
+  agentBox(): HTMLElement {
+    if (!this.agentEl) {
+      this.agentEl = el('<div class="ft-agent"></div>');
+      this.root.insertBefore(this.agentEl, this.ask);
+    }
+    return this.agentEl;
+  }
+
+  agentSteps(): ToolGroup {
+    if (!this.agentGroup) {
+      this.agentGroup = new ToolGroup();
+      this.agentBox().appendChild(this.agentGroup.root);
+    }
+    return this.agentGroup;
+  }
+
+  agentText(index: number, text: string): void {
+    let node = this.agentTexts.get(index);
+    if (!node) {
+      const p = el('<p class="ft-agent-text"></p>');
+      node = document.createTextNode('');
+      p.appendChild(node);
+      this.agentBox().appendChild(p);
+      this.agentTexts.set(index, node);
+      this.agentGroup = null;
+    }
+    if (node.data !== text) node.data = text;
+  }
 
   setAnswer(value: string[]): void {
     if (!value.length || value.join('\u0000') === this.answered.join('\u0000')) return;

@@ -61,6 +61,10 @@ export class SettingsView {
           <label class="ft-field ft-check"><input type="checkbox" data-t="webTools"><span>Web search and fetch</span></label>
         </div>
         <div class="ft-allowed"><span class="ft-allowed-label">Always allowed:</span><span class="ft-allowed-list"></span></div>
+        <div class="ft-field-row">
+          <label class="ft-field"><span>Sub-agents in one reply</span><select class="ft-input" data-a2="agentLimit"><option value="0">Off</option><option value="2">Up to 2</option><option value="4">Up to 4</option><option value="6">Up to 6</option><option value="10">Up to 10</option></select></label>
+          <label class="ft-field"><span>Sub-agent model</span><select class="ft-input" data-a2="agentModel"><option value="">Same as the chat</option></select></label>
+        </div>
       </section>
       <section class="ft-set-section" id="ft-set-chats" aria-labelledby="ft-set-chats-h">
         <h2 id="ft-set-chats-h">${ui('compress', 16)}<span>Long chats</span></h2>
@@ -128,12 +132,36 @@ export class SettingsView {
       if (!name) return;
       void run('settings.set', { key: 'toolAllow', value: (this.state.settings.toolAllow ?? []).filter((t) => t !== name) }).catch(() => undefined);
     });
+    const lim = q<HTMLSelectElement>(this.root, '[data-a2="agentLimit"]');
+    const mod = q<HTMLSelectElement>(this.root, '[data-a2="agentModel"]');
+    lim.addEventListener('change', () => void run('settings.set', { key: 'agentLimit', value: Number(lim.value) }).catch(() => undefined));
+    mod.addEventListener('change', () => void run('settings.set', { key: 'agentModel', value: mod.value }).catch(() => undefined));
     state.on('settings', () => { this.fillChats(); this.fillTools(); });
     this.fillChats();
     this.fillTools();
   }
 
+  private fillAgents(): void {
+    const s = this.state.settings;
+    const lim = q<HTMLSelectElement>(this.root, '[data-a2="agentLimit"]');
+    const want = String(s.agentLimit ?? 4);
+    if (![...lim.options].some((o) => o.value === want)) lim.add(new Option(`Up to ${want}`, want));
+    if (lim.value !== want) lim.value = want;
+    const mod = q<HTMLSelectElement>(this.root, '[data-a2="agentModel"]');
+    const ids = this.state.models.map((m) => m.id);
+    const key = ids.join(',');
+    if (mod.dataset.v !== key) {
+      mod.dataset.v = key;
+      mod.innerHTML = `<option value="">Same as the chat</option>${this.state.models.map((m) => `<option value="${esc(m.id)}">${esc(m.name)}</option>`).join('')}`;
+    }
+    const pick = s.agentModel ?? '';
+    if (pick && !ids.includes(pick)) mod.add(new Option(pick, pick));
+    if (mod.value !== pick) mod.value = pick;
+    if (mod.disabled !== (want === '0')) mod.disabled = want === '0';
+  }
+
   private fillTools(): void {
+    this.fillAgents();
     const s = this.state.settings;
     this.root.querySelectorAll<HTMLInputElement>('[data-t]').forEach((box) => {
       const on = (s as unknown as Record<string, unknown>)[box.dataset.t as string] !== false;

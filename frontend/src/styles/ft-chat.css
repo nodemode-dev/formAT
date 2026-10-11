@@ -308,6 +308,9 @@
 .ft-tool-links span { font-size: var(--fs-12); color: var(--text-muted); flex: none; }
 .ft-tool-ask { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); padding: var(--space-2) var(--space-3); border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-wash); }
 .ft-tool-ask-text { flex: 1 1 200px; color: var(--text-primary); }
+.ft-agent { display: grid; gap: var(--space-1); margin-left: 22px; padding-left: var(--space-3); border-left: 1px dashed var(--border-soft); }
+.ft-agent .ft-tools { margin: 0; }
+.ft-agent-text { margin: 0; font-size: var(--fs-13); color: var(--text-secondary); white-space: pre-wrap; }
 .ft-tool-q { display: grid; gap: var(--space-2); padding: var(--space-3); border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-wash); }
 .ft-tool-q[hidden] { display: none; }
 .ft-tool-q-text { margin: 0; color: var(--text-primary); font-size: var(--fs-14); }
