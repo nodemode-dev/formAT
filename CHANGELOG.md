@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.4.2 · 2026-10-11
+
+Tools and approvals (DEV_PLAN Phase 4, last part).
+
+- Sub-agents: Claude can hand a separable piece of work to a sub-agent with the same folder and tools; its steps show nested under its card, its commands and file changes ask like any other, and its report comes back to Claude.
+- Settings, Tools: how many sub-agents one reply may use (Off to 10) and which model they run on.
+- Engine: `spawn_agent`; settings `agentLimit`, `agentModel`.
+
 ## 0.4.1 · 2026-10-11
 
 Tools and approvals (DEV_PLAN Phase 4, second part).

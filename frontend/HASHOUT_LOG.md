@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.4.1
-Last updated: 2026-10-11 · v0.4.1: the question card, the plan checklist, file cards, the Outputs panel, two hidden-toggle fixes
+Current build version: v0.4.2
+Last updated: 2026-10-11 · v0.4.2: nested sub-agent steps, sub-agent settings
 
 ---
 
@@ -243,6 +243,13 @@ The question card is part of its step card, shown outside the step's `details` w
 - logged: v0.4.1 · 2026-10-11
 
 Progress, Files (Download each, Download all as a zip) and Used in this session. Each list is rebuilt only when its HTML changes, which happens on events, not while streaming. `refreshOutputs` drops a reply that arrives after the chat changed (a sequence number), so a slow answer cannot paint another chat's files.
+
+### src/ui/chat-view.ts · nested steps
+- refers-to: src/ui/chat-view.ts :: nested, applyBlock (parent), applyStatuses (meta.agents); src/ui/tool-cards.ts :: agentBox, agentSteps, agentText
+- kind: rationale
+- logged: v0.4.2 · 2026-10-11
+
+A block with a `parent` belongs to the sub-agent started by that call: its steps go into a group inside the parent card's agent box (outside the card's `details`, so the sub-agent's progress shows without opening anything) and its text into a paragraph keyed by index. Nested cards are registered in the same `cards` map, so statuses, live output and approvals reach them by id with no extra routing. A nested approval opens the outer group too. The callback that does so must not read the card before its constructor returns: the card calls back during construction, and the first build threw there and left the whole reply empty.
 
 ### src/ui · hidden toggles, checked by hand
 - refers-to: src/ui/tool-cards.ts :: setResult; src/ui/side-panel.ts :: setOutputs

@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.4.1
-Last updated: 2026-10-11 · v0.4.1: ask_user, task_list, send_file, downloads, outputs.list
+Current build version: v0.4.2
+Last updated: 2026-10-11 · v0.4.2: spawn_agent, agentLimit, agentModel
 
 ---
 
@@ -315,6 +315,13 @@ Each chat has its own folder, `workspace/chats/<id>`; `read`, `write`, `edit`, `
 - logged: v0.4.1 · 2026-10-11
 
 The three tools that make the work visible, from the plan's tool list (DEV_PLAN, Architecture decisions). `ask_user` shares the wait machinery with approvals but is a different kind of wait, so `tool.approve` refuses it and `tool.answer` refuses an approval; the answer is stored in `meta.answers` because the stored `tool_use` block must stay exactly as the model sent it. `task_list` replaces the whole list on each call (simplest for the model to keep right) and is stored in the `meta` table under `tasks.<chat>`. `send_file` only registers a file that already exists in the chat's folder, under `outputs.<chat>`; downloads go through `/api/chats/{id}/files/{path}`, which resolves the path inside the folder the same way the tools do (`../` answers 403). None of the three asks for approval or is blocked by Plan mode: they read or show, they never change the person's files. Their storage is per chat and is not removed with the chat yet.
+
+### app/engine/chat.py · sub-agents
+- refers-to: app/engine/chat.py :: _run_agent, _agent_view, AGENT_PROMPT, AGENT_ROUNDS; app/engine/tools.py :: AGENT_EXCLUDED, definitions (agent)
+- kind: rationale
+- logged: v0.4.2 · 2026-10-11
+
+A sub-agent is a second loop inside the parent's `spawn_agent` call, not a chat in the sidebar: its history starts from the task alone, which keeps it cheap and focused, and the task description tells Claude to write tasks that stand alone. It shares the chat's folder and the parent's message for statuses and approvals, so its waiting calls appear and are answered exactly like the parent's; it cannot ask questions, keep the plan, send files or start sub-agents, because those speak to the person and only the main Claude does that. It does not stream text deltas: each block is published once at `block_stop` with `parent` set, which is enough to follow it and cheaper than a second delta stream. Its blocks live in `meta.agents[tool_use_id]`, saved with the parent at each round. The report is its last text after its last tool call. Sub-agents run one after another within a reply (the loop runs parallel calls in order); `agentLimit` caps them per reply and 0 removes the tool; `agentModel` lets them run on a faster model.
 
 ---
 
