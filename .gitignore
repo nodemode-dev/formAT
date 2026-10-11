@@ -1,0 +1,17 @@
+node_modules/
+frontend/dist/
+backend/venv/
+backend/build/
+backend/dist-engine/
+backend/data/
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+native/format-render/target/
+src-tauri/target/
+src-tauri/gen/
+.DS_Store
+*.log
+.claude/settings.local.json
