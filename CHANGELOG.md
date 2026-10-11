@@ -10,7 +10,7 @@ Chat on the Claude API (DEV_PLAN Phase 3, second part).
 - Files pasted into the composer upload like picked ones.
 - A context meter beside the model: the last turn's tokens against the model's context window.
 - A keyboard shortcut sheet on Mod+/ and in the palette.
-- The parity tracker's Format page grades v0.3.1, v0.3.0 and v0.2.1 against claude.ai over 50 rows (37, 33 and 21 percent).
+- The parity tracker's Format page grades the current build against claude.ai over 50 rows: v0.3.1 at 37 percent.
 
 ## 0.3.0 · 2026-10-11
 
