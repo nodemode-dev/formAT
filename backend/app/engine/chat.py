@@ -166,7 +166,10 @@ def tool_view(block: dict, meta: dict) -> dict:
     t = block.get("type")
     if t in ("tool_use", "server_tool_use"):
         status = ((meta.get("tools") or {}).get(block.get("id")) or {}).get("status")
-        return {"type": t, "id": block.get("id"), "name": block.get("name"), "input": block.get("input") or {}, "status": status}
+        view = {"type": t, "id": block.get("id"), "name": block.get("name"), "input": block.get("input") or {}, "status": status}
+        if block.get("id") in (meta.get("answers") or {}):
+            view["answer"] = meta["answers"][block["id"]]
+        return view
     if t in RESULT_TYPES:
         content = block.get("content")
         view: dict = {"type": t, "tool_use_id": block.get("tool_use_id"), "is_error": bool(block.get("is_error"))}
@@ -202,6 +205,16 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
         return result(f"Format has no tool named {name}.", True, "error")
     if cancel.is_set():
         return result("Stopped by the person before this ran.", True, "denied")
+    if name == "ask_user":
+        _set_status(conversation_id, mid, meta, tid, "asking")
+        update(mid, live, meta)
+        events.publish("tool.question", conversationId=conversation_id, messageId=mid, toolUseId=tid, input=args)
+        got = tools.wait_for_answer(conversation_id, mid, call, cancel)
+        if got is None:
+            return result("The person did not answer; the reply was stopped.", True, "denied")
+        chosen = got if isinstance(got, list) else [got]
+        meta.setdefault("answers", {})[tid] = chosen
+        return result("The person answered: " + "; ".join(str(c) for c in chosen), False, "done")
     decision = tools.decision_for(name, current())
     if decision == "plan":
         return result(f"Plan mode is on, so {name} is not available: describe the change or command instead, and the person will switch modes to carry it out.", True, "denied")
@@ -228,7 +241,7 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
             buf.clear()
             last[0] = time.monotonic()
 
-    text, is_error = tools.run(name, args, conversation_id, on_output, cancel)
+    text, is_error = tools.run(name, args, conversation_id, on_output, cancel, mid)
     if buf:
         events.publish("tool.output", id=mid, conversationId=conversation_id, toolUseId=tid, text="".join(buf))
     return result(text, is_error, "error" if is_error else "done")

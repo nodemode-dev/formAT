@@ -1,4 +1,6 @@
 import fnmatch
+import json
+import mimetypes
 import os
 import re
 import shutil
@@ -10,7 +12,8 @@ from pathlib import Path
 from app.core import config
 from app.engine import events
 
-READ_ONLY = {"read", "glob", "grep"}
+READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user"}
+TASK_STATES = ("pending", "in_progress", "completed")
 OUTPUT_CAP = 30_000
 READ_CAP = 200_000
 BASH_TIMEOUT = 120
@@ -41,6 +44,18 @@ DEFINITIONS = [
      "input_schema": {"type": "object", "properties": {"pattern": {"type": "string", "description": "A Python regular expression"},
                                                         "glob": {"type": "string", "description": "Only files matching this glob, for example *.ts"}},
                       "required": ["pattern"]}},
+    {"name": "ask_user", "description": "Ask the person a multiple-choice question and wait for the answer. Use it when a choice is genuinely theirs and you cannot settle it from the conversation, not to confirm things you can decide. Give 2 to 4 short, distinct options; the person can also type their own answer.",
+     "input_schema": {"type": "object", "properties": {"question": {"type": "string"},
+                                                        "options": {"type": "array", "minItems": 2, "maxItems": 4, "items": {"type": "object", "properties": {"label": {"type": "string"}, "description": {"type": "string"}}, "required": ["label"]}},
+                                                        "multiSelect": {"type": "boolean", "description": "Allow more than one option"}},
+                      "required": ["question", "options"]}},
+    {"name": "task_list", "description": "Show the person your plan as a task list and keep it current. Each call replaces the whole list. Use it for work with three or more steps: mark one task in_progress while you work on it and completed as soon as it is done.",
+     "input_schema": {"type": "object", "properties": {"tasks": {"type": "array", "items": {"type": "object", "properties": {"title": {"type": "string"}, "status": {"type": "string", "enum": list(TASK_STATES)}}, "required": ["title", "status"]}}},
+                      "required": ["tasks"]}},
+    {"name": "send_file", "description": "Give the person a file from the workspace folder: it appears in the conversation as a file card they can download, and in the Outputs panel. Use it for every file that is a deliverable, after writing it.",
+     "input_schema": {"type": "object", "properties": {"path": {"type": "string", "description": "Path relative to the workspace folder"},
+                                                        "caption": {"type": "string", "description": "One line of context, optional"}},
+                      "required": ["path"]}},
 ]
 NAMES = {d["name"] for d in DEFINITIONS}
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
@@ -99,7 +114,23 @@ def wait_for_approval(conversation_id: str, message_id: str, block: dict, cancel
         events.publish("tool.approval.closed", conversationId=conversation_id, messageId=message_id, toolUseId=key)
 
 
-def answer(tool_use_id: str, decision: str) -> dict | None:
+def wait_for_answer(conversation_id: str, message_id: str, block: dict, cancel: threading.Event) -> object | None:
+    key = block["id"]
+    entry = {"event": threading.Event(), "answer": None, "conversationId": conversation_id, "messageId": message_id,
+             "toolUseId": key, "name": block["name"], "input": block.get("input") or {}, "since": time.time(), "kind": "question"}
+    with _waits_lock:
+        _waits[key] = entry
+    try:
+        while not entry["event"].wait(0.25):
+            if cancel.is_set():
+                return None
+        return entry["answer"]
+    finally:
+        with _waits_lock:
+            _waits.pop(key, None)
+
+
+def answer(tool_use_id: str, decision: object) -> dict | None:
     with _waits_lock:
         entry = _waits.get(tool_use_id)
     if entry is None:
@@ -112,8 +143,41 @@ def answer(tool_use_id: str, decision: str) -> dict | None:
 def pending(conversation_id: str | None = None) -> list[dict]:
     with _waits_lock:
         items = list(_waits.values())
-    return [{k: e[k] for k in ("conversationId", "messageId", "toolUseId", "name", "input", "since")}
+    return [{k: e[k] for k in ("conversationId", "messageId", "toolUseId", "name", "input", "since")} | {"kind": e.get("kind", "approval")}
             for e in items if conversation_id is None or e["conversationId"] == conversation_id]
+
+
+def kind_of_wait(tool_use_id: str) -> str | None:
+    with _waits_lock:
+        e = _waits.get(tool_use_id)
+    return e.get("kind", "approval") if e else None
+
+
+def tasks_of(conversation_id: str) -> list[dict]:
+    from app.engine import store
+    row = store.row("SELECT value FROM meta WHERE key = ?", (f"tasks.{conversation_id}",))
+    try:
+        return json.loads(row["value"]) if row else []
+    except (TypeError, ValueError):
+        return []
+
+
+def outputs_of(conversation_id: str) -> list[dict]:
+    from app.engine import store
+    row = store.row("SELECT value FROM meta WHERE key = ?", (f"outputs.{conversation_id}",))
+    try:
+        return json.loads(row["value"]) if row else []
+    except (TypeError, ValueError):
+        return []
+
+
+def _save(key: str, value: object) -> None:
+    from app.engine import store
+    store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, json.dumps(value)))
+
+
+def output_path(conversation_id: str, rel: str) -> Path:
+    return _inside(workspace(conversation_id), rel)
 
 
 class ToolError(Exception):
@@ -143,11 +207,37 @@ def _files(root: Path):
             yield Path(dirpath) / f
 
 
-def run(name: str, args: dict, conversation_id: str, on_output, cancel: threading.Event) -> tuple[str, bool]:
+def run(name: str, args: dict, conversation_id: str, on_output, cancel: threading.Event, message_id: str | None = None) -> tuple[str, bool]:
     root = workspace(conversation_id)
     try:
         if name == "bash":
             return _bash(root, args, on_output, cancel)
+        if name == "task_list":
+            items = args.get("tasks")
+            if not isinstance(items, list) or not items:
+                raise ToolError("tasks must be a non-empty list")
+            tasks = []
+            for t in items[:50]:
+                title = str((t or {}).get("title") or "").strip()
+                status = (t or {}).get("status")
+                if not title or status not in TASK_STATES:
+                    raise ToolError("each task needs a title and a status of pending, in_progress or completed")
+                tasks.append({"title": title[:200], "status": status})
+            _save(f"tasks.{conversation_id}", tasks)
+            events.publish("tasks.changed", conversationId=conversation_id, tasks=tasks)
+            done = sum(1 for t in tasks if t["status"] == "completed")
+            return f"Task list updated: {done} of {len(tasks)} done.", False
+        if name == "send_file":
+            path = _inside(root, args.get("path", ""))
+            if not path.is_file():
+                raise ToolError(f"No file {args.get('path')} in the workspace; write it first")
+            rel = str(path.relative_to(root.resolve()))
+            item = {"path": rel, "name": path.name, "size": path.stat().st_size, "mime": mimetypes.guess_type(path.name)[0] or "application/octet-stream",
+                    "caption": str(args.get("caption") or "")[:300], "messageId": message_id, "at": time.time()}
+            outputs = [o for o in outputs_of(conversation_id) if o["path"] != rel] + [item]
+            _save(f"outputs.{conversation_id}", outputs)
+            events.publish("outputs.changed", conversationId=conversation_id, outputs=outputs)
+            return f"Sent {rel} ({item['size']} bytes) to the person; it shows as a file card they can download.", False
         if name == "read":
             path = _inside(root, args.get("path", ""))
             if not path.is_file():

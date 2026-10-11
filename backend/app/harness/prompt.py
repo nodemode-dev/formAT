@@ -11,7 +11,7 @@ Files the person attaches arrive in their message as images, PDF documents or te
 
 Today is {today}. The computer runs {os}."""
 
-TOOLS = """You have tools. bash, read, write, edit, glob and grep work inside this chat's own folder, {chat_folder}; paths are relative to it, and each bash call starts a fresh shell there. The person approves commands and file changes unless they have allowed them, and may decline: if a tool is declined, do not retry it the same way; say what you would have done and continue. web_search and web_fetch reach the internet; cite what you use. Prefer doing the work with the tools over describing it, and report briefly what you did and what you found."""
+TOOLS = """You have tools. bash, read, write, edit, glob and grep work inside this chat's own folder, {chat_folder}; paths are relative to it, and each bash call starts a fresh shell there. The person approves commands and file changes unless they have allowed them, and may decline: if a tool is declined, do not retry it the same way; say what you would have done and continue. web_search and web_fetch reach the internet; cite what you use. For work with three or more steps, keep a task_list current. Hand over every finished file with send_file so it appears as a file card. Use ask_user only for a choice that is genuinely the person's. Prefer doing the work with the tools over describing it, and report briefly what you did and what you found."""
 
 
 def system_prompt(account: dict, tools: bool = False, chat_folder: str | None = None) -> list[dict]:

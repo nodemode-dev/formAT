@@ -104,10 +104,54 @@ def branch(conversationId: str, messageId: str) -> dict:
 def approve(toolUseId: str, decision: str) -> dict:
     if decision not in ("allow", "always", "deny"):
         raise CommandError("tool.approve: decision is allow, always or deny")
+    if tools.kind_of_wait(toolUseId) == "question":
+        raise CommandError("tool.approve: that is a question; answer it with tool.answer", 409)
     entry = tools.answer(toolUseId, decision)
     if entry is None:
         raise CommandError(f"tool.approve: nothing is waiting for {toolUseId}; tool.pending lists what is", 404)
     return {"toolUseId": toolUseId, "decision": decision, "name": entry["name"]}
+
+
+@command("tool.answer", "Answer Claude's question",
+         {"toolUseId": {"type": "string", "required": True}, "answer": {"required": True, "description": "the chosen option label, a list of labels when the question allows several, or your own text"}},
+         description="Answers a waiting question card (ask_user). tool.pending lists waiting questions with kind question.")
+def answer_question(toolUseId: str, answer: object) -> dict:
+    if tools.kind_of_wait(toolUseId) != "question":
+        raise CommandError(f"tool.answer: no question is waiting for {toolUseId}; tool.pending lists what is", 404)
+    if isinstance(answer, list):
+        picked = [str(a).strip()[:500] for a in answer if str(a).strip()]
+        if not picked:
+            raise CommandError("tool.answer: the answer is empty")
+        value: object = picked
+    else:
+        value = str(answer or "").strip()[:2000]
+        if not value:
+            raise CommandError("tool.answer: the answer is empty")
+    tools.answer(toolUseId, value)
+    return {"toolUseId": toolUseId, "answer": value}
+
+
+@command("tasks.get", "Task list", {"conversationId": {"type": "string", "required": True}}, mutates=False,
+         description="The chat's task list as Claude last set it with task_list: titles with pending, in_progress or completed.")
+def tasks_get(conversationId: str) -> dict:
+    return {"conversationId": conversationId, "tasks": tools.tasks_of(conversationId)}
+
+
+@command("outputs.list", "Outputs", {"conversationId": {"type": "string", "required": True}}, mutates=False,
+         description="Files Claude sent in this chat (send_file) with their download paths, and what was used in the session: uploads, web searches and fetches, commands, files changed.")
+def outputs_list(conversationId: str) -> dict:
+    used = {"uploads": 0, "web_search": 0, "web_fetch": 0, "bash": 0, "files": 0}
+    for m in messages_of(conversationId):
+        used["uploads"] += len((m.get("meta") or {}).get("attachments") or [])
+        for b in m["content"]:
+            n = b.get("name")
+            if b.get("type") in ("tool_use", "server_tool_use") and n:
+                if n in ("web_search", "web_fetch", "bash"):
+                    used[n] += 1
+                elif n in ("write", "edit"):
+                    used["files"] += 1
+    files = [o | {"url": f"/api/chats/{conversationId}/files/{o['path']}"} for o in tools.outputs_of(conversationId)]
+    return {"conversationId": conversationId, "files": files, "used": used, "zip": f"/api/chats/{conversationId}/outputs.zip" if files else None}
 
 
 @command("tool.pending", "Waiting approvals", {"conversationId": {"type": "string"}}, mutates=False,
