@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 
 const FRONTEND_PORT = 5490;
 const BACKEND_PORT = 8490;
-const engine = { target: `http://127.0.0.1:${BACKEND_PORT}`, changeOrigin: true };
+const engine = { target: `http://127.0.0.1:${BACKEND_PORT}`, changeOrigin: true, ws: true };
 const engineSocket = { target: `ws://127.0.0.1:${BACKEND_PORT}`, ws: true, changeOrigin: true };
 
 export default defineConfig({

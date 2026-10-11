@@ -74,6 +74,14 @@
   }
 })();
   </script>
+  <script>
+(function () {
+  var root = document.documentElement, get = function (k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
+  root.dataset.ftSidebar = get('format.sidebar', 'open') === 'rail' ? 'rail' : 'open';
+  root.dataset.ftPanel = get('format.panel', 'closed') === 'open' ? 'open' : 'closed';
+  root.dataset.ftTerm = get('format.terminal', 'closed') === 'open' ? 'open' : 'closed';
+})();
+  </script>
   <link rel="stylesheet" href="/src/styles/scrollbars.css">
   <link rel="stylesheet" href="/src/styles/fonts.css">
   <link rel="stylesheet" href="/src/styles/tokens.css">
@@ -81,6 +89,9 @@
   <link rel="stylesheet" href="/src/styles/shell.css">
   <link rel="stylesheet" href="/src/styles/dialogs.css">
   <link rel="stylesheet" href="/src/styles/ft-shell.css">
+  <link rel="stylesheet" href="/src/styles/ft-sidebar.css">
+  <link rel="stylesheet" href="/src/styles/ft-chat.css">
+  <link rel="stylesheet" href="/src/styles/ft-overlays.css">
   <link rel="stylesheet" href="/src/styles/light-mode.css">
 </head>
 <body>

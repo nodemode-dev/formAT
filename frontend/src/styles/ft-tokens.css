@@ -14,4 +14,14 @@
   --ft-reading-leading: 1.65;
   --ft-code-ink: var(--accent-ink);
   --ft-code-fill: var(--surface-2);
+  --ft-dock-h: 280px;
+  --ft-sidebar-bg: color-mix(in srgb, var(--bg-primary) 72%, #000);
+  --ft-bubble: var(--surface-2);
+  --ft-menu-bg: color-mix(in srgb, var(--bg-node) 92%, var(--text-primary) 8%);
+  --ft-row-active: color-mix(in srgb, var(--surface-2) 80%, var(--text-primary) 6%);
+  --ft-side-motion: 180ms var(--ease-glass);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root { --ft-side-motion: 0ms linear; }
 }

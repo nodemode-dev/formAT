@@ -1,3 +1,4 @@
+import { App } from './app';
 import { health, run } from './engine-client/api';
 import { EventStream } from './engine-client/events';
 import { mountBootFrame } from './ui/boot-frame';
@@ -10,7 +11,7 @@ interface AppInfo {
 }
 
 const host = document.getElementById('app') as HTMLElement;
-const frame = mountBootFrame(host, VERSION);
+let frame: ReturnType<typeof mountBootFrame>;
 
 async function probe(): Promise<void> {
   try {
@@ -26,14 +27,25 @@ async function probe(): Promise<void> {
   }
 }
 
-const stream = new EventStream();
-stream.onState((state) => {
-  frame.set('events', state === 'open' ? 'ok' : state === 'connecting' ? 'idle' : 'bad', state === 'open' ? 'connected' : state);
-  if (state === 'open') void probe();
-});
+function bootFallback(): void {
+  frame = mountBootFrame(host, VERSION);
+  const stream = new EventStream();
+  stream.onState((state) => {
+    frame.set('events', state === 'open' ? 'ok' : state === 'connecting' ? 'idle' : 'bad', state === 'open' ? 'connected' : state);
+    if (state === 'open') location.reload();
+  });
+  stream.start();
+  void probe();
+}
 
-void document.fonts.ready.then(() => {
+function reveal(): void {
   document.body.classList.add('app-ready');
+}
+
+const app = new App(host);
+const ready = Promise.all([document.fonts.ready, app.load()]);
+ready.then(reveal, () => {
+  host.replaceChildren();
+  bootFallback();
+  void document.fonts.ready.then(reveal);
 });
-stream.start();
-void probe();
