@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.2
-Last updated: 2026-10-11 · v0.3.2: version pager after edits, edit on any message, math with KaTeX
+Current build version: v0.3.3
+Last updated: 2026-10-11 · v0.3.3: summaries in the thread, Long chats settings, the context meter fix
 
 ---
 
@@ -208,6 +208,27 @@ Mod+B sidebar (as claude.ai), Mod+K palette (first row New chat, as claude.ai's)
 - logged: v0.3.1 · 2026-10-11
 
 The meter beside the model is the last reply's `usage` (input, cache creation, cache read and output tokens) over the model's `contextWindow` from `/v1/models`: that sum is what the next turn starts from. It hides when there is no usage or no window, shows at least 1 percent, and turns to the warning colour at 80 percent. It runs on `messages`, `active` and `settings`, and on `message.completed`, because a finished reply patches its message in place rather than emitting `messages`; the first build missed that and the check caught the meter not moving.
+
+### src/ui/composer.ts · setContext
+- refers-to: src/ui/composer.ts :: setContext
+- kind: warning-context
+- logged: v0.3.3 · 2026-10-11
+
+From v0.3.1 to v0.3.2 the meter never showed: `setContext` toggled `hidden` only when `hidden === !text`, which is the case where nothing should change. Its text was right, and the v0.3.1 check read the text of the hidden element and passed. Found while checking compaction in v0.3.3; the checks now require the element to be visible. The pattern in this codebase is `if (el.hidden !== want) el.hidden = want`, or the equivalent early return.
+
+### src/ui/chat-view.ts · summaries
+- refers-to: src/ui/chat-view.ts :: node (compaction), paintCompaction, complete; src/app.ts :: message.completed (compactNext), compactNow
+- kind: rationale
+- logged: v0.3.3 · 2026-10-11
+
+A message with `meta.compaction` is drawn as a divider, not a reply: a centred line with its state (summarizing, summarized, stopped, or the engine's reason) and the summary text behind a closed `details`. Messages above it stay on screen, as claude.ai keeps the visible conversation when it compacts; only the API request starts from the summary. `paintCompaction` patches the label, the text and the `details` visibility; the node is never rebuilt. A reply that arrives with `meta.compactNext` does not end the busy state or release the queue, because the engine is still writing the summary in the same run and a queued send would get 409; the summary's own `message.completed` does both, whether it succeeded or not.
+
+### src/ui/views.ts · Long chats
+- refers-to: src/ui/views.ts :: fillChats
+- kind: explainer
+- logged: v0.3.3 · 2026-10-11
+
+The checkbox and the threshold menu write through `settings.set` on change and are filled from `settings.changed`, so the CLI and the window stay in step. A threshold set from the CLI that is not one of the four menu values is added as an option rather than shown wrong. The menu is disabled while automatic summaries are off.
 
 ### src/app.ts · shortcuts
 - refers-to: src/app.ts :: shortcuts

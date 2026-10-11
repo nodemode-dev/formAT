@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.2
-Last updated: 2026-10-11 · v0.3.2: branching conversations, chat.branch, schema 3
+Current build version: v0.3.3
+Last updated: 2026-10-11 · v0.3.3: the Files API, compaction, chat.compact, remote file cleanup
 
 ---
 
@@ -247,6 +247,34 @@ One thread per running reply. The assistant message is stored empty with status 
 - logged: v0.3.0 · 2026-10-11
 
 Local faster-whisper (MIT, optional, `./format install-voice`; model `base` unless `FORMAT_WHISPER_MODEL`) is preferred; otherwise OpenAI's transcription endpoint with `FORMAT_TRANSCRIBE_MODEL` (default `whisper-1`). Neither was run here: no OpenAI key, no network to OpenAI, and the local model downloads on first use. Without either the endpoint answers 503 with how to enable one, which the window shows.
+
+### app/harness/content.py · the Files API
+- refers-to: app/harness/content.py :: remote_id, blocks_for, FILES_API_MIN; app/engine/uploads.py :: remember_remote; app/providers/anthropic_provider.py :: upload_file, delete_file, key_tag
+- kind: rationale
+- logged: v0.3.3 · 2026-10-11
+
+Every turn sends the whole history, so an attached 20 MB PDF would travel as base64 on every request until the chat ends, and a few of them reach the request size limit. From 1 MB, images and PDFs are uploaded once (the Files API is generally available as of 2026-10-11, no beta header; files persist until deleted) and sent as `{"type": "file", "file_id": ...}`. Smaller files stay inline: one request either way, and nothing left in the workspace. The id is cached in the upload's `meta.json` with the provider and a fingerprint of the key (the first 16 hex of its SHA-256), because files belong to the key's workspace: a different key uploads again rather than referencing a file it cannot see. A failed upload is logged and the file goes inline. Ids only ever come from Format's own uploads, never from a person or a model, as Anthropic's page asks.
+
+### app/engine/cmd_conversation.py · deleting remote files
+- refers-to: app/engine/cmd_conversation.py :: delete, _forget_remote
+- kind: rationale
+- logged: v0.3.3 · 2026-10-11
+
+Files stay in the Anthropic workspace until deleted, so deleting a chat deletes the remote copies of its attachments, in a background thread after the chat is gone, skipping files uploaded under another key. A failure is logged; the local copy in the workspace folder is kept, as before.
+
+### app/engine/chat.py · compaction
+- refers-to: app/engine/chat.py :: _should_compact, _compact, start_compaction, _context_used; app/harness/request.py :: since_summary, build_compaction, COMPACT_BETA; app/providers/anthropic_provider.py :: compact, can_compact
+- kind: rationale
+- logged: v0.3.3 · 2026-10-11
+
+On-demand compaction (beta `compact-2026-09-04`, read 2026-10-11), not threshold compaction: Anthropic's page recommends it, it keeps the decision in the engine, and it never pauses a reply. After a reply, the engine adds that reply's input, cache-creation, cache-read and output tokens (what the next request starts from) and compares it with `compactAt` times the model's context window; past it, the same run sends the chat with `compaction: {"type": "summarize"}`, the chat's own system prompt and thinking, and `max_tokens` 16000, and stores the signed block, unchanged, as an assistant message with `meta.compaction`. It runs after the reply rather than before the next question, so the person's next message never waits on it unless they send while it runs (the window queues). The harness then sends the newest summary first and everything after it, with the beta header on each request that carries it (a request without the header fails validation); earlier messages stay in the store and on screen. A summary that does not come back (`stop_reason` other than `compaction`, or an API error) is kept as a message with the reason and contributes nothing to later requests. Images and files before a summary are not carried by it; the Long chats note says so. `can_compact` reads `capabilities.compaction` when the models list has it and otherwise the model list on Anthropic's page.
+
+### app/engine/chat.py · compactNext
+- refers-to: app/engine/chat.py :: _run (finally)
+- kind: warning-context
+- logged: v0.3.3 · 2026-10-11
+
+The decision to compact is made before the reply's `message.completed` is published and is carried on the reply as `meta.compactNext`, and the run stays in `RUNS` until the summary is stored. The window would otherwise take the reply's completion as the end of the run and send its queue into a 409.
 
 ---
 

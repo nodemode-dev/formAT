@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.3 · 2026-10-11
+
+Chat on the Claude API (DEV_PLAN Phase 3, last part).
+
+- Large attachments: images and PDFs of 1 MB or more are uploaded once through the Files API and referenced by id on every turn; smaller ones stay inline. Deleting a chat deletes its uploaded files.
+- Long chats: when a chat reaches 75 percent of the model's context window (adjustable in Settings, Long chats), Claude summarizes the earlier messages after a reply and continues from the summary (compaction). The summary shows as a divider you can expand; earlier messages stay on screen. Also on demand: Summarize earlier messages in the command palette, or `chat.compact`.
+- Engine: `chat.compact`; settings `autoCompact` and `compactAt`.
+- Fixed: the context meter beside the model never showed (since 0.3.1).
+
 ## 0.3.2 · 2026-10-11
 
 Chat on the Claude API (DEV_PLAN Phase 3, third part).
