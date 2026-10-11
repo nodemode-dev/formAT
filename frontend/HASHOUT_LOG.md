@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.1
-Last updated: 2026-10-11 · v0.3.1: edit the last message, palette content search, syntax colours, paste, context meter, shortcut sheet
+Current build version: v0.3.2
+Last updated: 2026-10-11 · v0.3.2: version pager after edits, edit on any message, math with KaTeX
 
 ---
 
@@ -132,6 +132,20 @@ A streaming reply is split into blocks at blank lines outside code fences. Every
 
 highlight.js 11.12 (BSD-3-Clause), `lib/common` only (about 35 languages), runs inside the fence renderer, so a code block is coloured once when its block finishes and never again; the streaming tail shows plain text until its fence closes. Only a named language is highlighted (no auto-detection, which is slow and guesses wrong on short snippets). Its classes map to `--ft-syn-*` tokens drawn from the family's handle and status colours, so no highlight.js theme sheet is loaded. Those colours are tuned for Studio Dark; a light-theme pass on them is open (`--ft-syn-type` is the one raw value, a sky blue the family has no token for).
 
+### src/ui/markdown.ts · math
+- refers-to: src/ui/markdown.ts :: math_inline, math_block, tex, splitBlocks
+- kind: rationale
+- logged: v0.3.2 · 2026-10-11
+
+KaTeX 0.18.9 (MIT) renders `$...$` and `\(...\)` inline and `$$...$$` and `\[...\]` as blocks, through two markdown-it rules written here instead of a plugin (the maintained plugin pins KaTeX 0.16). Each finished block is rendered once like any other; while streaming, `splitBlocks` treats an open `$$` or `\[` like an open code fence so a formula with blank lines is not split in two. A `$` directly before a digit or a space never opens math, and a closing `$` must follow a non-space and not precede a digit, so prices like "$5 and $10" stay text; the first build read "$5 and $10, while the area is $\pi r^2$" as one formula and the check caught it. Errors render as KaTeX's own red source (`throwOnError: false`), `trust` is off. KaTeX's sheet has no z-index; its faces use `font-display: block`, so the three main faces are requested at start and are ready before the first formula arrives.
+
+### src/ui/markdown.ts · version pin
+- refers-to: frontend/package.json :: katex
+- kind: warning-context
+- logged: v0.3.2 · 2026-10-11
+
+KaTeX 0.19.0 was ten days old on 2026-10-11; 0.18.9 (published 2026-09-23) is pinned exactly instead.
+
 ### src/app.ts · claimNext
 - refers-to: src/app.ts :: send, onEvent (conversation.created)
 - kind: rationale
@@ -244,6 +258,16 @@ The menu follows claude.ai's model menu (UI_STUDY § Composer): current model wi
 - logged: v0.3.1 · 2026-10-11
 
 Edit sits only on the most recent user message, because `chat.edit` replaces that message and its reply; claude.ai branches on edit, which needs the message tree navigation of a later release. Edit puts the text back in the box and shows the editing bar; Send then calls `chat.edit`, Cancel or an empty send leaves editing. The engine deletes the old pair with `message.deleted` events and adds the new message, so the view removes two nodes and appends, as on any send.
+
+Superseded in v0.3.2: Edit is on every message the person sent and `startEdit` carries that message's id; sending adds a new version (see chat-view.ts · version pager).
+
+### src/ui/chat-view.ts · version pager
+- refers-to: src/ui/chat-view.ts :: node (user), render; src/app.ts :: conversation.path
+- kind: rationale
+- logged: v0.3.2 · 2026-10-11
+
+A message with more than one version carries `branch` (index, count, ids) from the engine and shows previous, "n / count" and next under the bubble, as claude.ai does after an edit. A step calls `chat.branch` with the neighbouring id; the engine answers with `conversation.path`, the window replaces its message list, and the keyed render keeps every node still on the path, removes the ones that left and creates the ones that arrived, so switching versions never redraws the shared start of the chat. The pager's count and buttons are patched in `render`, not rebuilt. While a reply runs, Edit and the pager buttons are disabled; Edit is hidden with `visibility`, not `display`, so the row under the bubble keeps its 28 px and the thread does not move when a reply starts or ends.
+
 
 ### src/ui/composer.ts · paste
 - refers-to: src/ui/composer.ts :: paste listener

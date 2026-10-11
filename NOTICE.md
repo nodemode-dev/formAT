@@ -21,6 +21,7 @@ Format · Copyright 2026 nodemode-ai · Licensed under the Apache License, Versi
 | entities | BSD-2-Clause | reply rendering (markdown-it dependency) |
 | argparse | PSF-2.0 | markdown-it's command line only, not used by Format |
 | highlight.js (`lib/common`) | BSD-3-Clause | syntax colours in code blocks |
+| KaTeX (with its fonts) | MIT | math in replies |
 | faster-whisper (optional, `./format install-voice`) | MIT | local dictation |
 | FastAPI, Starlette, Pydantic | MIT | engine |
 | Uvicorn, httpx | BSD-3-Clause | engine |

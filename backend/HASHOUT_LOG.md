@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.3.1
-Last updated: 2026-10-11 · v0.3.1: chat.edit and search by message text
+Current build version: v0.3.2
+Last updated: 2026-10-11 · v0.3.2: branching conversations, chat.branch, schema 3
 
 ---
 
@@ -49,6 +49,7 @@ backend/
 - [app/engine/store.py](#app-engine-store)
 - [app/engine/cmd_conversation.py](#app-engine-cmd-conversation)
 - [app/engine/cmd_chat.py](#app-engine-cmd-chat)
+- [app/engine/cmd_message.py](#app-engine-cmd-message)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -140,6 +141,26 @@ Pinned first, then most recent, matching the sidebar's Pinned group above the da
 - logged: v0.3.1 · 2026-10-11
 
 Edit replaces rather than branches: it deletes the person's last message and everything after it (publishing `message.deleted` for each), inserts the new text with the old message's attachments and `edited: true` in `meta`, and starts a reply. claude.ai keeps the old path as a branch; `parent_id` already makes the store a tree, and branch navigation is the remaining half of this row. It refuses with 409 while a reply runs, so a reply can never land after its question was removed.
+
+Superseded in v0.3.2 by the entry below: nothing is deleted any more.
+
+### app/engine/cmd_chat.py · edit and branch
+- refers-to: app/engine/cmd_chat.py :: edit, branch, retry, _publish_path
+- kind: rationale
+- logged: v0.3.2 · 2026-10-11
+
+`chat.edit` inserts the new text as a sibling of the edited message (same parent, or a second root for the first message, passed as `ROOT` so `insert` does not attach it to the leaf), which moves the leaf there and starts a reply; the old version and everything after it stay in the store as a branch. `messageId` may be any of the person's messages on the current path; without it the most recent is edited, as in v0.3.1. `chat.branch` sets the leaf to the newest descendant of the chosen version (`deepest`, following the latest child at each step), which is what claude.ai shows when stepping back to a version. Both publish `conversation.path` with the whole path, because the window cannot work out which nodes to keep from single add and delete events. `chat.retry` still deletes the last reply but now resets the leaf to its parent first, or the new reply would attach to a deleted message. All three refuse with 409 while a reply runs.
+
+---
+
+## app/engine/cmd_message.py {#app-engine-cmd-message}
+
+### app/engine/cmd_message.py · the tree
+- refers-to: app/engine/cmd_message.py :: insert, messages_of, leaf_of, set_leaf, deepest, _siblings; app/engine/store.py :: conn (schema 3)
+- kind: rationale
+- logged: v0.3.2 · 2026-10-11
+
+A chat is a tree of messages and `conversations.leaf_id` names the end of the path on screen. `insert` attaches to the leaf unless told otherwise and becomes the new leaf; `messages_of` walks parents from the leaf (with a seen set, so a damaged row cannot loop) and adds `branch` to each of the person's messages that has siblings. Schema 3 added `leaf_id` and an index on `(conversation_id, parent_id)`; chats from schema 2 had no parents, so the migration links each chat's messages in time order and sets the leaf to the last one, once, inside the first connection.
 
 ---
 

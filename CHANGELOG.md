@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.3.2 · 2026-10-11
+
+Chat on the Claude API (DEV_PLAN Phase 3, third part).
+
+- Branching conversations: Edit on any message you sent adds a new version and asks again from there; the earlier version and what followed it are kept. A pager under an edited message (previous, n / count, next) switches between versions.
+- Engine: `chat.edit` takes `messageId` and branches instead of replacing; new `chat.branch`; `conversation.path` events; schema 3 (`conversations.leaf_id`), with older chats linked into a chain on first open.
+- Math in replies with KaTeX: `$...$` and `\(...\)` inline, `$$...$$` and `\[...\]` as blocks. Prices such as "$5 and $10" stay text.
+- The parity page regraded for v0.3.2 (38 percent).
+
 ## 0.3.1 · 2026-10-11
 
 Chat on the Claude API (DEV_PLAN Phase 3, second part).
