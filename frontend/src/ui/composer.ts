@@ -67,7 +67,7 @@ export class Composer {
   }
 
   setContext(text: string, title: string, high: boolean): void {
-    if (this.contextEl.hidden !== !text) this.contextEl.hidden = !text;
+    this.contextEl.classList.toggle('is-empty', !text);
     setText(this.contextEl, text);
     setAttr(this.contextEl, 'title', title);
     this.contextEl.classList.toggle('is-high', high);
@@ -89,7 +89,7 @@ export class Composer {
         </div>
         <div class="ft-bar-notice"></div>
         <div class="ft-bar-right">
-          <span class="ft-context" hidden></span>
+          <span class="ft-context is-empty"></span>
           <button type="button" class="ft-text-btn ft-model" data-menu-anchor aria-label="Model and effort"><span class="ft-model-name"></span><span class="ft-muted ft-model-effort"></span>${ui('chevronDown', 14)}</button>
           <button type="button" class="ft-text-btn ft-mode" data-menu-anchor aria-label="Permission mode"></button>
         </div>
