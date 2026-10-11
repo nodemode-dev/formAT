@@ -1,7 +1,7 @@
 import time
 
 from app.engine import chat, events, store, uploads
-from app.engine.cmd_message import insert, messages_of
+from app.engine.cmd_message import ROOT, deepest, insert, messages_of, set_leaf
 from app.engine.commands import CommandError, command
 
 
@@ -53,32 +53,49 @@ def retry(conversationId: str) -> dict:
         raise CommandError("chat.retry: the chat is empty")
     if msgs[-1]["role"] == "assistant":
         store.run("DELETE FROM messages WHERE id = ?", (msgs[-1]["id"],))
+        set_leaf(conversationId, msgs[-1]["parent_id"])
         events.publish("message.deleted", id=msgs[-1]["id"], conversationId=conversationId)
     reply = chat.start(conversationId)
     return {"conversationId": conversationId, "replyId": reply["id"]}
 
 
-@command("chat.edit", "Edit the last message",
-         {"conversationId": {"type": "string", "required": True}, "text": {"type": "string", "required": True}},
-         description="Replaces the most recent message the person sent (keeping its attachments), removes the reply after it, and asks again.")
-def edit(conversationId: str, text: str) -> dict:
+def _publish_path(conversationId: str) -> list[dict]:
+    msgs = messages_of(conversationId)
+    events.publish("conversation.path", conversationId=conversationId, messages=msgs)
+    return msgs
+
+
+@command("chat.edit", "Edit a message",
+         {"conversationId": {"type": "string", "required": True}, "text": {"type": "string", "required": True},
+          "messageId": {"type": "string", "description": "one of the person's messages on the current path; omit for the most recent"}},
+         description="Adds the edited text as a new version of one of the person's messages (keeping its attachments) and asks again from there. The earlier version and everything after it stay as a branch; chat.branch switches between versions.")
+def edit(conversationId: str, text: str, messageId: str | None = None) -> dict:
     if chat.running(conversationId):
         raise CommandError("A reply is still running in this chat; chat.stop it first", 409)
     if not text.strip():
         raise CommandError("chat.edit: text is empty")
     msgs = messages_of(conversationId)
-    last_user = next((i for i in range(len(msgs) - 1, -1, -1) if msgs[i]["role"] == "user"), None)
-    if last_user is None:
-        raise CommandError("chat.edit: there is no message of yours to edit")
-    old = msgs[last_user]
-    for m in msgs[last_user:]:
-        store.run("DELETE FROM messages WHERE id = ?", (m["id"],))
-        events.publish("message.deleted", id=m["id"], conversationId=conversationId)
+    users = [m for m in msgs if m["role"] == "user"]
+    old = next((m for m in users if m["id"] == messageId), None) if messageId else (users[-1] if users else None)
+    if old is None:
+        raise CommandError("chat.edit: no message of yours with that id on the current path" if messageId else "chat.edit: there is no message of yours to edit", 404 if messageId else 400)
     meta = {k: v for k, v in (old.get("meta") or {}).items() if k in ("attachments", "files")} | {"edited": True}
-    user = insert(conversationId, "user", [{"type": "text", "text": text}], meta)
-    events.publish("message.added", message=user)
+    user = insert(conversationId, "user", [{"type": "text", "text": text}], meta, old["parent_id"] if old["parent_id"] else ROOT)
+    _publish_path(conversationId)
     reply = chat.start(conversationId)
     return {"conversationId": conversationId, "message": user, "replyId": reply["id"]}
+
+
+@command("chat.branch", "Show another version",
+         {"conversationId": {"type": "string", "required": True}, "messageId": {"type": "string", "required": True, "description": "a version from a message's branch ids"}},
+         description="Switches the chat to another version of an edited message and the newest conversation that follows it. Returns the messages on the new path.")
+def branch(conversationId: str, messageId: str) -> dict:
+    if chat.running(conversationId):
+        raise CommandError("A reply is still running in this chat; chat.stop it first", 409)
+    if store.row("SELECT id FROM messages WHERE id = ? AND conversation_id = ?", (messageId, conversationId)) is None:
+        raise CommandError(f"chat.branch: no message {messageId} in this chat", 404)
+    set_leaf(conversationId, deepest(conversationId, messageId))
+    return {"conversationId": conversationId, "messages": _publish_path(conversationId)}
 
 
 @command("chat.wait", "Wait for the reply", {"conversationId": {"type": "string", "required": True}, "timeout": {"type": "number"}}, mutates=False,

@@ -48,8 +48,18 @@ def conn() -> sqlite3.Connection:
             c.executescript(SCHEMA)
             if "meta" not in {r[1] for r in c.execute("PRAGMA table_info(messages)").fetchall()}:
                 c.execute("ALTER TABLE messages ADD COLUMN meta TEXT")
-            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '2')")
-            c.execute("UPDATE meta SET value = '2' WHERE key = 'schema'")
+            if "leaf_id" not in {r[1] for r in c.execute("PRAGMA table_info(conversations)").fetchall()}:
+                c.execute("ALTER TABLE conversations ADD COLUMN leaf_id TEXT")
+                for (cid,) in c.execute("SELECT id FROM conversations").fetchall():
+                    prev = None
+                    for (mid, parent) in c.execute("SELECT id, parent_id FROM messages WHERE conversation_id = ? ORDER BY created", (cid,)).fetchall():
+                        if parent is None and prev is not None:
+                            c.execute("UPDATE messages SET parent_id = ? WHERE id = ?", (prev, mid))
+                        prev = mid
+                    c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
+            c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
+            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '3')")
+            c.execute("UPDATE meta SET value = '3' WHERE key = 'schema'")
             _conn = c
         return _conn
 
