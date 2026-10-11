@@ -24,11 +24,13 @@ def create(title: str | None = None, projectId: str | None = None) -> dict:
 
 
 @command("conversation.list", "Chats", {"query": {"type": "string"}, "limit": {"type": "integer"}}, mutates=False,
-         description="Lists conversations, pinned first, then most recently updated; query filters by title.")
+         description="Lists conversations, pinned first, then most recently updated; query matches the title or the text of any message.")
 def list_(query: str | None = None, limit: int | None = None) -> dict:
     sql, args = "SELECT * FROM conversations", ()
     if query:
-        sql, args = sql + " WHERE title LIKE ?", (f"%{query}%",)
+        like = f"%{query}%"
+        sql += " WHERE title LIKE ? OR id IN (SELECT conversation_id FROM messages WHERE content LIKE ?)"
+        args = (like, like)
     sql += " ORDER BY pinned DESC, updated DESC LIMIT ?"
     items = store.rows(sql, args + (max(1, min(int(limit or 200), 1000)),))
     for c in items:
