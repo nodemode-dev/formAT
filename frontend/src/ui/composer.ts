@@ -7,7 +7,7 @@ import { Dictation } from './dictation';
 
 export interface ComposerHooks {
   send(text: string, files: FileInfo[]): Promise<void>;
-  edit(text: string): Promise<void>;
+  edit(text: string, id: string): Promise<void>;
   stop(): void;
   isRunning(): boolean;
   openCustomize(): void;
@@ -48,9 +48,11 @@ export class Composer {
   private editBar!: HTMLElement;
   private contextEl!: HTMLElement;
   private editing = false;
+  private editId = '';
 
-  startEdit(text: string): void {
+  startEdit(text: string, id: string): void {
     this.editing = true;
+    this.editId = id;
     this.editBar.hidden = false;
     this.input.value = text;
     this.autosize();
@@ -74,7 +76,7 @@ export class Composer {
   constructor(private state: AppState, private hooks: ComposerHooks) {
     this.root = el(`<div class="ft-composer">
       <div class="ft-queue" hidden></div>
-      <div class="ft-editing" hidden><span>Editing your last message; sending replaces it and its reply.</span><button type="button" class="ft-text-btn ft-edit-cancel">Cancel</button></div>
+      <div class="ft-editing" hidden><span>Editing a message; sending adds a new version and keeps the old one.</span><button type="button" class="ft-text-btn ft-edit-cancel">Cancel</button></div>
       <div class="ft-composer-box">
         <div class="ft-attach-row" hidden></div>
         <textarea class="ft-composer-input" rows="1" placeholder="How can Format help?" aria-label="Message"></textarea>
@@ -217,7 +219,7 @@ export class Composer {
       this.editBar.hidden = true;
       this.input.value = '';
       this.autosize();
-      await this.hooks.edit(text);
+      await this.hooks.edit(text, this.editId);
       return;
     }
     this.input.value = '';

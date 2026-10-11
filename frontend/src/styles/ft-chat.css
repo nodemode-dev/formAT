@@ -304,6 +304,9 @@
 .ft-md hr { border: 0; border-top: 1px solid var(--line-1); margin: 1.2em 0; }
 .ft-md code { padding: 1px 5px; border-radius: var(--radius-sm); background: var(--ft-code-fill); color: var(--ft-code-ink); font: 0.88em var(--font-mono); }
 .ft-md table { display: block; max-width: 100%; overflow-x: auto; border-collapse: collapse; font-size: 0.94em; }
+.ft-math { margin: 0 0 0.9em; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.ft-md .katex { font-size: 1.08em; }
+.ft-md .katex-error { color: var(--danger-text); font: 0.88em var(--font-mono); }
 .ft-md th, .ft-md td { padding: 6px 10px; border: 1px solid var(--line-1); text-align: left; }
 .ft-md th { background: var(--surface-1); font-weight: 600; }
 .ft-code { margin: 0 0 0.9em; border: 1px solid var(--line-1); border-radius: var(--radius-lg); background: var(--ft-sidebar-bg); overflow: hidden; }
@@ -337,9 +340,15 @@
 .ft-code .hljs-meta { color: var(--ft-syn-comment); }
 
 .ft-msg.is-user { position: relative; }
-.ft-msg-edit { opacity: 0; justify-self: end; }
+.ft-msg-tools { display: flex; align-items: center; gap: var(--space-1); justify-self: end; min-height: 28px; }
+.ft-msg-edit { opacity: 0; }
 .ft-msg.is-user:hover .ft-msg-edit, .ft-msg-edit:focus-visible { opacity: 1; }
-.ft-msg-edit[hidden] { display: none; }
+.ft-msg-edit:disabled { visibility: hidden; }
+.ft-branch { display: inline-flex; align-items: center; gap: 2px; font: var(--fs-12) var(--font-mono); color: var(--text-muted); font-variant-numeric: tabular-nums; }
+.ft-branch[hidden] { display: none; }
+.ft-branch .ft-icon-btn { width: 24px; height: 24px; }
+.ft-branch .ft-icon-btn:disabled { opacity: 0.35; cursor: default; }
+.ft-branch-count { min-width: 3.5ch; text-align: center; }
 .ft-editing { display: flex; align-items: center; gap: var(--space-2); margin-bottom: var(--space-2); padding: var(--space-1) var(--space-1) var(--space-1) var(--space-3); border: 1px solid var(--accent-line); border-radius: var(--radius-md); background: var(--accent-wash); font-size: var(--fs-12); color: var(--text-secondary); }
 .ft-editing[hidden] { display: none; }
 .ft-editing span { flex: 1; }

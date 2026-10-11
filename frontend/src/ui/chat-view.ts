@@ -19,7 +19,8 @@ interface AssistantView {
 
 export interface ChatHooks {
   retry(): void;
-  edit(text: string): void;
+  edit(text: string, id: string): void;
+  branch(id: string): void;
 }
 
 function greeting(): string {
@@ -84,9 +85,18 @@ export class ChatView {
       n = el(`<article class="ft-msg is-user" data-id="${esc(m.id)}">
         ${files.length ? `<div class="ft-msg-files">${files.map((f) => `<span class="ft-file-chip" title="${esc(f.name)}"><span class="ft-file-chip-name">${esc(f.name)}</span><span class="ft-file-chip-kind">${esc(f.kind.toUpperCase())}</span></span>`).join('')}</div>` : ''}
         <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div>
-        <button type="button" class="ft-icon-btn ft-msg-edit" title="Edit" aria-label="Edit this message" hidden>${ui('pencil', 16)}</button></article>`);
+        <div class="ft-msg-tools"><span class="ft-branch" hidden><button type="button" class="ft-icon-btn ft-branch-prev" title="Previous version" aria-label="Previous version">${ui('chevronLeft', 14)}</button><span class="ft-branch-count"></span><button type="button" class="ft-icon-btn ft-branch-next" title="Next version" aria-label="Next version">${ui('chevronRight', 14)}</button></span>
+        <button type="button" class="ft-icon-btn ft-msg-edit" title="Edit" aria-label="Edit this message">${ui('pencil', 16)}</button></div></article>`);
       q(n, '.ft-msg-body').textContent = text;
-      q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(text));
+      const id = m.id;
+      q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(text, id));
+      const step = (d: number): void => {
+        const b = this.state.messages.find((x) => x.id === id)?.branch;
+        const to = b?.ids[b.index + d];
+        if (to) this.hooks.branch(to);
+      };
+      q(n, '.ft-branch-prev').addEventListener('click', () => step(-1));
+      q(n, '.ft-branch-next').addEventListener('click', () => step(1));
       if (!text) (q(n, '.ft-msg-bubble') as HTMLElement).hidden = true;
     } else {
       n = el(`<article class="ft-msg is-assistant" data-id="${esc(m.id)}"><div class="ft-msg-blocks"></div><div class="ft-msg-status" hidden></div>
@@ -201,13 +211,22 @@ export class ChatView {
       const n = this.node(m);
       if (this.thread.children[i] !== n) this.thread.insertBefore(n, this.thread.children[i] ?? null);
     });
-    const lastUser = [...msgs].reverse().find((m) => m.role === 'user');
     const busy = !!this.state.activeId && this.state.running.has(this.state.activeId);
-    for (const [id, n] of this.nodes) {
-      const btn = n.querySelector<HTMLElement>('.ft-msg-edit');
-      if (!btn) continue;
-      const hide = busy || id !== lastUser?.id;
-      if (btn.hidden !== hide) btn.hidden = hide;
+    for (const m of msgs) {
+      if (m.role !== 'user') continue;
+      const n = this.nodes.get(m.id);
+      const btn = n?.querySelector<HTMLButtonElement>('.ft-msg-edit');
+      if (!n || !btn) continue;
+      if (btn.disabled !== busy) btn.disabled = busy;
+      const pager = q(n, '.ft-branch');
+      const b = m.branch;
+      const showPager = !!b && b.count > 1;
+      if (pager.hidden === showPager) pager.hidden = !showPager;
+      if (!b) continue;
+      setText(q(pager, '.ft-branch-count'), `${b.index + 1} / ${b.count}`);
+      const prev = q(pager, '.ft-branch-prev') as HTMLButtonElement, next = q(pager, '.ft-branch-next') as HTMLButtonElement;
+      if (prev.disabled !== (busy || b.index === 0)) prev.disabled = busy || b.index === 0;
+      if (next.disabled !== (busy || b.index === b.count - 1)) next.disabled = busy || b.index === b.count - 1;
     }
     const empty = msgs.length === 0;
     this.root.classList.toggle('is-empty', empty);

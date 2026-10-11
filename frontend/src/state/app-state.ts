@@ -40,6 +40,7 @@ export interface Message {
   content: ContentBlock[];
   created: number;
   meta: MessageMeta;
+  branch?: { index: number; count: number; ids: string[] };
 }
 
 export interface Model {

@@ -54,9 +54,9 @@ export class App {
     });
     this.composer = new Composer(this.state, {
       send: (t, f) => this.send(t, f),
-      edit: async (t) => {
+      edit: async (t, id) => {
         if (!this.state.activeId) return;
-        try { await run('chat.edit', { conversationId: this.state.activeId, text: t }); } catch (err) { this.composer.showError(err instanceof Error ? err.message : String(err)); }
+        try { await run('chat.edit', { conversationId: this.state.activeId, text: t, messageId: id }); } catch (err) { this.composer.showError(err instanceof Error ? err.message : String(err)); }
       },
       stop: () => { if (this.state.activeId) void run('chat.stop', { conversationId: this.state.activeId }); },
       isRunning: () => !!this.state.activeId && this.state.running.has(this.state.activeId),
@@ -65,7 +65,11 @@ export class App {
     });
     this.chat = new ChatView(this.state, this.composer, {
       retry: () => { if (this.state.activeId) void run('chat.retry', { conversationId: this.state.activeId }); },
-      edit: (t) => this.composer.startEdit(t),
+      edit: (t, id) => this.composer.startEdit(t, id),
+      branch: (id) => {
+        if (!this.state.activeId) return;
+        run('chat.branch', { conversationId: this.state.activeId, messageId: id }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+      },
     });
     this.state.on('messages', () => this.updateContext());
     this.state.on('active', () => this.updateContext());
@@ -223,6 +227,11 @@ export class App {
     } else if (e.type === 'message.deleted') {
       if (e.conversationId === this.state.activeId) {
         this.state.messages = this.state.messages.filter((x) => x.id !== e.id);
+        this.state.emit('messages');
+      }
+    } else if (e.type === 'conversation.path') {
+      if (e.conversationId === this.state.activeId) {
+        this.state.messages = e.messages as Message[];
         this.state.emit('messages');
       }
     } else if (e.type === 'settings.changed') {
