@@ -1,9 +1,9 @@
-import type { AppState, ContentBlock, Message } from '../state/app-state';
+import type { AppState, ArtifactRef, ContentBlock, Message } from '../state/app-state';
 import type { Composer } from './composer';
 import { el, esc, q, setText } from './dom';
 import { ui } from './icons-ft';
 import { StreamRenderer } from './markdown';
-import { type Answer, type Approve, FileCard, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
+import { type Answer, type Approve, ArtifactCard, FileCard, type OpenArtifact, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
 
 interface PartApi {
   set(text: string, done: boolean): void;
@@ -19,6 +19,7 @@ interface AssistantView {
   group: ToolGroup | null;
   cards: Map<string, { card: ToolCard; group: ToolGroup }>;
   files: Map<string, FileCard>;
+  arts: Map<string, ArtifactCard>;
 }
 
 export interface ChatHooks {
@@ -27,6 +28,7 @@ export interface ChatHooks {
   branch(id: string): void;
   approve: Approve;
   answer: Answer;
+  openArtifact: OpenArtifact;
   chatId(): string;
 }
 
@@ -120,7 +122,7 @@ export class ChatView {
           <button type="button" class="ft-icon-btn ft-act-retry" title="Retry" aria-label="Retry reply">${ui('retry', 16)}</button>
           <span class="ft-msg-model"></span>
         </div></article>`);
-      const view: AssistantView = { root: n, blocks: q(n, '.ft-msg-blocks'), parts: [], status: q(n, '.ft-msg-status'), actions: q(n, '.ft-msg-actions'), group: null, cards: new Map(), files: new Map() };
+      const view: AssistantView = { root: n, blocks: q(n, '.ft-msg-blocks'), parts: [], status: q(n, '.ft-msg-status'), actions: q(n, '.ft-msg-actions'), group: null, cards: new Map(), files: new Map(), arts: new Map() };
       this.assistants.set(m.id, view);
       q(n, '.ft-act-copy').addEventListener('click', () => void navigator.clipboard?.writeText(this.plainText(m.id)));
       q(n, '.ft-act-retry').addEventListener('click', () => this.hooks.retry());
@@ -141,6 +143,13 @@ export class ChatView {
       if (s.status !== 'done') view.files.get(id)?.setStatus(s.status);
     }
     for (const [id, a] of Object.entries(m.meta?.answers ?? {})) view.cards.get(id)?.card.setAnswer(a);
+    for (const [id, a] of Object.entries(m.meta?.artifacts ?? {})) view.arts.get(id)?.setArtifact(a);
+  }
+
+  artifactPublished(id: string, toolUseId: string, ref: ArtifactRef): void {
+    const m = this.state.messages.find((x) => x.id === id);
+    if (m) m.meta.artifacts = { ...(m.meta.artifacts ?? {}), [toolUseId]: ref };
+    this.assistants.get(id)?.arts.get(toolUseId)?.setArtifact(ref);
   }
 
   private ensurePart(view: AssistantView, index: number, type: string, block?: ContentBlock): { set(text: string, done: boolean): void } {
@@ -153,6 +162,16 @@ export class ChatView {
       view.group = null;
       view.blocks.appendChild(file.root);
       view.files.set(block.id, file);
+      view.parts[index] = { type, api: NOOP };
+      return NOOP;
+    }
+    if (type === 'tool_use' && block?.name === 'publish_artifact' && block.id) {
+      const known = view.arts.get(block.id);
+      if (known) { known.update(block); return NOOP; }
+      const card = new ArtifactCard(block, this.hooks.openArtifact);
+      view.group = null;
+      view.blocks.appendChild(card.root);
+      view.arts.set(block.id, card);
       view.parts[index] = { type, api: NOOP };
       return NOOP;
     }
@@ -174,6 +193,7 @@ export class ChatView {
       if (block?.tool_use_id) {
         view.cards.get(block.tool_use_id)?.card.setResult(resultView(block));
         view.files.get(block.tool_use_id)?.setResult(resultView(block));
+        view.arts.get(block.tool_use_id)?.setResult(resultView(block));
       }
       view.parts[index] = { type, api: NOOP };
       return NOOP;
@@ -285,6 +305,7 @@ export class ChatView {
     if (m) m.meta.tools = { ...(m.meta.tools ?? {}), [toolUseId]: { status } };
     this.assistants.get(id)?.cards.get(toolUseId)?.card.setStatus(status);
     if (status !== 'done') this.assistants.get(id)?.files.get(toolUseId)?.setStatus(status);
+    this.assistants.get(id)?.arts.get(toolUseId)?.setStatus(status);
   }
 
   toolOutput(id: string, toolUseId: string, text: string): void {

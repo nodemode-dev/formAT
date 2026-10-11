@@ -339,6 +339,14 @@
 .ft-file-card[data-status="error"] .ft-file-card-meta { color: var(--danger-text); }
 .ft-file-card-dl[aria-disabled="true"] { opacity: 0.45; pointer-events: none; }
 .ft-file-card-dl { flex: none; text-decoration: none; }
+.ft-art-card { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 0.9em; padding: var(--space-3); border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--surface-2); max-width: 520px; }
+.ft-art-card-icon { display: inline-flex; color: var(--accent-ink); flex: none; }
+.ft-art-card-text { display: grid; min-width: 0; flex: 1; }
+.ft-art-card-name { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ft-art-card-meta { font-size: var(--fs-12); color: var(--text-muted); min-height: 1.4em; }
+.ft-art-card[data-status="error"] .ft-art-card-meta { color: var(--danger-text); }
+.ft-art-card-open { flex: none; }
+.ft-art-card-open:disabled { opacity: 0.45; cursor: default; }
 .ft-compact-line { display: flex; align-items: center; gap: var(--space-3); font-size: var(--fs-12); color: var(--text-muted); }
 .ft-compact-rule { flex: 1; height: 1px; background: var(--border-soft); }
 .ft-compact-label { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 80%; }

@@ -1,4 +1,4 @@
-import type { ContentBlock } from '../state/app-state';
+import type { ArtifactRef, ContentBlock } from '../state/app-state';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
@@ -62,6 +62,67 @@ export class FileCard {
   setResult(v: ContentBlock): void {
     const m = /\((\d+) bytes\)/.exec(v.text ?? '');
     this.setStatus(v.is_error ? 'error' : 'done', m ? Number(m[1]) : undefined);
+  }
+}
+
+export type OpenArtifact = (id: string, version?: number) => void;
+
+export class ArtifactCard {
+  readonly root: HTMLElement;
+  readonly id: string;
+  private name: HTMLElement;
+  private meta: HTMLElement;
+  private open: HTMLButtonElement;
+  private ref: ArtifactRef | null = null;
+  private title = '';
+  private status = 'input';
+
+  constructor(b: ContentBlock, private onOpen: OpenArtifact) {
+    this.id = b.id ?? '';
+    this.root = el(`<div class="ft-art-card" data-status="input"><span class="ft-art-card-icon">${ui('artifacts', 20)}</span>
+      <div class="ft-art-card-text"><span class="ft-art-card-name"></span><span class="ft-art-card-meta"></span></div>
+      <button type="button" class="ft-btn ft-art-card-open" disabled>Open</button></div>`);
+    this.name = q(this.root, '.ft-art-card-name');
+    this.meta = q(this.root, '.ft-art-card-meta');
+    this.open = q<HTMLButtonElement>(this.root, '.ft-art-card-open');
+    this.open.addEventListener('click', () => { if (this.ref) this.onOpen(this.ref.id, this.ref.version); });
+    this.update(b);
+  }
+
+  update(b: ContentBlock): void {
+    const t = String(b.input?.title ?? '');
+    if (t) this.title = t;
+    if (b.artifact) this.setArtifact(b.artifact);
+    if (b.status) this.setStatus(b.status);
+    else this.paint();
+  }
+
+  setArtifact(ref: ArtifactRef): void {
+    this.ref = ref;
+    if (ref.title) this.title = ref.title;
+    this.setStatus('done');
+  }
+
+  setStatus(status: string): void {
+    if (status !== 'done' || this.ref) this.status = status;
+    this.paint();
+  }
+
+  setResult(v: ContentBlock): void {
+    if (v.is_error) this.setStatus('error');
+  }
+
+  isFor(artifactId: string): boolean {
+    return this.ref?.id === artifactId;
+  }
+
+  private paint(): void {
+    if (this.root.dataset.status !== this.status) this.root.dataset.status = this.status;
+    setText(this.name, this.title || 'Writing a page');
+    const meta = this.status === 'error' ? 'Could not publish this page' : this.ref ? `Version ${this.ref.version} · HTML` : 'Writing the page';
+    setText(this.meta, meta);
+    const off = !this.ref;
+    if (this.open.disabled !== off) this.open.disabled = off;
   }
 }
 

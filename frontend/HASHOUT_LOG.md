@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.4.2
-Last updated: 2026-10-11 · v0.4.2: nested sub-agent steps, sub-agent settings
+Current build version: v0.5.0
+Last updated: 2026-10-11 · v0.5.0: artifact cards, the artifact panel, the Artifacts gallery
 
 ---
 
@@ -34,7 +34,9 @@ frontend/
     │   ├── side-panel.ts          Outputs and Used in this session
     │   ├── terminal-dock.ts       xterm tabs attached to engine PTYs
     │   ├── palette.ts             command palette
-    │   ├── views.ts               Projects, Artifacts, Scheduled, Customize, Settings pages
+    │   ├── tool-cards.ts          tool steps and groups, questions, file and artifact cards
+    │   ├── artifact-panel.ts      the artifact beside the chat: two frames, versions, code, links
+    │   ├── views.ts               Artifacts gallery; Projects, Scheduled, Customize, Settings pages
     │   └── boot-frame.ts          the engine-down fallback
     └── styles/
         ├── tokens.css ... light-mode.css   family sheets, vendored unchanged from formvis v1.66.1
@@ -57,6 +59,7 @@ frontend/
 - [src/ui/composer.ts](#src-ui-composer)
 - [src/ui/terminal-dock.ts](#src-ui-terminal-dock)
 - [src/ui/palette.ts](#src-ui-palette)
+- [src/ui/artifact-panel.ts and the gallery](#src-ui-artifact-panel)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -376,6 +379,38 @@ The result list is re-rendered per keystroke inside the open overlay (not a live
 - logged: v0.3.1 · 2026-10-11
 
 Titles are matched in the window at once from the chats already loaded. From three characters on, `conversation.list` with `query` also asks the engine, which matches message text; chats found only that way join the list in their sidebar order with the hint "in messages". The engine call waits 180 ms after the last keystroke, and a reply that arrives after a newer keystroke is dropped, so results never jump back to an older query.
+
+---
+
+## src/ui/artifact-panel.ts and the gallery {#src-ui-artifact-panel}
+
+### src/ui/artifact-panel.ts · opens on click, not by itself
+- refers-to: src/ui/tool-cards.ts :: ArtifactCard; src/app.ts :: openArtifact, closeArtifact; src/styles/ft-shell.css :: :root[data-ft-artifact="open"] .ft-body
+- kind: rationale
+- logged: v0.5.0 · 2026-10-11
+
+claude.ai opens a new artifact beside the chat on its own. Here that would narrow the chat column and reflow the text while the person is reading it, a layout shift without input, so the reply shows an artifact card (title, Version n, Open) and the panel opens when the card is clicked. Each card opens the version it published; the panel's version picker reaches the others. The panel is a second grid track of `.ft-body` (`--ft-panel-w`, at least `--ft-panel-min-w`), set by `data-ft-artifact` on the root; at 760 px and below it covers the body instead (`--z-companion`). The attribute is set only after the first page has loaded, so the panel never appears empty. It is not remembered across reloads, and it closes when another chat or another view is opened, as on claude.ai.
+
+### src/ui/artifact-panel.ts · two frames
+- refers-to: src/ui/artifact-panel.ts :: load, show, frames, front
+- kind: rationale
+- logged: v0.5.0 · 2026-10-11
+
+Changing an iframe's `src` blanks it until the new page paints. The panel keeps two frames on top of each other; a new version loads into the hidden one, and only its `load` event swaps visibility, after which the old frame is emptied. The header (title, picker, links) is painted after the swap too, so it always describes the page on screen. When the open artifact gets a new version (`artifact.changed`) and the person was on the latest, the panel follows to the new one the same way; on an older version it stays and only the picker gains the new entry.
+
+### src/ui/artifact-panel.ts · sandbox
+- refers-to: src/ui/artifact-panel.ts :: SANDBOX; backend app/routers/files.py :: artifact_csp
+- kind: warning-context
+- logged: v0.5.0 · 2026-10-11
+
+The frames carry `sandbox="allow-scripts allow-popups allow-modals allow-downloads"` and never `allow-same-origin`: with both scripts and same-origin a page could reach `/api/commands` and remove its own sandbox. The engine's CSP sandboxes the page again for Pop out, where there is no frame. The canvas behind a page is `--ft-artifact-canvas` (white) because a page without its own background expects one, the way a browser tab shows it. Code view highlights with highlight.js as XML up to 300 KB and shows plain text above that.
+
+### src/ui/views.ts · ArtifactsView
+- refers-to: src/ui/views.ts :: ArtifactsView; src/app.ts :: openFromGallery
+- kind: explainer
+- logged: v0.5.0 · 2026-10-11
+
+The Artifacts page lists every artifact, newest first, with its chat, version count and last change (time today, date before). It is loaded at start and refreshed on `artifact.changed`, `artifact.deleted`, a deleted chat and each visit, and replaced only when its markup changes. A row opens its chat and then the panel on the latest version; its menu also goes to the chat or deletes the artifact.
 
 ---
 

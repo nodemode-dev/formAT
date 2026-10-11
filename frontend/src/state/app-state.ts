@@ -22,6 +22,21 @@ export interface ContentBlock {
   results?: Array<{ title?: string; url?: string; page_age?: string | null }>;
   url?: string;
   title?: string;
+  artifact?: ArtifactRef;
+}
+
+export interface ArtifactRef { id: string; version: number; title: string }
+
+export interface ArtifactSummary {
+  id: string;
+  conversationId: string;
+  title: string;
+  kind: string;
+  created: number;
+  updated: number;
+  versions: number;
+  latest: number;
+  chatTitle?: string;
 }
 
 export interface FileInfo {
@@ -45,6 +60,7 @@ export interface MessageMeta {
   tools?: Record<string, { status: string }>;
   answers?: Record<string, string[]>;
   agents?: Record<string, { model: string; title?: string; blocks: ContentBlock[] }>;
+  artifacts?: Record<string, ArtifactRef>;
 }
 
 export interface Message {
@@ -94,6 +110,7 @@ export interface Settings {
   toolAllow?: string[];
   agentLimit?: number;
   agentModel?: string;
+  artifactNetwork?: boolean;
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';

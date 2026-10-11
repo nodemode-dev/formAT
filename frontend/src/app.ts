@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ContentBlock, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -11,7 +11,8 @@ import { type OutputFile, SidePanel, type Used } from './ui/side-panel';
 import type { TaskItem } from './ui/tool-cards';
 import { Sidebar } from './ui/sidebar';
 import { TerminalDock } from './ui/terminal-dock';
-import { pageView, SettingsView, type InfoLike } from './ui/views';
+import { ArtifactPanel } from './ui/artifact-panel';
+import { ArtifactsView, pageView, SettingsView, type InfoLike } from './ui/views';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -25,6 +26,8 @@ export class App {
   private dock: TerminalDock;
   private palette: Palette;
   private panel: SidePanel;
+  private artifact: ArtifactPanel;
+  private gallery: ArtifactsView;
   private outputsSeq = 0;
   private settingsView: SettingsView;
   private pages = new Map<View, HTMLElement>();
@@ -79,7 +82,13 @@ export class App {
       answer: (toolUseId, answer) => {
         run('tool.answer', { toolUseId, answer }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
       },
+      openArtifact: (id, version) => this.openArtifact(id, version),
       chatId: () => this.state.activeId ?? '',
+    });
+    this.artifact = new ArtifactPanel(() => this.closeArtifact());
+    this.gallery = new ArtifactsView((a) => void this.openFromGallery(a), (id) => void this.openChat(id));
+    this.state.on('active', () => {
+      if (this.artifact.conversationId && this.artifact.conversationId !== this.state.activeId) this.closeArtifact();
     });
     this.state.on('messages', () => this.updateContext());
     this.state.on('active', () => this.updateContext());
@@ -93,6 +102,7 @@ export class App {
       { label: 'New chat', icon: 'plus', hint: `${modKey}⇧O`, run: () => this.newChat() },
       { label: 'Toggle sidebar', icon: 'sidebar', hint: `${modKey}B`, run: () => this.toggle('sidebar') },
       { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
+      { label: 'Artifacts', icon: 'artifacts', run: () => this.setView('artifacts') },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
       { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
       { label: 'Summarize earlier messages', icon: 'compress', run: () => this.compactNow() },
@@ -105,13 +115,16 @@ export class App {
     this.shell.insertBefore(this.sidebar.root, this.shell.firstChild);
     const center = q(this.shell, '.ft-center');
     center.appendChild(this.chat.root);
-    (['projects', 'artifacts', 'scheduled', 'customize'] as const).forEach((v) => {
+    (['projects', 'scheduled', 'customize'] as const).forEach((v) => {
       const p = pageView(v);
       this.pages.set(v, p);
       center.appendChild(p);
     });
+    this.pages.set('artifacts', this.gallery.root);
+    center.appendChild(this.gallery.root);
     this.pages.set('settings', this.settingsView.root);
     center.appendChild(this.settingsView.root);
+    q(this.shell, '.ft-body').appendChild(this.artifact.root);
     q(this.shell, '.ft-body').appendChild(panel.root);
     q(this.shell, '.ft-main').appendChild(this.dock.root);
     host.appendChild(this.shell);
@@ -146,6 +159,7 @@ export class App {
     this.sidebar.setAccount(account);
     this.settingsView.fill(info, voice.engines);
     await this.loadModels();
+    void this.gallery.refresh();
     this.state.emit('conversations');
     this.state.emit('account');
     this.state.emit('keys');
@@ -229,6 +243,7 @@ export class App {
     } else if (e.type === 'conversation.deleted') {
       this.state.conversations.delete(e.id as string);
       if (this.state.activeId === e.id) this.newChat();
+      void this.gallery.refresh();
       this.state.emit('conversations');
     } else if (e.type === 'message.added') {
       const m = e.message as Message;
@@ -245,6 +260,14 @@ export class App {
       if (e.conversationId === this.state.activeId) this.chat.toolStatus(e.id as string, e.toolUseId as string, e.status as string);
     } else if (e.type === 'tool.output') {
       if (e.conversationId === this.state.activeId) this.chat.toolOutput(e.id as string, e.toolUseId as string, e.text as string);
+    } else if (e.type === 'message.artifact') {
+      if (e.conversationId === this.state.activeId) this.chat.artifactPublished(e.id as string, e.toolUseId as string, e.artifact as ArtifactRef);
+    } else if (e.type === 'artifact.changed') {
+      this.artifact.changed(e.artifact as ArtifactSummary, e.version as number);
+      void this.gallery.refresh();
+    } else if (e.type === 'artifact.deleted') {
+      if (this.artifact.artifactId === e.id) this.closeArtifact();
+      void this.gallery.refresh();
     } else if (e.type === 'tasks.changed') {
       if (e.conversationId === this.state.activeId) this.panel.setTasks(e.tasks as TaskItem[]);
     } else if (e.type === 'outputs.changed') {
@@ -318,8 +341,29 @@ export class App {
     setAttr(q(this.shell, '.ft-term-toggle'), 'aria-pressed', String(this.layout('term') === 'open'));
   }
 
+  private openArtifact(id: string, version?: number): void {
+    void this.artifact.show(id, version).then((ok) => {
+      const html = document.documentElement;
+      if (ok && html.dataset.ftArtifact !== 'open') html.dataset.ftArtifact = 'open';
+    }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+  }
+
+  private closeArtifact(): void {
+    const html = document.documentElement;
+    if (html.dataset.ftArtifact === 'open') delete html.dataset.ftArtifact;
+    this.artifact.reset();
+  }
+
+  private async openFromGallery(a: ArtifactSummary): Promise<void> {
+    if (this.state.activeId !== a.conversationId) await this.openChat(a.conversationId);
+    else this.setView('chat');
+    this.openArtifact(a.id);
+  }
+
   setView(view: View): void {
     closeMenus();
+    if (view !== 'chat' && this.artifact.artifactId) this.closeArtifact();
+    if (view === 'artifacts') void this.gallery.refresh();
     this.state.view = view;
     this.chat.root.hidden = view !== 'chat';
     for (const [v, p] of this.pages) if (p.hidden === (v === view)) p.hidden = v !== view;

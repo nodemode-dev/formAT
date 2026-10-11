@@ -16,6 +16,7 @@
   --ft-code-fill: var(--surface-2);
   --ft-dock-h: 280px;
   --ft-outputs-w: 304px;
+  --ft-artifact-canvas: var(--cta-bg);
   --ft-syn-keyword: var(--handle-mask);
   --ft-syn-string: var(--ok-soft);
   --ft-syn-number: var(--warn);

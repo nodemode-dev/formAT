@@ -1,16 +1,78 @@
 import { run } from '../engine-client/api';
-import type { AppState, KeyStatus, View } from '../state/app-state';
+import type { AppState, ArtifactSummary, KeyStatus, View } from '../state/app-state';
 import { el, esc, modKey, q, setText } from './dom';
 import { ui, type UiIcon } from './icons-ft';
+import { openMenu } from './menu';
 
-const PAGES: Record<Exclude<View, 'chat' | 'settings'>, [string, UiIcon, string]> = {
+const PAGES: Record<Exclude<View, 'chat' | 'settings' | 'artifacts'>, [string, UiIcon, string]> = {
   projects: ['Projects', 'projects', 'Projects keep instructions, knowledge files and their chats together. They arrive in v0.6.0.'],
-  artifacts: ['Artifacts', 'artifacts', 'Pages, documents and files Claude makes, with versions, collected from every chat. They arrive in v0.5.0.'],
   scheduled: ['Scheduled', 'clock', 'Tasks that run on a schedule, with their history. They arrive in v0.7.0.'],
   customize: ['Customize', 'customize', 'Skills, connectors (MCP servers) and providers, each with its own page. They arrive in v0.6.0.'],
 };
 
-export function pageView(view: Exclude<View, 'chat' | 'settings'>): HTMLElement {
+function when(ts: number): string {
+  const d = new Date(ts * 1000);
+  const today = new Date();
+  return d.toDateString() === today.toDateString() ? d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+    : d.toLocaleDateString([], { month: 'short', day: 'numeric', year: d.getFullYear() === today.getFullYear() ? undefined : 'numeric' });
+}
+
+export class ArtifactsView {
+  readonly root: HTMLElement;
+  private list: HTMLElement;
+  private empty: HTMLElement;
+  private items: ArtifactSummary[] = [];
+  private seq = 0;
+
+  constructor(private open: (a: ArtifactSummary) => void, private openChat: (id: string) => void) {
+    this.root = el(`<section class="ft-page" data-view="artifacts" hidden>
+      <header class="ft-page-head"><h1>Artifacts</h1></header>
+      <div class="ft-gallery" role="list" hidden></div>
+      <div class="ft-page-empty" hidden>${ui('artifacts', 28)}<p>Pages, apps and tools Claude publishes in your chats collect here, with every version.</p></div>
+    </section>`);
+    this.list = q(this.root, '.ft-gallery');
+    this.empty = q(this.root, '.ft-page-empty');
+    this.list.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const row = t.closest<HTMLElement>('[data-id]');
+      const a = this.items.find((x) => x.id === row?.dataset.id);
+      if (!row || !a) return;
+      if (t.closest('.ft-gallery-more')) { this.menu(t.closest('.ft-gallery-more') as HTMLElement, a); return; }
+      this.open(a);
+    });
+    this.list.addEventListener('keydown', (e) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('.ft-gallery-item');
+      const a = this.items.find((x) => x.id === row?.dataset.id);
+      if (a && (e.key === 'Enter' || e.key === ' ') && e.target === row) { e.preventDefault(); this.open(a); }
+    });
+  }
+
+  private menu(anchor: HTMLElement, a: ArtifactSummary): void {
+    openMenu(anchor, [
+      { label: 'Open', icon: 'artifacts', action: () => this.open(a) },
+      { label: 'Go to the chat', icon: 'chat', action: () => this.openChat(a.conversationId) },
+      { divider: true },
+      { label: 'Delete', icon: 'trash', action: () => void run('artifact.delete', { id: a.id }).catch(() => undefined) },
+    ], 'down');
+  }
+
+  async refresh(): Promise<void> {
+    const seq = ++this.seq;
+    let got: ArtifactSummary[];
+    try { got = (await run<{ artifacts: ArtifactSummary[] }>('artifact.list')).artifacts; } catch { return; }
+    if (seq !== this.seq) return;
+    this.items = got;
+    const html = got.map((a) => `<div class="ft-gallery-item" role="listitem" tabindex="0" data-id="${esc(a.id)}"><span class="ft-gallery-icon">${ui('artifacts', 18)}</span>
+      <span class="ft-gallery-text"><span class="ft-gallery-name">${esc(a.title)}</span><span class="ft-gallery-meta">${esc([a.chatTitle || 'Untitled chat', `${a.versions} version${a.versions === 1 ? '' : 's'}`, when(a.updated)].join(' · '))}</span></span>
+      <button type="button" class="ft-icon-btn ft-gallery-more" aria-label="More for ${esc(a.title)}" title="More">${ui('more', 16)}</button></div>`).join('');
+    if (this.list.dataset.v !== html) { this.list.dataset.v = html; this.list.innerHTML = html; }
+    const any = got.length > 0;
+    if (this.list.hidden === any) this.list.hidden = !any;
+    if (this.empty.hidden !== any) this.empty.hidden = any;
+  }
+}
+
+export function pageView(view: Exclude<View, 'chat' | 'settings' | 'artifacts'>): HTMLElement {
   const [title, ic, body] = PAGES[view];
   return el(`<section class="ft-page" data-view="${view}" hidden>
     <header class="ft-page-head"><h1>${esc(title)}</h1></header>
@@ -55,11 +117,12 @@ export class SettingsView {
       </section>
       <section class="ft-set-section" id="ft-set-tools" aria-labelledby="ft-set-tools-h">
         <h2 id="ft-set-tools-h">${ui('terminal', 16)}<span>Tools</span></h2>
-        <p class="ft-set-note">Workspace tools let Claude run commands and read and change files in the chat's own folder on this computer; commands and file changes ask first in Ask mode, never run in Plan mode, and run without asking in Auto mode. Web search is billed by Anthropic per search.</p>
+        <p class="ft-set-note">Workspace tools let Claude run commands and read and change files in the chat's own folder on this computer; commands and file changes ask first in Ask mode, never run in Plan mode, and run without asking in Auto mode. Web search is billed by Anthropic per search. Artifacts run sealed off from Format and your files; they load scripts and fonts from the common CDNs, and nothing else from the internet unless you allow it.</p>
         <div class="ft-field-row">
           <label class="ft-field ft-check"><input type="checkbox" data-t="workspaceTools"><span>Workspace tools (bash, files)</span></label>
           <label class="ft-field ft-check"><input type="checkbox" data-t="webTools"><span>Web search and fetch</span></label>
         </div>
+        <label class="ft-field ft-check"><input type="checkbox" data-t="artifactNetwork"><span>Artifacts can load images and data from the internet</span></label>
         <div class="ft-allowed"><span class="ft-allowed-label">Always allowed:</span><span class="ft-allowed-list"></span></div>
         <div class="ft-field-row">
           <label class="ft-field"><span>Sub-agents in one reply</span><select class="ft-input" data-a2="agentLimit"><option value="0">Off</option><option value="2">Up to 2</option><option value="4">Up to 4</option><option value="6">Up to 6</option><option value="10">Up to 10</option></select></label>
