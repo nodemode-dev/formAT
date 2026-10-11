@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.0 · 2026-10-11
+
+Chat on the Claude API (DEV_PLAN Phase 3, first part).
+
+- The harness: Format's system prompt with the person's name and preferences, every turn as content blocks (thinking passed back with its signature), attachments by kind (images, PDFs, text and code, zips unpacked into the workspace), effort clamped to the model, adaptive thinking with summaries, max tokens by effort, automatic prompt caching.
+- Streaming replies rendered as Markdown block by block (headings, lists, tables, code with copy, links), thinking summaries, stop, retry, copy, and a queue above the composer.
+- Models and their effort levels from `/v1/models`; a built-in list when no key works.
+- Uploads (`POST /api/uploads`) with cards in the composer and chips on the message.
+- Settings: account (name, response preferences, send key, dictation language) and API keys saved in Format or read from `backend/.env`.
+- Dictation: browser speech recognition, or recording plus engine transcription (local faster-whisper or OpenAI).
+- Outputs is a floating card; the terminal dock has Hide.
+- Engine commands: `chat.send`, `chat.stop`, `chat.retry`, `chat.wait`, `keys.status`, `keys.set`, `keys.clear`, `account.get`, `account.set`; `models.list` now reads the API.
+
 ## 0.2.1 · 2026-10-11
 
 - Narrow windows (760 px and below): the open sidebar is a drawer over the page, the side panel takes the full width, and the main area keeps its column.

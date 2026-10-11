@@ -2,7 +2,7 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.2.1
+Current build version: v0.3.0
 Last updated: 2026-10-11 · real terminals, messages, models and chat settings
 
 ---
