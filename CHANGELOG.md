@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 · 2026-10-11
+
+The shell (DEV_PLAN Phase 2).
+
+- Sidebar with New chat, Projects, Artifacts, Scheduled, Customize and More, Pinned and day-grouped recents (rename, pin, delete in place), folding to a mini rail with Mod+B and remembered across reloads.
+- Chat view: the greeting and a centred composer when empty, the composer docked under the thread in a conversation, scroll-to-bottom.
+- Composer: + menu (files, Skills, Connectors, Research), model menu with Effort (Low to Max), Extended thinking and More models, permission mode (Ask, Auto, Plan), attachment cards. Sent messages are stored; replies arrive in v0.3.0.
+- Outputs side panel and a terminal dock with tabs running real login shells (xterm 6 over engine PTYs), both collapsible.
+- Command palette (Mod+K) and Projects, Artifacts, Scheduled, Customize and Settings pages.
+- Engine: `terminal.open`, `list`, `write`, `read`, `resize`, `close`; `message.add`; `models.list`; `settings.get` and `settings.set`.
+
 ## 0.1.0 · 2026-10-11
 
 The scaffold (DEV_PLAN Phase 1).
