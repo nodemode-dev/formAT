@@ -8,6 +8,7 @@ For people changing Format. People using it want the manual in [`docs/`](../../d
 | [Engine](Engine.md) | commands, events, the store, the tool loop, the harness, the optional parts |
 | [Window](Window.md) | the shell, views and panes, the zero-flash rules, styles and tokens |
 | [Agents and skills](Agents.md) | the MCP server, the agent guide, the two skills, `./format agents` |
+| [Desktop](Desktop.md) | the Tauri shell, the frozen engine sidecar, building for macOS, Windows and Linux |
 | [Checks](Checks.md) | how a change is verified before release |
 | [Releasing](Releasing.md) | versions, commits, tags, the hand-back |
 

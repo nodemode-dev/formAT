@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.11.0 · 2026-10-12
+
+The desktop app.
+
+- Format is a desktop app for macOS (Apple silicon and Intel), Windows and Linux, built on Tauri 2 the way formlit and formvis are: a splash while the engine starts, then the Format window. Python, the engine, the window, the built-in browser's package and local dictation are inside the app. Data lives in the platform's app-data folder; the engine's log is in the app's log folder.
+- In the app, links to other sites and Open link open in your default browser, downloads and exports go to your Downloads folder with a short "Saved" notice, the microphone asks once, and on macOS your login shell's PATH is used so Homebrew tools and `npx` are found.
+- The Browser pane offers Install the browser when Chromium is missing (the desktop app's first run), and the page is now drawn at the pane's own size, sharp on high-density screens, instead of a shrunken 1280 px page.
+- Artifact pages and HTML previews without a background of their own now show on white in Safari's engine (the desktop app on macOS and Linux) as they already did in Chrome; they showed dark text on the dark panel.
+- `./format install-desktop`, `./format freeze`, `./format desktop dev|build` (and the `.bat` forms on Windows). A GitHub workflow builds all four platforms on a `v*.*.*` tag and drafts a release; unsigned macOS builds are signed ad hoc.
+- Engine: `browser.install`; `browser.act` `resize`; `browser.status` reports `installed` and `installing`; `files.save_download`; `app.info` `desktop`; `FORMAT_DESKTOP`, `FORMAT_DIST`. 95 commands.
+
 ## 0.10.5 · 2026-10-12
 
 Dictation on stronger speech models.

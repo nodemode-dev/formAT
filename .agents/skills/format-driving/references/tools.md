@@ -183,6 +183,12 @@ The text of one file in the chat's folder, up to 1 MB (longer files are cut and 
 
 - read-only · command `files.read` · params: `conversationId` string, `path` string
 
+### save_download
+
+Saves one of the engine's own downloads (an artifact page, an export, a chat file, Download all) into the person's Downloads folder under the server's file name, numbered if taken, and returns where. The desktop app's window uses it for every download. Use to put an artifact page, an export or a chat's file into the person's Downloads folder.
+
+- changes state · command `files.save_download` · params: `url` string, `reveal?` boolean
+
 ### list_outputs
 
 Files Claude sent in this chat (send_file) with their download paths, and what was used in the session: uploads, web searches and fetches, commands, files changed. Use to get the files Claude handed over in a chat and their download paths.
@@ -483,15 +489,21 @@ Version, ports, data folder, which provider keys are set and how many commands t
 
 ### act_in_browser
 
-One action in the built-in browser, the same actions Claude's browser tool has plus click_at and keys for the Browser pane; returns the page snapshot. Use to click, type, scroll or go back in Format's built-in browser, with a ref from the latest snapshot.
+One action in the built-in browser, the same actions Claude's browser tool has plus click_at, keys and resize for the Browser pane; returns the page snapshot. Use to click, type, scroll or go back in Format's built-in browser, with a ref from the latest snapshot.
 
-- changes state · command `browser.act` · params: `action` string, `url?` string, `ref?` integer, `text?` string, `submit?` boolean, `key?` string, `direction?` string, `x?` number, `y?` number
+- changes state · command `browser.act` · params: `action` string, `url?` string, `ref?` integer, `text?` string, `submit?` boolean, `key?` string, `direction?` string, `x?` number, `y?` number, `width?` integer, `height?` integer
 
 ### close_browser
 
 Closes the built-in browser; its sign-ins stay for next time. Use when the built-in browser is no longer needed.
 
 - changes state · command `browser.close` · params: none
+
+### install_browser
+
+Downloads the Chromium the built-in browser runs on (about 150 MB, once) in the background; browser.status reports installing and then installed. Needs the Playwright package, which the desktop app bundles. Use when the built-in browser reports that Chromium is not installed yet.
+
+- changes state · command `browser.install` · params: none
 
 ### open_in_browser
 

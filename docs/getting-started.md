@@ -7,6 +7,10 @@
 - An Anthropic API key from console.anthropic.com. Format sends your messages to the Claude API with that key; usage is billed to your Anthropic account.
 - Optional: ffmpeg on the PATH (video and audio previews), Rust stable (the native renderer).
 
+## The desktop app, or from source
+
+The quickest way in is the desktop app for macOS, Windows or Linux: install it and open it, nothing else needed. See [The desktop app](desktop-app.md). The rest of this page runs Format from the repository.
+
 ## Install and start
 
 ```bash
