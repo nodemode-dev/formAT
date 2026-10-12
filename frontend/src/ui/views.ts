@@ -146,6 +146,7 @@ export class SettingsView {
           <div><dt>Data folder</dt><dd data-k="dataDir">checking</dd></div>
           <div><dt>Engine commands</dt><dd data-k="commands">checking</dd></div>
           <div><dt>Dictation</dt><dd data-k="voice">checking</dd></div>
+          <div><dt>Native renderer</dt><dd data-k="native">checking</dd></div>
         </dl>
       </section>
     </section>`);
@@ -294,6 +295,9 @@ export class SettingsView {
     set('version', `v${info.version}`);
     set('dataDir', info.dataDir);
     set('commands', String(info.commands));
-    if (voice) set('voice', `browser speech recognition where available; fallback: ${voice.local ? 'local Whisper' : voice.openai ? 'OpenAI transcription' : 'none (./format install-voice, or an OpenAI key)'}`);
+    void run<{ enabled: boolean; built: boolean; adapter?: string; backend?: string; error?: string }>('native.status').then((n) => {
+      set('native', !n.built ? 'not built (optional: ./format native build)' : !n.enabled ? 'built, off (start Format with FORMAT_NATIVE=1)' : n.adapter ? `on: ${n.adapter}, ${n.backend}` : `on, but ${n.error ?? 'no GPU adapter'}`);
+    }).catch(() => set('native', 'unknown'));
+    if (voice) set('voice',`browser speech recognition where available; fallback: ${voice.local ? 'local Whisper' : voice.openai ? 'OpenAI transcription' : 'none (./format install-voice, or an OpenAI key)'}`);
   }
 }

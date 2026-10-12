@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.7.1
-Last updated: 2026-10-12 · v0.7.1: the Scheduled page, Background, the Claude terminal tab, steadier sidebar and artifact header
+Current build version: v0.8.0
+Last updated: 2026-10-12 · v0.8.0: Native renderer in About, the files pane's back slot, the artifact header rule scoped
 
 ---
 
@@ -550,7 +550,23 @@ The engine's read-only agent terminal is adopted as a tab when `terminal.opened`
 - kind: warning-context
 - logged: v0.7.1 · 2026-10-12
 
-The title now takes the free space (`flex: 1 1 0`) and the spacer is a fixed gap, so when the version picker appears with a second version it takes room from the title and the Preview and Code tabs stay put. Before, the picker pushed the tabs right (0.0006, the intermittent shift noted in v0.7.0's verify_050).
+The title now takes the free space (`flex: 1 1 0`) and the spacer is a fixed gap (v0.8.0: scoped to `.ft-art > .ft-art-head`, because the files pane borrows the same header classes and its title moved with the general rule), so when the version picker appears with a second version it takes room from the title and the Preview and Code tabs stay put. Before, the picker pushed the tabs right (0.0006, the intermittent shift noted in v0.7.0's verify_050).
+
+---
+
+### src/styles/ft-shell.css · the files pane's back slot
+- refers-to: src/styles/ft-shell.css :: .ft-files-back[hidden]; src/ui/files-pane.ts :: toggle
+- kind: warning-context
+- logged: v0.8.0 · 2026-10-12
+
+A preview swaps in only after its file has loaded (no blank frame), so the back button appeared then, after the click's grace window, and pushed the title right by its width (a shift of up to 0.0001 in verify_051 once shift sources were recorded). The button now keeps its slot while hidden (`visibility: hidden` instead of `display: none`), so the title sits in the same place in the list and in a preview.
+
+### src/ui/views.ts · Native renderer in About
+- refers-to: src/ui/views.ts :: SettingsView.fill
+- kind: explainer
+- logged: v0.8.0 · 2026-10-12
+
+About gains one fact, filled once from `native.status` at start: not built, built and off, on with the adapter and backend, or on with the probe's error. The terminal in the window is unchanged; the native renderer serves `terminal.snapshot` and the desktop shell to come.
 
 ---
 
