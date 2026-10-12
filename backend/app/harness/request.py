@@ -91,7 +91,7 @@ def api_messages(history: list[dict], model: dict, accepts, provider=None) -> li
         if m["role"] == "assistant":
             segment: list[dict] = []
             results: list[dict] = []
-            for b in m["content"]:
+            for b in m["content"] if (m.get("meta") or {}).get("via") != "claude-code" else [x for x in m["content"] if x.get("type") == "text"]:
                 if b.get("type") == "tool_result":
                     results.append({k: b[k] for k in ("type", "tool_use_id", "content", "is_error") if k in b})
                     continue

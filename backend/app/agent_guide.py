@@ -15,6 +15,7 @@ GUIDE: dict[str, tuple[str, str]] = {
     "devices.start": ("open_to_devices", "Use when the person wants to continue on their phone or another computer, or to share links beyond this computer."),
     "devices.stop": ("close_to_devices", "Use when the person wants Format reachable from this computer only."),
     "devices.forget": ("forget_devices", "Use when the person wants every paired device to pair again."),
+    "claudecode.status": ("get_claude_code_status", "Use when chats run without an API key, to see whether Claude Code is installed and whether it or the API key answers."),
     "browser.status": ("get_browser_status", "Use to see whether Format's built-in browser is installed and open, and which page it shows."),
     "browser.open": ("open_in_browser", "Use to open a page in Format's built-in browser, which the person watches in its Browser pane; returns the page as text with numbered elements."),
     "browser.act": ("act_in_browser", "Use to click, type, scroll or go back in Format's built-in browser, with a ref from the latest snapshot."),

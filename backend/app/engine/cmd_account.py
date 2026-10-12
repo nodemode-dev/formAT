@@ -40,7 +40,10 @@ def set_(displayName: str | None = None, preferences: str | None = None, sendKey
 
 
 def _status() -> dict:
-    return {name: {"set": bool(secrets.api_key(name)), "source": secrets.source(name), "hint": secrets.hint(name)} for name in secrets.PROVIDERS}
+    from app.engine import claude_code
+    cc = claude_code.info()
+    keys = {name: {"set": bool(secrets.api_key(name)), "source": secrets.source(name), "hint": secrets.hint(name)} for name in secrets.PROVIDERS}
+    return keys | {"claude-code": {"set": cc["installed"], "source": cc["path"], "hint": cc["version"]}}
 
 
 @command("keys.status", "API keys", mutates=False,

@@ -517,6 +517,12 @@ Whether the built-in browser is installed and open, and its current page (url, t
 
 - read-only · command `browser.status` · params: none
 
+### get_claude_code_status
+
+Whether the Claude Code CLI is installed (its path and version) and which engine answers chats now: api (the Anthropic API key) or claude-code (the person's own Claude Code sign-in). Use when chats run without an API key, to see whether Claude Code is installed and whether it or the API key answers.
+
+- read-only · command `claudecode.status` · params: none
+
 ### forget_devices
 
 Changes the pairing code, so every paired device has to pair again. Use when the person wants every paired device to pair again.
@@ -609,7 +615,7 @@ The chat settings: model, effort, thinking, permission mode, autoCompact and com
 
 ### set_setting
 
-Sets one chat setting: model takes a model id from models.list, effort one of low, medium, high, xhigh, max, permissionMode ask, auto or plan, thinking (show Claude's thinking) true or false, autoCompact (summarize long chats) true or false, compactAt the share of the context window that triggers it, 0.05 to 0.95, webTools (web search and fetch) and workspaceTools (bash and files in the chat's folder) true or false, toolAllow and toolDeny lists of bash, write, edit, agentModel the sub-agents' model id (empty for the chat's model), agentLimit the most sub-agents in one reply, 0 to 10, artifactNetwork (let artifact pages load images and data from the internet) true or false, memory (Claude keeps notes across chats with the memory tool) true or false, outsideAgents (coding agents using Format over MCP) ask, allowed or blocked, sandbox (Claude's bash runs sandboxed: only the chat's folder writable, the home folder hidden) true or false, sandboxNetwork (let sandboxed commands reach the network) true or false, browserTools (Claude can use the built-in browser) true or false. Use when the person asks for another model, effort, permission mode or tool setting; it applies to all chats.
+Sets one chat setting: model takes a model id from models.list, effort one of low, medium, high, xhigh, max, permissionMode ask, auto or plan, thinking (show Claude's thinking) true or false, autoCompact (summarize long chats) true or false, compactAt the share of the context window that triggers it, 0.05 to 0.95, webTools (web search and fetch) and workspaceTools (bash and files in the chat's folder) true or false, toolAllow and toolDeny lists of bash, write, edit, agentModel the sub-agents' model id (empty for the chat's model), agentLimit the most sub-agents in one reply, 0 to 10, artifactNetwork (let artifact pages load images and data from the internet) true or false, memory (Claude keeps notes across chats with the memory tool) true or false, outsideAgents (coding agents using Format over MCP) ask, allowed or blocked, sandbox (Claude's bash runs sandboxed: only the chat's folder writable, the home folder hidden) true or false, sandboxNetwork (let sandboxed commands reach the network) true or false, browserTools (Claude can use the built-in browser) true or false, chatEngine (who answers: auto uses the API key when set and otherwise the person's Claude Code sign-in, api, or claude-code) auto, api or claude-code. Use when the person asks for another model, effort, permission mode or tool setting; it applies to all chats.
 
 - changes state · command `settings.set` · params: `key` string, `value` any
 

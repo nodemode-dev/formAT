@@ -43,7 +43,7 @@ class AnthropicProvider(Provider):
     def _client(self) -> anthropic.Anthropic:
         key = secrets.api_key("anthropic")
         if not key:
-            raise ProviderError("No Anthropic API key: add one in Settings > API keys, or set ANTHROPIC_API_KEY in backend/.env", 401)
+            raise ProviderError("No Anthropic API key: add one in Settings > API keys, or install Claude Code and sign in once with `claude` to chat through your Claude plan", 401)
         return anthropic.Anthropic(api_key=key, max_retries=2)
 
     def configured(self) -> bool:

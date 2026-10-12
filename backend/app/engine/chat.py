@@ -4,7 +4,7 @@ import threading
 import time
 
 from app import providers
-from app.engine import events, projects, terminal, tools
+from app.engine import claude_code, events, projects, terminal, tools
 from app.engine.cmd_account import account
 from app.engine.cmd_message import insert, messages_of, update
 from app.engine.cmd_settings import current, find_model
@@ -46,9 +46,14 @@ def start(conversation_id: str) -> dict:
         settings = settings | {"research": True, "webTools": True, "effort": "high"}
     if asked.get("output") in ("doc", "sheet", "deck"):
         settings = settings | {"output": asked["output"], "workspaceTools": True}
-    placeholder = insert(conversation_id, "assistant", [], {"model": model["id"], "status": "streaming"} | ({"research": True} if research else {}))
+    try:
+        via = claude_code.route(settings)
+    except providers.ProviderError as exc:
+        RUNS.pop(conversation_id, None)
+        raise RuntimeError(str(exc)) from None
+    placeholder = insert(conversation_id, "assistant", [], {"model": model["id"], "status": "streaming"} | ({"research": True} if research else {}) | ({"via": via} if via != "api" else {}))
     events.publish("message.added", message=placeholder)
-    threading.Thread(target=_run, args=(conversation_id, placeholder["id"], model, settings, cancel), name=f"chat-{conversation_id[:8]}", daemon=True).start()
+    threading.Thread(target=claude_code.run if via == "claude-code" else _run, args=(conversation_id, placeholder["id"], model, settings, cancel), name=f"chat-{conversation_id[:8]}", daemon=True).start()
     return placeholder
 
 
@@ -175,7 +180,7 @@ RESULT_TYPES = {"tool_result", "web_search_tool_result", "web_fetch_tool_result"
 def tool_view(block: dict, meta: dict) -> dict:
     t = block.get("type")
     if t in ("tool_use", "server_tool_use", "mcp_tool_use"):
-        status = ((meta.get("tools") or {}).get(block.get("id")) or {}).get("status")
+        status =((meta.get("tools") or {}).get(block.get("id")) or {}).get("status")
         view = {"type": t, "id": block.get("id"), "name": block.get("name"), "input": block.get("input") or {}, "status": status}
         if t == "mcp_tool_use":
             view["server"] = block.get("server_name")
