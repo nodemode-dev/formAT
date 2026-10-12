@@ -1,0 +1,60 @@
+{
+  "skill_name": "format-harness",
+  "notes": "Run in a Claude Code session in the Format repo. Graders read the session's file edits, commands and final report. Expected behaviours are observable in the diff, the command output or the report.",
+  "evals": [
+    {
+      "id": 1,
+      "name": "new-command-reaches-every-door",
+      "prompt": "Add a command to Format that duplicates a chat (copies its visible messages into a new conversation with ' (copy)' after the title) and make sure agents can use it too.",
+      "files": [],
+      "expected_behavior": [
+        "The director routes to engine-builder: an @command conversation.duplicate (or similar) is added in backend/app/engine/cmd_conversation.py with typed params and a description naming what it returns",
+        "backend/app/agent_guide.py gains a verb_noun tool name with a 'Use when' sentence, and ./format agents sync is run, regenerating references/tools.md",
+        "The command is exercised through POST /api/commands and the CLI; backend/HASHOUT_LOG.md gains an entry; no sed or scripted edit is used on repo files"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "window-change-measured-for-shift",
+      "prompt": "Show the number of runs next to each scheduled task in the Scheduled list.",
+      "files": [],
+      "expected_behavior": [
+        "ui-builder is loaded; the change edits frontend/src/ui/scheduled-view.ts with a setText on an existing keyed row rather than rebuilding the list",
+        "The count sits where its width changes cannot move other elements (inside the left-aligned text block)",
+        "A throttled browser check reports layout shift 0 with sources recorded and no page errors before the work is called done"
+      ]
+    },
+    {
+      "id": 3,
+      "name": "use-not-build",
+      "prompt": "Ask Claude in Format to summarize README.md and publish the summary as a page.",
+      "files": [],
+      "expected_behavior": [
+        "The director classifies this as use, not build: no repo file is edited",
+        "It uses chat.send then chat.wait (or the MCP tools send_message and wait_for_reply) and artifact.publish into the same conversation",
+        "The report gives the conversation id and the artifact id and version"
+      ]
+    },
+    {
+      "id": 4,
+      "name": "release-cut",
+      "prompt": "Cut a patch release for the fix we just made.",
+      "files": [],
+      "expected_behavior": [
+        "release-keeper bumps the version in backend/app/__init__.py, frontend/src/version.ts, frontend/package.json and both package-lock fields to the same value",
+        "Commits are authored as nodemode-ai with Conventional Commit subjects and end with the session trailers; an annotated tag v[x.y.z] is on HEAD",
+        "CHANGELOG has the new entry and the parity tracker still has exactly two rows"
+      ]
+    }
+  ],
+  "trigger_evals": [
+    { "query": "add a pin button to artifacts in format's gallery", "should_trigger": true },
+    { "query": "the terminal dock in this repo leaks a websocket when a tab closes, fix it", "should_trigger": true },
+    { "query": "Please cut the v0.9.1 release of Format with the usual commits and zips.", "should_trigger": true },
+    { "query": "why does the sidebar jump when a scheduled run starts? it should not move", "should_trigger": true },
+    { "query": "draft a reply in Format and save it as an artifact", "should_trigger": false },
+    { "query": "build me a claude.ai artifact that is a markdown editor", "should_trigger": false },
+    { "query": "format the python files in this folder with black", "should_trigger": false },
+    { "query": "explain how wgpu bind groups work in general", "should_trigger": false }
+  ]
+}
