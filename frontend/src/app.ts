@@ -490,6 +490,7 @@ export class App {
       this.state.anthropicKey = !!this.state.keys.anthropic?.set;
       this.sidebar.setKey(this.state.anthropicKey);
       this.state.emit('keys');
+      void fetch('/api/voice').then((r) => r.json()).then((v) => this.settingsView.fillVoice(v.engines)).catch(() => undefined);
       void this.loadModels();
     }
   }

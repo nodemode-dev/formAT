@@ -34,7 +34,20 @@ export class Dictation {
   private chunks: Blob[] = [];
   private stream: MediaStream | null = null;
 
-  constructor(private language: () => string, private hooks: DictationHooks) {}
+  private known: { at: number; order: string[] } | null = null;
+
+  constructor(private language: () => string, private hooks: DictationHooks, private engine: () => string = () => 'auto') {}
+
+  private async engines(): Promise<string[]> {
+    if (this.known && performance.now() - this.known.at < 15_000) return this.known.order;
+    try {
+      const body = await (await fetch('/api/voice')).json();
+      this.known = { at: performance.now(), order: (body.engines?.order as string[] | undefined) ?? [] };
+    } catch {
+      this.known = { at: performance.now(), order: [] };
+    }
+    return this.known.order;
+  }
 
   toggle(): void {
     if (this.live) this.stop();
@@ -48,7 +61,9 @@ export class Dictation {
 
   private async start(): Promise<void> {
     const Native = nativeRecognition();
-    if (Native) {
+    const pref = this.engine() || 'auto';
+    const browser = pref === 'browser' || (pref === 'auto' && (await this.engines()).length === 0);
+    if (Native && browser) {
       const rec = new Native();
       rec.lang = this.language() || 'en-US';
       rec.continuous = true;
@@ -84,7 +99,9 @@ export class Dictation {
     recorder.onstop = () => void this.transcribe(recorder.mimeType || 'audio/webm');
     this.recorder = recorder;
     recorder.start();
-    this.set(true, 'Recording; click to stop and transcribe');
+    const order = this.known?.order ?? [];
+    const first = pref !== 'auto' && pref !== 'browser' ? pref : order[0];
+    this.set(true, `Recording; click to stop and transcribe${first ? ` with ${first === 'scribe' ? 'Scribe v2' : first === 'local' ? 'local Whisper' : 'OpenAI'}` : ''}`);
   }
 
   private stop(): void {
@@ -111,6 +128,8 @@ export class Dictation {
     const form = new FormData();
     form.append('audio', blob, `speech.${ext}`);
     form.append('language', this.language() || 'en-US');
+    const pref = this.engine();
+    if (pref === 'scribe' || pref === 'local' || pref === 'openai') form.append('engine', pref);
     try {
       const res = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
       const body = await res.json();

@@ -98,7 +98,10 @@ export interface Account {
   preferences: string;
   sendKey: 'enter' | 'modEnter';
   voiceLanguage: string;
+  voiceEngine?: 'auto' | 'browser' | 'scribe' | 'local' | 'openai';
 }
+
+export interface VoiceEngines { scribe: boolean; local: boolean; openai: boolean; localModel?: string; scribeModel?: string; order?: string[] }
 
 export interface KeyStatus {
   set: boolean;

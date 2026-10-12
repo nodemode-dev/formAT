@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.4
-Last updated: 2026-10-12 · v0.10.4: no window changes; the manual in docs/ describes it
+Current build version: v0.10.5
+Last updated: 2026-10-12 · v0.10.5: the Dictation engine setting, the ElevenLabs key, the dictation path chosen per setting
 
 ---
 
@@ -195,6 +195,12 @@ Files upload on pick (`POST /api/uploads`); each card is keyed and patched (uplo
 
 Chromium-based browsers and Safari have speech recognition built in (`SpeechRecognition` or `webkitSpeechRecognition`), so text arrives with no engine work. Firefox has none, so there the microphone records with `MediaRecorder` and the engine transcribes (local faster-whisper after `./format install-voice`, or OpenAI with an OpenAI key). Recognised text is inserted at the cursor.
 
+### src/ui/dictation.ts · choosing the engine
+- refers-to: src/ui/dictation.ts :: engines, start, transcribe; src/ui/composer.ts :: the Dictation constructor (engine getter); src/ui/views.ts :: voiceEngine select, ElevenLabs key row, fillVoice; src/app.ts :: keys.changed refreshes the About line; src/state/app-state.ts :: Account.voiceEngine, VoiceEngines
+- kind: rationale
+- logged: v0.10.5 · 2026-10-12
+
+From v0.10.5 the account's Dictation engine decides. Browser uses the built-in recognizer. Scribe, local or openai always record and send that engine as the preferred one (the engine still falls through to the others on failure). Automatic asks `/api/voice` (cached 15 seconds) and records whenever Format has any engine set up, because Scribe v2 and Whisper large-v3-turbo are more accurate than the browser's recognizer and keep the audio away from the browser vendor; it uses the browser only when Format has none. The microphone's tooltip names the engine while recording. Saving a key refreshes Settings, About's dictation line, which was otherwise filled only at load.
 ### src/ui/views.ts · API keys
 - refers-to: src/ui/views.ts :: SettingsView
 - kind: explainer

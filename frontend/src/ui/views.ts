@@ -1,5 +1,5 @@
 import { run } from '../engine-client/api';
-import type { AppState, ArtifactSummary, KeyStatus } from '../state/app-state';
+import type { AppState, ArtifactSummary, KeyStatus, VoiceEngines } from '../state/app-state';
 import { el, esc, modKey, q, setText } from './dom';
 import { ui } from './icons-ft';
 import { openMenu } from './menu';
@@ -76,6 +76,7 @@ export interface InfoLike {
 const PROVIDERS: Array<[string, string, string]> = [
   ['anthropic', 'Anthropic', 'Powers chat. Create one at console.anthropic.com.'],
   ['openai', 'OpenAI', 'Optional: dictation transcription in browsers without speech recognition, and the OpenAI provider later.'],
+  ['elevenlabs', 'ElevenLabs', 'Optional: dictation with Scribe v2, ElevenLabs\' speech to text. Create one at elevenlabs.io.'],
 ];
 
 function sourceText(k: KeyStatus | undefined): string {
@@ -101,6 +102,7 @@ export class SettingsView {
           <label class="ft-field"><span>Send with</span><select class="ft-input" data-a="sendKey"><option value="enter">Enter (Shift+Enter for a new line)</option><option value="modEnter">${esc(modKey)}Enter (Enter for a new line)</option></select></label>
           <label class="ft-field"><span>Dictation language</span><input class="ft-input" data-a="voiceLanguage" maxlength="16" placeholder="en-US"></label>
         </div>
+        <label class="ft-field"><span>Dictation engine</span><select class="ft-input" data-a="voiceEngine"><option value="auto">Automatic: Scribe v2, then local Whisper, then OpenAI, else the browser</option><option value="scribe">ElevenLabs Scribe v2 (needs an ElevenLabs key)</option><option value="local">Local Whisper large-v3-turbo (./format install-voice)</option><option value="openai">OpenAI (needs an OpenAI key)</option><option value="browser">The browser's speech recognition</option></select></label>
         <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-save-account">Save</button><span class="ft-saved" aria-live="polite"></span></div>
       </section>
       <section class="ft-set-section" id="ft-set-tools" aria-labelledby="ft-set-tools-h">
@@ -315,7 +317,7 @@ export class SettingsView {
   private async saveAccount(): Promise<void> {
     const get = (k: string) => (q<HTMLInputElement>(this.root, `[data-a="${k}"]`)).value;
     try {
-      await run('account.set', { displayName: get('displayName'), preferences: get('preferences'), sendKey: get('sendKey'), voiceLanguage: get('voiceLanguage') || 'en-US' });
+      await run('account.set', { displayName: get('displayName'), preferences: get('preferences'), sendKey: get('sendKey'), voiceLanguage: get('voiceLanguage') || 'en-US', voiceEngine: get('voiceEngine') || 'auto' });
       setText(this.saved, 'Saved.');
     } catch (e) {
       setText(this.saved, e instanceof Error ? e.message : String(e));
@@ -329,6 +331,7 @@ export class SettingsView {
     put('preferences', a.preferences);
     put('sendKey', a.sendKey);
     put('voiceLanguage', a.voiceLanguage);
+    put('voiceEngine', a.voiceEngine || 'auto');
   }
 
   private fillKeys(): void {
@@ -346,7 +349,7 @@ export class SettingsView {
     document.getElementById(`ft-set-${section}`)?.scrollIntoView({ block: 'start' });
   }
 
-  fill(info: InfoLike, voice?: { local: boolean; openai: boolean }): void {
+  fill(info: InfoLike, voice?: VoiceEngines): void {
     const set = (k: string, v: string) => setText(q(this.root, `[data-k="${k}"]`), v);
     set('version', `v${info.version}`);
     set('dataDir', info.dataDir);
@@ -354,6 +357,13 @@ export class SettingsView {
     void run<{ enabled: boolean; built: boolean; adapter?: string; backend?: string; error?: string }>('native.status').then((n) => {
       set('native', !n.built ? 'not built (optional: ./format native build)' : !n.enabled ? 'built, off (start Format with FORMAT_NATIVE=1)' : n.adapter ? `on: ${n.adapter}, ${n.backend}` : `on, but ${n.error ?? 'no GPU adapter'}`);
     }).catch(() => set('native', 'unknown'));
-    if (voice) set('voice',`browser speech recognition where available; fallback: ${voice.local ? 'local Whisper' : voice.openai ? 'OpenAI transcription' : 'none (./format install-voice, or an OpenAI key)'}`);
+    if (voice) this.fillVoice(voice);
+  }
+
+  fillVoice(voice?: VoiceEngines): void {
+    if (!voice) return;
+    const names: Record<string, string> = { scribe: `ElevenLabs ${voice.scribeModel ?? 'scribe_v2'}`, local: `local Whisper ${voice.localModel ?? 'large-v3-turbo'}`, openai: 'OpenAI' };
+    const order = (voice.order ?? []).map((e) => names[e] ?? e);
+    setText(q(this.root, '[data-k="voice"]'), order.length ? `${order.join(', then ')}; the browser's speech recognition when none answers` : 'the browser\'s speech recognition only (add an ElevenLabs or OpenAI key, or ./format install-voice)');
   }
 }

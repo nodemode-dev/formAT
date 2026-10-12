@@ -128,7 +128,7 @@ export class Composer {
       },
       text: (t) => this.insertText(t),
       error: (msg) => this.flash(msg),
-    });
+    }, () => this.state.account.voiceEngine ?? 'auto');
     this.micBtn.addEventListener('click', () => this.dictation.toggle());
     q(this.root, '.ft-research-pill').addEventListener('click', () => this.setResearch(false));
     q(this.root, '.ft-output-pill').addEventListener('click', () => this.setOutput(null));
