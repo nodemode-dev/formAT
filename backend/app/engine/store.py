@@ -59,6 +59,22 @@ CREATE TABLE IF NOT EXISTS project_files (
   PRIMARY KEY (project_id, upload_id)
 );
 CREATE INDEX IF NOT EXISTS conversations_by_project ON conversations(project_id, updated);
+CREATE TABLE IF NOT EXISTS connectors (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL UNIQUE,
+  kind TEXT NOT NULL,
+  url TEXT NOT NULL DEFAULT '',
+  token TEXT NOT NULL DEFAULT '',
+  command TEXT NOT NULL DEFAULT '',
+  env TEXT NOT NULL DEFAULT '{}',
+  enabled INTEGER NOT NULL DEFAULT 1,
+  disabled_tools TEXT NOT NULL DEFAULT '[]',
+  tools TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'new',
+  error TEXT NOT NULL DEFAULT '',
+  created REAL NOT NULL,
+  updated REAL NOT NULL
+);
 """
 
 _lock = threading.RLock()
@@ -90,8 +106,8 @@ def conn() -> sqlite3.Connection:
                         prev = mid
                     c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
-            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '5')")
-            c.execute("UPDATE meta SET value = '5' WHERE key = 'schema'")
+            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '6')")
+            c.execute("UPDATE meta SET value = '6' WHERE key = 'schema'")
             _conn = c
         return _conn
 

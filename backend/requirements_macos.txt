@@ -3,4 +3,5 @@ uvicorn[standard]==0.53.0
 httpx==0.28.1
 python-multipart==0.0.32
 anthropic==1.13.0
+mcp==2.3.0
 ptyprocess==0.7.0

@@ -74,7 +74,7 @@ def _run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: th
             history = base_history + ([{"role": "assistant", "content": blocks, "meta": {}}] if blocks else [])
             req = harness.build(history, raw, settings, account(), provider.accepts, provider, toolset, folder, project)
             if rounds == 1:
-                meta["request"] = {k: req[k] for k in ("model", "max_tokens") if k in req} | {"effort": (req.get("output_config") or {}).get("effort"), "thinking": req.get("thinking"), "tools": [t["name"] for t in toolset]}
+                meta["request"] = {k: req[k] for k in ("model", "max_tokens") if k in req} | {"effort": (req.get("output_config") or {}).get("effort"), "thinking": req.get("thinking"), "tools": [t.get("name") or t.get("mcp_server_name") for t in toolset]}
             base = len(blocks)
             partial: dict[int, str] = {}
             stop_reason = None
@@ -162,14 +162,16 @@ def _run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: th
 
 
 RESULT_TYPES = {"tool_result", "web_search_tool_result", "web_fetch_tool_result", "code_execution_tool_result",
-                "bash_code_execution_tool_result", "text_editor_code_execution_tool_result"}
+                "bash_code_execution_tool_result", "text_editor_code_execution_tool_result", "mcp_tool_result"}
 
 
 def tool_view(block: dict, meta: dict) -> dict:
     t = block.get("type")
-    if t in ("tool_use", "server_tool_use"):
+    if t in ("tool_use", "server_tool_use", "mcp_tool_use"):
         status = ((meta.get("tools") or {}).get(block.get("id")) or {}).get("status")
         view = {"type": t, "id": block.get("id"), "name": block.get("name"), "input": block.get("input") or {}, "status": status}
+        if t == "mcp_tool_use":
+            view["server"] = block.get("server_name")
         if block.get("id") in (meta.get("answers") or {}):
             view["answer"] = meta["answers"][block["id"]]
         if block.get("name") == "publish_artifact":
@@ -183,6 +185,8 @@ def tool_view(block: dict, meta: dict) -> dict:
         view: dict = {"type": t, "tool_use_id": block.get("tool_use_id"), "is_error": bool(block.get("is_error"))}
         if isinstance(content, str):
             view["text"] = content[:20_000]
+        elif isinstance(content, list) and t == "mcp_tool_result":
+            view["text"] = "\n".join(str(c.get("text") or "") for c in content if isinstance(c, dict) and c.get("type") == "text")[:20_000]
         elif isinstance(content, list) and t == "web_search_tool_result":
             view["results"] = [{k: r.get(k) for k in ("title", "url", "page_age")} for r in content if isinstance(r, dict)][:20]
         elif isinstance(content, dict):
@@ -209,7 +213,7 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
         _set_status(conversation_id, mid, meta, tid, status)
         return {"type": "tool_result", "tool_use_id": tid, "content": text, "is_error": is_error}
 
-    if name not in tools.NAMES:
+    if name not in tools.NAMES and not str(name).startswith("mcp__"):
         return result(f"Format has no tool named {name}.", True, "error")
     if cancel.is_set():
         return result("Stopped by the person before this ran.", True, "denied")
@@ -334,7 +338,7 @@ def _run_agent(conversation_id: str, mid: str, call: dict, live: list[dict], can
                             blocks[i]["input"] = json.loads(partial.pop(i) or "{}")
                         except ValueError:
                             blocks[i]["input"] = {}
-                    if blocks[i].get("type") in ("text", "tool_use", "server_tool_use"):
+                    if blocks[i].get("type") in ("text", "tool_use", "server_tool_use", "mcp_tool_use"):
                         publish(i)
                 elif ev.kind == "message_delta":
                     stop_reason = ev.data.get("stop_reason")
@@ -370,7 +374,7 @@ def _close_open_calls(blocks: list[dict], meta: dict) -> None:
     answered = {b.get("tool_use_id") for b in blocks if b.get("type") in RESULT_TYPES}
     keep: list[dict] = []
     for b in blocks:
-        if b.get("type") == "server_tool_use" and b.get("id") not in answered:
+        if b.get("type") in ("server_tool_use", "mcp_tool_use") and b.get("id") not in answered:
             continue
         keep.append(b)
     blocks[:] = keep

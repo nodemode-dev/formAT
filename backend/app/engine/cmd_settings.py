@@ -68,8 +68,8 @@ def set_(key: str, value: object) -> dict:
         raise CommandError("settings.set: agentModel takes a model id from models.list, or an empty string for the chat's model")
     if key == "agentLimit" and (isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= 10):
         raise CommandError("settings.set: agentLimit takes a whole number from 0 (no sub-agents) to 10")
-    if key in ("toolAllow", "toolDeny") and (not isinstance(value, list) or any(v not in TOOL_NAMES for v in value)):
-        raise CommandError(f"settings.set: {key} takes a list of tool names from {', '.join(TOOL_NAMES)}")
+    if key in ("toolAllow", "toolDeny") and (not isinstance(value, list) or any(not isinstance(v, str) or (v not in TOOL_NAMES and not v.startswith("mcp__")) for v in value)):
+        raise CommandError(f"settings.set: {key} takes a list of tool names from {', '.join(TOOL_NAMES)}, or connector tools named mcp__<connector>__<tool>")
     if key == "compactAt" and (isinstance(value, bool) or not isinstance(value, (int, float)) or not 0.05 <= float(value) <= 0.95):
         raise CommandError("settings.set: compactAt takes a number from 0.05 to 0.95")
     if key == "model" and (not isinstance(value, str) or not value.strip()):

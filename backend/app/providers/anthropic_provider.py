@@ -90,8 +90,9 @@ class AnthropicProvider(Provider):
 
     def compact(self, request: dict) -> dict:
         req = {k: v for k, v in request.items() if k not in ("betas", "stream")}
+        betas = [COMPACT_BETA] + [b for b in request.get("betas") or [] if b != COMPACT_BETA]
         try:
-            res = self._client().beta.messages.create(betas=[COMPACT_BETA], compaction={"type": "summarize"}, **req)
+            res = self._client().beta.messages.create(betas=betas, compaction={"type": "summarize"}, **req)
         except anthropic.APIError as exc:
             raise _api_error(exc) from None
         return {"stop_reason": res.stop_reason, "content": [b.to_dict() for b in res.content], "usage": res.usage.to_dict()}

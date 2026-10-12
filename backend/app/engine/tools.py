@@ -97,9 +97,13 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
             out.append(dict(WEB_FETCH))
     if settings.get("memory") and not agent:
         out.append(dict(MEMORY))
-    from app.engine import skills
+    from app.engine import connectors, skills
     if skills.enabled():
         out.append(dict(SKILL))
+    _, toolsets, local = connectors.request_parts()
+    out.extend(local)
+    if not agent:
+        out.extend(toolsets)
     return out
 
 
@@ -238,6 +242,9 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
         if name == "skill":
             from app.engine import skills
             return skills.load(args)
+        if name.startswith("mcp__"):
+            from app.engine import connectors
+            return connectors.call(name, args)
         if name == "task_list":
             items = args.get("tasks")
             if not isinstance(items, list) or not items:

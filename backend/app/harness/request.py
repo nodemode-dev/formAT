@@ -149,8 +149,19 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     thinking = _thinking(model, bool(settings.get("thinking", True)), max_tokens)
     if thinking:
         req["thinking"] = thinking
+    betas: list[str] = []
     if any(b.get("type") == "compaction" for msg in req["messages"] for b in msg["content"]):
-        req["betas"] = [COMPACT_BETA]
+        betas.append(COMPACT_BETA)
+    wanted = {t["mcp_server_name"] for t in tools or [] if t.get("type") == "mcp_toolset"}
+    used_mcp = any(b.get("type") in ("mcp_tool_use", "mcp_tool_result") for msg in req["messages"] for b in msg["content"])
+    if wanted or used_mcp:
+        from app.engine import connectors
+        servers = [s for s in connectors.request_parts()[0] if s["name"] in wanted]
+        if servers:
+            req["mcp_servers"] = servers
+        betas.append(connectors.MCP_BETA)
+    if betas:
+        req["betas"] = betas
     return req
 
 
@@ -158,7 +169,7 @@ def build_compaction(history: list[dict], model: dict, settings: dict, account: 
                      project: dict | None = None) -> dict:
     req = build(history, model, settings, account, accepts, provider, tools, chat_folder, project)
     req["max_tokens"] = int(min(COMPACT_MAX_TOKENS, model.get("max_tokens") or COMPACT_MAX_TOKENS))
+    req["betas"] = [b for b in req.get("betas") or [] if b != COMPACT_BETA]
     if req.get("thinking", {}).get("type") == "enabled":
         req["thinking"]["budget_tokens"] = max(1024, min(req["thinking"]["budget_tokens"], req["max_tokens"] // 2))
-    req.pop("betas", None)
     return req

@@ -164,12 +164,14 @@ def tasks_get(conversationId: str) -> dict:
 @command("outputs.list", "Outputs", {"conversationId": {"type": "string", "required": True}}, mutates=False,
          description="Files Claude sent in this chat (send_file) with their download paths, and what was used in the session: uploads, web searches and fetches, commands, files changed.")
 def outputs_list(conversationId: str) -> dict:
-    used = {"uploads": 0, "web_search": 0, "web_fetch": 0, "bash": 0, "files": 0}
+    used = {"uploads": 0, "web_search": 0, "web_fetch": 0, "bash": 0, "files": 0, "connectors": 0}
     for m in messages_of(conversationId):
         used["uploads"] += len((m.get("meta") or {}).get("attachments") or [])
         for b in m["content"]:
             n = b.get("name")
-            if b.get("type") in ("tool_use", "server_tool_use") and n:
+            if b.get("type") == "mcp_tool_use" or (b.get("type") == "tool_use" and str(n).startswith("mcp__")):
+                used["connectors"] += 1
+            elif b.get("type") in ("tool_use", "server_tool_use") and n:
                 if n in ("web_search", "web_fetch", "bash"):
                     used[n] += 1
                 elif n in ("write", "edit"):
