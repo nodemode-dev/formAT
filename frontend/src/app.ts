@@ -13,6 +13,7 @@ import { Sidebar } from './ui/sidebar';
 import { TerminalDock } from './ui/terminal-dock';
 import { ArtifactPanel } from './ui/artifact-panel';
 import { FilesPane } from './ui/files-pane';
+import { interceptDownloads, setDesktop } from './ui/save';
 import { BrowserPane, type BrowserStatus } from './ui/browser-pane';
 import { ProjectsView } from './ui/projects-view';
 import { CustomizeView } from './ui/customize-view';
@@ -205,6 +206,7 @@ export class App {
     });
     this.state.on('projects', () => this.renderTitle());
     document.addEventListener('keydown', (e) => this.keys(e));
+    interceptDownloads();
     this.state.on('active', () => this.renderTitle());
     this.state.on('conversations', () => this.renderTitle());
     this.sidebar.setTerminalOpen(html.dataset.ftTerm === 'open');
@@ -246,6 +248,7 @@ export class App {
     this.sidebar.setKey(this.state.anthropicKey);
     this.sidebar.setAccount(account);
     this.settingsView.fill(info, voice.engines);
+    setDesktop(!!info.desktop);
     await this.loadModels();
     void this.gallery.refresh();
     this.state.emit('conversations');

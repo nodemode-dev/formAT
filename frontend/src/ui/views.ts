@@ -71,6 +71,7 @@ export interface InfoLike {
   dataDir: string;
   providers: Record<string, boolean>;
   commands: number;
+  desktop?: boolean;
 }
 
 const PROVIDERS: Array<[string, string, string]> = [

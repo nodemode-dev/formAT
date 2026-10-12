@@ -2,7 +2,7 @@ import { run } from '../engine-client/api';
 import { el, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
-export interface BrowserStatus { available: boolean; open: boolean; url: string; title: string; seq: number; error: string; busy: boolean }
+export interface BrowserStatus { available: boolean; installed?: boolean; installing?: boolean; note?: string; open: boolean; url: string; title: string; seq: number; error: string; busy: boolean }
 
 const KEYS = new Set(['Enter', 'Backspace', 'Tab', 'Escape', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Delete', 'Home', 'End', 'PageUp', 'PageDown']);
 
@@ -35,7 +35,7 @@ export class BrowserPane {
       </div>
       <div class="ft-br-body" tabindex="0" aria-label="Page; click and type to use it">
         <img class="ft-br-frame" alt="" draggable="false" hidden>
-        <div class="ft-page-empty ft-br-empty">${ui('globe', 28)}<p class="ft-br-note"></p></div>
+        <div class="ft-page-empty ft-br-empty">${ui('globe', 28)}<p class="ft-br-note"></p><button type="button" class="ft-btn ft-btn-primary ft-br-install" hidden>Install the browser</button></div>
         <p class="ft-br-msg" aria-live="polite" hidden></p>
       </div>
     </aside>`);
@@ -46,6 +46,7 @@ export class BrowserPane {
     this.note = q(this.root, '.ft-br-note');
     this.msg = q(this.root, '.ft-br-msg');
     q(this.root, '.ft-br-close').addEventListener('click', () => this.close());
+    q(this.root, '.ft-br-install').addEventListener('click', () => void this.act('browser.install', {}));
     q(this.root, '.ft-br-url').addEventListener('submit', (e) => {
       e.preventDefault();
       const url = this.input.value.trim();
@@ -55,9 +56,13 @@ export class BrowserPane {
     this.root.querySelectorAll<HTMLElement>('[data-br]').forEach((b) => b.addEventListener('click', () => void this.act('browser.act', { action: b.dataset.br })));
     this.img.addEventListener('click', (e) => {
       const r = this.img.getBoundingClientRect();
-      if (!r.width || !r.height) return;
+      const nw = this.img.naturalWidth, nh = this.img.naturalHeight;
+      if (!r.width || !r.height || !nw || !nh) return;
+      const scale = Math.min(r.width / nw, r.height / nh);
+      const x = (e.clientX - r.left) / (nw * scale), y = (e.clientY - r.top) / (nh * scale);
+      if (x > 1 || y > 1) return;
       this.flushTyping();
-      void this.act('browser.act', { action: 'click_at', x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height });
+      void this.act('browser.act', { action: 'click_at', x, y });
       this.body.focus();
     });
     this.body.addEventListener('wheel', (e) => {
@@ -87,8 +92,28 @@ export class BrowserPane {
     return this.visible;
   }
 
+  private sizeTimer = 0;
+  private sent = '';
+  private observer: ResizeObserver | null = null;
+
+  private fit(): void {
+    window.clearTimeout(this.sizeTimer);
+    this.sizeTimer = window.setTimeout(() => {
+      const w = Math.round(this.body.clientWidth);
+      const h = Math.round(this.body.clientHeight);
+      if (!this.visible || w < 100 || h < 100 || `${w}x${h}` === this.sent) return;
+      this.sent = `${w}x${h}`;
+      void run<BrowserStatus>('browser.act', { action: 'resize', width: w, height: h }).then((s) => this.update(s)).catch(() => undefined);
+    }, 200);
+  }
+
   async show(): Promise<void> {
     this.visible = true;
+    if (!this.observer) {
+      this.observer = new ResizeObserver(() => this.fit());
+      this.observer.observe(this.body);
+    }
+    this.fit();
     try {
       this.update(await run<BrowserStatus>('browser.status'));
     } catch (err) {
@@ -109,9 +134,16 @@ export class BrowserPane {
       if (s.busy) this.body.dataset.busy = '1';
       else delete this.body.dataset.busy;
     }
+    const missing = s.available && s.installed === false;
     const note = !s.available ? 'The built-in browser is not installed. Run ./format install-browser, then restart Format.'
-      : s.error ? s.error : 'Type a URL above to browse here. Claude uses this same browser when it needs to click through a site, and you can watch and take over.';
+      : s.installing ? `${s.note || 'Downloading Chromium'} (about 150 MB, once). This takes a minute or two.`
+      : s.error ? s.error
+      : missing ? 'The built-in browser needs Chromium, downloaded once (about 150 MB). Sign-ins you make here stay in Format.'
+      : 'Type a URL above to browse here. Claude uses this same browser when it needs to click through a site, and you can watch and take over.';
     setText(this.note, note);
+    const btn = q<HTMLButtonElement>(this.root, '.ft-br-install');
+    const showBtn = missing && !s.installing;
+    if (btn.hidden === showBtn) btn.hidden = !showBtn;
     if (s.seq > 0 && s.open) {
       this.wantSeq = s.seq;
       if (this.visible) void this.loadFrame();

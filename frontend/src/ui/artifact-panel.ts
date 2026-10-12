@@ -6,6 +6,7 @@ import { DocView, exportsFor, type DocKind } from './doc-view';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { openMenu } from './menu';
+import { save } from './save';
 
 interface Opened extends ArtifactSummary {
   version: number;
@@ -74,10 +75,7 @@ export class ArtifactPanel {
       if (!a || (a.kind ?? 'html') === 'html') return;
       e.preventDefault();
       openMenu(this.download, exportsFor(a.kind).map(([fmt, label]) => ({ label, icon: 'download' as const, action: () => {
-        const link = document.createElement('a');
-        link.href = `/api/artifacts/${a.id}/v/${a.version}/export/${fmt}`;
-        link.download = '';
-        link.click();
+        save(`/api/artifacts/${a.id}/v/${a.version}/export/${fmt}`);
       } })), 'down', 0, 'Export as');
     });
     q(this.root, '.ft-art-share').addEventListener('click', (e) => void this.shareMenu(e.currentTarget as HTMLElement));
@@ -129,6 +127,7 @@ export class ArtifactPanel {
     }
     if (this.root.dataset.kind !== kind) this.root.dataset.kind = kind;
     setAttr(this.download, 'title', kind === 'html' ? 'Download' : 'Export');
+    setAttr(this.download, 'data-own-click', kind === 'html' ? null : '1');
     this.say('');
     this.current = a;
     this.following = a.version === a.latest;

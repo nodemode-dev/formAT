@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.5
-Last updated: 2026-10-12 · v0.10.5: the Dictation engine setting, the ElevenLabs key, the dictation path chosen per setting
+Current build version: v0.11.0
+Last updated: 2026-10-12 · v0.11.0: the Browser pane sized to itself with Install the browser; the desktop splash
 
 ---
 
@@ -628,6 +628,26 @@ The chat list is fetched before the event socket opens, so a chat created in bet
 
 The pane shares the side track with artifacts and files. It shows the engine's latest frame in an image with a fixed 16:10 box, so a new frame never changes size; each frame is fetched as a blob, decoded off screen and only then swapped in, so there is no blank or half-drawn image between frames. The person uses the page directly: a click is sent as a fraction of the image (`click_at`), the wheel scrolls (at most four steps a second), printable keys are batched for 150 ms and typed, and Enter, Tab, arrows and the like are pressed. The address bar follows the page unless it has focus. The pane does not open by itself when Claude browses: the globe in the top bar shows a dot while the browser is open, and Claude's steps read "Opened a page in the browser", "Typed in the browser" in the tool group.
 
+### src/ui/browser-pane.ts · sized to the pane, and Install
+- refers-to: src/ui/browser-pane.ts :: fit, show (ResizeObserver), the click handler, update (Install the browser); src/styles/ft-shell.css :: .ft-br-frame, .ft-br-body, .ft-br-install; frontend/public/splash.html
+- kind: rationale
+- logged: v0.11.0 · 2026-10-12
+
+From v0.11.0 the frame fills the pane's body (absolutely placed, `object-fit: contain` at the top left) and the pane tells the engine its CSS size, debounced 200 ms, whenever the body changes size; the engine draws at that size at twice the density, so text is as sharp as the rest of the window and the image never changes the layout (the body's size comes from the grid, not the image). Clicks map through the image's natural size, so a frame from before a resize still lands where it shows. When the engine has Playwright but no Chromium (the desktop app's first run), the empty pane says so and offers Install the browser, then shows the download until it ends. `public/splash.html` is the desktop app's splash, shipped in `dist` like the favicon.
+
+### src/styles/ft-shell.css · light frames inside a dark window
+- refers-to: src/styles/ft-shell.css :: .ft-art-frame, .ft-fv-frame (color-scheme: light)
+- kind: warning-context
+- logged: v0.11.0 · 2026-10-12
+
+The window is `color-scheme: dark`. Chromium paints a white canvas under an iframe whose page does not declare a colour scheme, so artifact and HTML previews without a background of their own looked like a browser tab; WebKit (the desktop app on Linux, and Safari's engine on macOS) instead let the frame inherit the dark scheme, and such pages showed black text on the dark panel. Both frames now declare `color-scheme: light` on the iframe element, which WebKit applies to the framed page; found by running the Linux desktop build, checked there and in Chromium.
+
+### src/ui/save.ts · downloads in the desktop app
+- refers-to: src/ui/save.ts :: setDesktop, save, interceptDownloads, notify; src/app.ts :: load (setDesktop from app.info), interceptDownloads; src/ui/artifact-panel.ts :: the Export menu (save), data-own-click; src/styles/ft-overlays.css :: #toast-root, .ft-toast
+- kind: rationale
+- logged: v0.11.0 · 2026-10-12
+
+When `app.info` says the engine runs in the desktop app, a capture-phase click listener takes over every same-origin `/api/` link that is a download (a `download` attribute, `?download=1`, or an `/export/` path) and calls `files.save_download` instead, then shows "Saved <name> to Downloads" in a toast in the family's `#toast-root` (fades by opacity, so nothing moves). The Export menu calls `save()` directly because its links are never in the document. The artifact panel's Download button opens the Export menu for documents, sheets and decks, so it carries `data-own-click` there and the listener leaves it alone. In the web build `save()` is the plain anchor click it was before and the listener does nothing.
 ### src/ui/customize-view.ts · Plugins
 - refers-to: src/ui/customize-view.ts :: wirePlugins, renderPlugins, openPlugin, paintPlugin; src/ui/icons-ft.ts :: plugin
 - kind: explainer
