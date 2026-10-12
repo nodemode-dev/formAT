@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.8.0 · 2026-10-12
+
+The native renderer (DEV_PLAN Phase 8).
+
+- `native/format-render` draws a terminal's screen on the GPU through wgpu (Metal, Vulkan, Direct3D 12 or OpenGL): colours, 256 and true colour, inverse, dim, box drawing and the cursor, in JetBrains Mono. It is optional and off unless you build it (`./format native build`, needs Rust) and start Format with `FORMAT_NATIVE=1`.
+- `terminal.snapshot` returns a picture of any terminal's current screen, for agents and checks; `native.status` says whether the renderer is built and on and which GPU it uses (also in Settings, About). `./format native info` prints the adapter and `./format native window` opens the renderer's demo window.
+- The terminal in the window stays the browser one: measured under 4x CPU it printed 200,000 lines in about 4 seconds with frames mostly on time, so it does not need replacing.
+- Fixed: the files pane's title no longer moves when a preview opens, and the artifact header fix of 0.7.1 no longer touches the files pane.
+- Engine: `native.status`, `terminal.snapshot`. 74 commands.
+
 ## 0.7.1 · 2026-10-12
 
 Scheduled tasks and background work (DEV_PLAN Phase 7, second part).
