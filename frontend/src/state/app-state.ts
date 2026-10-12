@@ -24,6 +24,8 @@ export interface ContentBlock {
   url?: string;
   title?: string;
   artifact?: ArtifactRef;
+  server?: string;
+  server_name?: string;
 }
 
 export interface ArtifactRef { id: string; version: number; title: string }
@@ -122,7 +124,21 @@ export interface Settings {
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
 
-type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory';
+type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors';
+
+export interface ConnectorInfo {
+  id: string;
+  name: string;
+  kind: 'url' | 'command';
+  url: string;
+  command: string;
+  hasToken: boolean;
+  enabled: boolean;
+  route: 'api' | 'local';
+  status: string;
+  error: string;
+  tools: Array<{ name: string; description: string; enabled: boolean }>;
+}
 
 export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number }
 
@@ -150,6 +166,7 @@ export class AppState {
   waiting = new Map<string, Set<string>>();
   projects = new Map<string, ProjectSummary>();
   skills: SkillSummary[] = [];
+  connectors: ConnectorInfo[] = [];
   draftProject: string | null = null;
   private subs = new Map<Topic, Set<() => void>>();
 

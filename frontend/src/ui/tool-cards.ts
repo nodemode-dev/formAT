@@ -131,9 +131,14 @@ export class ArtifactCard {
   }
 }
 
-export const TOOL_TYPES = new Set(['tool_use', 'server_tool_use']);
+export const TOOL_TYPES = new Set(['tool_use', 'server_tool_use', 'mcp_tool_use']);
 export const RESULT_TYPES = new Set(['tool_result', 'web_search_tool_result', 'web_fetch_tool_result', 'code_execution_tool_result',
-  'bash_code_execution_tool_result', 'text_editor_code_execution_tool_result']);
+  'bash_code_execution_tool_result', 'text_editor_code_execution_tool_result', 'mcp_tool_result']);
+
+export function connectorParts(name: string): { connector: string; tool: string } | null {
+  const m = /^mcp__([a-z0-9_-]+?)__(.+)$/.exec(name);
+  return m ? { connector: m[1], tool: m[2] } : null;
+}
 
 const ICON: Record<string, Parameters<typeof ui>[0]> = {
   bash: 'terminal', write: 'file', edit: 'pencil', read: 'file', glob: 'search', grep: 'search', web_search: 'globe', web_fetch: 'globe',
@@ -175,7 +180,11 @@ export function describe(name: string, input: Record<string, unknown>): { title:
       const done = tasks.filter((t) => t.status === 'completed').length;
       return { title: 'Updated the plan', sub: tasks.length ? `${done} of ${tasks.length} done` : '', short: 'updated the plan' };
     }
-    default: return { title: `Used ${name.replace(/_/g, ' ')}`, sub: '', short: `used ${name.replace(/_/g, ' ')}` };
+    default: {
+      const c = connectorParts(name);
+      if (c) return { title: `Used ${c.tool}`, sub: `${c.connector} connector`, short: `used ${c.tool}` };
+      return { title: `Used ${name.replace(/_/g, ' ')}`, sub: '', short: `used ${name.replace(/_/g, ' ')}` };
+    }
   }
 }
 
@@ -184,6 +193,7 @@ export function resultView(b: ContentBlock): ContentBlock {
   const c = b.content as unknown;
   const v: ContentBlock = { type: b.type, tool_use_id: b.tool_use_id, is_error: !!b.is_error };
   if (typeof c === 'string') v.text = c;
+  else if (Array.isArray(c) && b.type === 'mcp_tool_result') v.text = c.filter((x) => x?.type === 'text').map((x) => String(x.text ?? '')).join('\n');
   else if (Array.isArray(c) && b.type === 'web_search_tool_result') v.results = c.map((r) => ({ title: r?.title, url: r?.url, page_age: r?.page_age }));
   else if (c && typeof c === 'object') {
     const o = c as Record<string, unknown>;
@@ -198,6 +208,7 @@ export class ToolCard {
   readonly root: HTMLElement;
   readonly id: string;
   name: string;
+  remote = false;
   input: Record<string, unknown> = {};
   status = 'input';
   failed = false;
@@ -273,9 +284,10 @@ export class ToolCard {
 
   constructor(b: ContentBlock, private approve: Approve, private changed: () => void, private answer: Answer = () => undefined) {
     this.id = b.id ?? '';
-    this.name = b.name ?? 'tool';
+    this.name = b.type === 'mcp_tool_use' ? `mcp__${b.server ?? b.server_name ?? 'remote'}__${b.name ?? 'tool'}` : b.name ?? 'tool';
+    this.remote = b.type === 'mcp_tool_use';
     this.root = el(`<div class="ft-tool" data-status="input">
-      <details class="ft-tool-d"><summary class="ft-tool-head"><span class="ft-tool-icon">${ui(ICON[this.name] ?? 'skills', 14)}</span><span class="ft-tool-title"></span><span class="ft-tool-sub"></span><span class="ft-tool-state"></span></summary>
+      <details class="ft-tool-d"><summary class="ft-tool-head"><span class="ft-tool-icon">${ui(ICON[this.name] ?? (connectorParts(this.name) ? 'plug' : 'skills'), 14)}</span><span class="ft-tool-title"></span><span class="ft-tool-sub"></span><span class="ft-tool-state"></span></summary>
         <div class="ft-tool-body"><pre class="ft-tool-input" hidden></pre><pre class="ft-tool-out" hidden></pre><ul class="ft-tool-links" hidden></ul></div></details>
       <div class="ft-tool-ask" hidden><span class="ft-tool-ask-text"></span><button type="button" class="ft-btn ft-btn-primary" data-d="allow">Allow once</button><button type="button" class="ft-btn" data-d="always">Always allow</button><button type="button" class="ft-btn" data-d="deny">Deny</button></div>
       <div class="ft-tool-q" hidden><p class="ft-tool-q-text"></p><div class="ft-tool-q-opts"></div>
@@ -321,7 +333,8 @@ export class ToolCard {
     setText(this.sub, d.sub.split('\n')[0].slice(0, 160));
     setAttr(this.sub, 'title', d.sub.slice(0, 2000));
     const detail = this.name === 'bash' ? String(this.input.command ?? '') : this.name === 'write' ? String(this.input.content ?? '') : this.name === 'edit' ? `${String(this.input.old_string ?? '')}\n\n${String(this.input.new_string ?? '')}`
-      : this.name === 'memory' ? String(this.input.file_text ?? this.input.new_str ?? this.input.insert_text ?? '') : '';
+      : this.name === 'memory' ? String(this.input.file_text ?? this.input.new_str ?? this.input.insert_text ?? '')
+        : connectorParts(this.name) && Object.keys(this.input).length ? JSON.stringify(this.input, null, 2) : '';
     setText(this.inputEl, detail.slice(0, 20000));
     if (this.inputEl.hidden === !!detail) this.inputEl.hidden = !detail;
     if (this.name === 'ask_user') {
@@ -340,7 +353,7 @@ export class ToolCard {
       if (this.links.hidden) this.links.hidden = false;
     }
     if (b.status) this.setStatus(b.status);
-    else if (this.status === 'input' && Object.keys(this.input).length) this.setStatus(this.name.startsWith('web_') ? 'running' : 'input');
+    else if (this.status === 'input' && (Object.keys(this.input).length || this.remote)) this.setStatus(this.name.startsWith('web_') || this.remote ? 'running' : 'input');
     this.changed();
   }
 
@@ -357,7 +370,8 @@ export class ToolCard {
       this.question.querySelectorAll<HTMLButtonElement | HTMLInputElement>('button, input').forEach((x) => { x.disabled = false; });
     }
     if (waiting) {
-      setText(q(this.ask, '.ft-tool-ask-text'), this.name === 'bash' ? 'Allow Claude to run this command?' : `Allow Claude to ${this.name} ${base(this.input.path)}?`);
+      const c = connectorParts(this.name);
+      setText(q(this.ask, '.ft-tool-ask-text'), this.name === 'bash' ? 'Allow Claude to run this command?' : c ? `Allow Claude to use ${c.tool} from the ${c.connector} connector?` : `Allow Claude to ${this.name} ${base(this.input.path)}?`);
       this.ask.querySelectorAll('button').forEach((x) => { x.disabled = false; });
     }
     this.failed = status === 'error';
@@ -382,7 +396,7 @@ export class ToolCard {
       this.links.innerHTML = `<li><a href="${esc(v.url)}" target="_blank" rel="noopener noreferrer">${esc(v.title || v.url)}</a><span>${esc(host(v.url))}</span></li>`;
       this.links.hidden = false;
     }
-    if (this.name.startsWith('web_') || this.status === 'input' || this.status === 'running') this.setStatus(v.is_error ? 'error' : 'done');
+    if (this.name.startsWith('web_') || this.remote || this.status === 'input' || this.status === 'running') this.setStatus(v.is_error ? 'error' : 'done');
     else if (v.is_error && this.status === 'done') this.setStatus('error');
   }
 }

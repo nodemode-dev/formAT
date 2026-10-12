@@ -340,7 +340,15 @@ export class Composer {
             { divider: true }, { label: 'Manage skills', icon: 'customize' as const, action: () => this.hooks.openCustomize() }];
         },
       },
-      { label: 'Connectors', icon: 'plug', submenu: () => empty('connectors') },
+      {
+        label: 'Connectors', icon: 'plug', submenu: () => {
+          const all = this.state.connectors;
+          if (!all.length) return empty('connectors');
+          return [...all.map((c) => ({ label: c.name, desc: c.status === 'error' && c.route === 'local' ? 'Not connected' : c.route === 'api' ? 'Through Anthropic' : `${c.tools.filter((t) => t.enabled).length} tools`,
+            checked: c.enabled, action: () => void run('connector.update', { id: c.id, enabled: !c.enabled }) })),
+          { divider: true }, { label: 'Manage connectors', icon: 'customize' as const, action: () => this.hooks.openCustomize() }];
+        },
+      },
       { divider: true },
       { label: 'Research', icon: 'research', checked: this.research, action: () => { this.research = !this.research; } },
     ], 'up');

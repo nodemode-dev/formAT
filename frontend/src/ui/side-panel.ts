@@ -3,7 +3,7 @@ import { ui } from './icons-ft';
 import { type TaskItem, taskListHtml } from './tool-cards';
 
 export interface OutputFile { name: string; path: string; size: number; caption?: string; url: string }
-export interface Used { uploads: number; web_search: number; web_fetch: number; bash: number; files: number }
+export interface Used { uploads: number; web_search: number; web_fetch: number; bash: number; files: number; connectors?: number }
 
 function count(n: number, one: string, many: string): string {
   return n ? `${n} ${n === 1 ? one : many}` : 'none';
@@ -39,6 +39,7 @@ export class SidePanel {
           <div class="ft-used-row" data-u="web">${ui('globe', 16)}<span>Web</span><span class="ft-muted">none</span></div>
           <div class="ft-used-row" data-u="bash">${ui('terminal', 16)}<span>Commands</span><span class="ft-muted">none</span></div>
           <div class="ft-used-row" data-u="files">${ui('pencil', 16)}<span>File changes</span><span class="ft-muted">none</span></div>
+          <div class="ft-used-row" data-u="connectors">${ui('plug', 16)}<span>Connectors</span><span class="ft-muted">none</span></div>
         </section>
       </div>
     </aside>`);
@@ -73,5 +74,6 @@ export class SidePanel {
     row('web', used.web_search + used.web_fetch ? [used.web_search ? count(used.web_search, 'search', 'searches') : '', used.web_fetch ? count(used.web_fetch, 'page', 'pages') : ''].filter(Boolean).join(', ') : 'none');
     row('bash', count(used.bash, 'command', 'commands'));
     row('files', count(used.files, 'change', 'changes'));
+    row('connectors', count(used.connectors ?? 0, 'call', 'calls'));
   }
 }

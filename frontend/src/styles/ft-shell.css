@@ -267,6 +267,22 @@
 .ft-cz-files { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-4); }
 .ft-cz-file { cursor: default; }
 .ft-cz-body { padding: var(--space-4); border: 1px solid var(--line-1); border-radius: var(--radius-lg); background: var(--surface-1); }
+.ft-cn-form [hidden], .ft-cn-empty[hidden], .ft-cn-notools[hidden] { display: none; }
+.ft-cn-kind { display: flex; flex-wrap: wrap; gap: var(--space-4); }
+.ft-cn-kind .ft-check { min-height: 0; align-self: center; }
+.ft-cn-kind input { accent-color: var(--accent-color); }
+.ft-cn-badge { padding: 1px 8px; border: 1px solid var(--line-2); border-radius: 999px; font: var(--fs-11) var(--font-ui); color: var(--text-secondary); white-space: nowrap; }
+.ft-cn-badge[data-s="connected"] { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
+.ft-cn-badge[data-s="error"] { border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
+.ft-cz-row.is-error .ft-cz-row-desc { color: var(--danger-text); }
+.ft-cn-state { margin: 0 0 var(--space-4); font-size: var(--fs-13); color: var(--text-secondary); overflow-wrap: anywhere; }
+.ft-cn-state.is-error { color: var(--danger-text); }
+.ft-cn-tools { display: grid; gap: var(--space-2); }
+.ft-cn-tool { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: var(--space-3); align-items: start; padding: var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); cursor: pointer; }
+.ft-cn-tool input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent-color); }
+.ft-cn-tool span { display: grid; gap: 2px; min-width: 0; }
+.ft-cn-tool b { font: 500 var(--fs-13) var(--font-mono); }
+.ft-cn-tool small { font-size: var(--fs-12); color: var(--text-secondary); line-height: 1.5; }
 .ft-mem-list { display: grid; gap: 2px; }
 .ft-mem-row { display: grid; grid-template-columns: 14px minmax(0, 1fr) auto; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-2); border: 0; border-radius: var(--radius); background: transparent; color: var(--text-primary); font: var(--fs-13) var(--font-mono); text-align: left; cursor: pointer; }
 .ft-mem-row:hover { background: var(--bg-hover); }

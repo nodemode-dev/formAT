@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.6.1
-Last updated: 2026-10-12 · v0.6.1: Customize with skills, the + menu's Skills, Settings' Memory, memory and skill steps
+Current build version: v0.6.2
+Last updated: 2026-10-12 · v0.6.2: connectors on Customize and in the + menu, connector steps and approvals
 
 ---
 
@@ -38,7 +38,7 @@ frontend/
     │   ├── artifact-panel.ts      the artifact beside the chat: two frames, versions, code, links
     │   ├── files-pane.ts          the chat folder's files and their previews, comments on a block
     │   ├── projects-view.ts       the Projects page: tiles, one project with chats, instructions and files
-    │   ├── customize-view.ts      Customize: skills (list, on and off, add, write, one skill), connectors note
+    │   ├── customize-view.ts      Customize: skills (list, on and off, add, write, one skill), connectors (add, tools, reconnect)
     │   ├── memory-panel.ts        Settings, Memory: the setting, the scope, the memory files and their editor
     │   ├── views.ts               Artifacts gallery; Scheduled and Settings pages
     │   └── boot-frame.ts          the engine-down fallback
@@ -449,6 +449,13 @@ New chat in this project sets a draft project: the empty chat shows "New chat in
 - logged: v0.6.1 · 2026-10-12
 
 Customize lists the installed skills as keyed rows with an on/off box, and opens one skill on the same page (its description, file chips and SKILL.md rendered without its frontmatter). Skills arrive as a .zip of the folder or a SKILL.md, through the button or dropped on the page, or are written in a form that becomes SKILL.md. Delete asks once in place. The + menu's Skills submenu lists the skills that are on; picking one puts "Use the <name> skill." at the start of the message, which is plain text the person can see and change, rather than a hidden flag; the system prompt already lists every skill, so the name is enough for Claude to load it. Connectors keep a note until v0.6.2.
+
+### src/ui/customize-view.ts · connectors
+- refers-to: src/ui/customize-view.ts :: wireConnectors, renderConnectors, paintConnector; src/ui/composer.ts :: plusMenu (Connectors); src/ui/tool-cards.ts :: connectorParts, ToolCard (remote)
+- kind: rationale
+- logged: v0.6.2 · 2026-10-12
+
+Connectors sit under Skills on Customize: keyed rows with the name, a state line, a badge for where the calls run ("Anthropic" for a public https server sent through the API's MCP connector, "Engine" for one the engine runs), and an on/off box. Add connector takes a name and either a URL with an optional token or a command, then connects at once and reports the tool count or the error. A connector's page lists its tools with a box each (turning one off removes it from Claude's tools, or becomes an `enabled: false` config for the API), Reconnect, and Remove, asking once. A public server whose tools cannot be listed from this computer still works through Anthropic; its page says so rather than calling it failed. The + menu's Connectors turns each on or off in place. In a reply, an engine-run call (`mcp__<connector>__<tool>`) and an API call (`mcp_tool_use`, whose name is rebuilt the same way from `server_name`) both read "Used <tool>" with "<connector> connector" beside it; engine-run calls ask "Allow Claude to use <tool> from the <connector> connector?", and their input shows as JSON. Outputs counts connector calls.
 
 ### src/ui/memory-panel.ts · memory in Settings
 - refers-to: src/ui/memory-panel.ts :: MemoryPanel; src/app.ts (appended after About)

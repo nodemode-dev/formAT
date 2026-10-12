@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type ProjectSummary, type SkillSummary, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -197,6 +197,9 @@ export class App {
     const skills = await run<{ skills: SkillSummary[] }>('skill.list').catch(() => ({ skills: [] as SkillSummary[] }));
     this.state.skills = skills.skills;
     this.state.emit('skills');
+    const conns = await run<{ connectors: ConnectorInfo[] }>('connector.list').catch(() => ({ connectors: [] as ConnectorInfo[] }));
+    this.state.connectors = conns.connectors;
+    this.state.emit('connectors');
     void this.memoryPanel.refresh();
     list.conversations.forEach((c) => {
       this.state.conversations.set(c.id, c);
@@ -312,6 +315,9 @@ export class App {
     } else if (e.type === 'skills.changed') {
       this.state.skills = e.skills as SkillSummary[];
       this.state.emit('skills');
+    } else if (e.type === 'connectors.changed') {
+      this.state.connectors = e.connectors as ConnectorInfo[];
+      this.state.emit('connectors');
     } else if (e.type === 'memory.changed') {
       this.state.emit('memory');
     } else if (e.type === 'project.deleted') {
