@@ -38,8 +38,11 @@ def list_(query: str | None = None, limit: int | None = None) -> dict:
         args = (like, like)
     sql += " ORDER BY pinned DESC, updated DESC LIMIT ?"
     items = store.rows(sql, args + (max(1, min(int(limit or 200), 1000)),))
+    from app.engine import chat, tools
+    waiting = {w["conversationId"] for w in tools.pending()}
     for c in items:
         c["pinned"] = bool(c["pinned"])
+        c["activity"] = "waiting" if c["id"] in waiting else "running" if chat.running(c["id"]) else None
     return {"conversations": items, "count": len(items)}
 
 

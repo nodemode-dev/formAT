@@ -258,6 +258,8 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
             info = {"id": row["artifact_id"], "version": row["version"], "title": row["title"]}
             meta.setdefault("artifacts", {})[tid] = info
             events.publish("message.artifact", id=mid, conversationId=conversation_id, toolUseId=tid, artifact=info)
+    if name in ("bash", "write", "edit"):
+        events.publish("files.changed", conversationId=conversation_id)
     if buf:
         events.publish("tool.output", id=mid, conversationId=conversation_id, toolUseId=tid, text="".join(buf))
     return result(text, is_error, "error" if is_error else "done")

@@ -7,11 +7,15 @@ from app.engine.commands import CommandError, command
 
 @command("chat.send", "Send a message",
          {"text": {"type": "string", "required": True}, "conversationId": {"type": "string", "description": "omit to start a new chat"},
-          "attachments": {"type": "array", "items": {"type": "string"}, "description": "file ids from POST /api/uploads"}},
-         description="Stores the message (with its attachments) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
-def send(text: str, conversationId: str | None = None, attachments: list | None = None) -> dict:
-    if not text.strip() and not attachments:
+          "attachments": {"type": "array", "items": {"type": "string"}, "description": "file ids from POST /api/uploads"},
+          "comments": {"type": "array", "items": {"type": "object"}, "description": "comments on files in the chat's folder: {path, quote, note}, up to 20"}},
+         description="Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
+def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None) -> dict:
+    notes = _comments(comments)
+    if not text.strip() and not attachments and not notes:
         raise CommandError("chat.send: text is empty")
+    if notes and conversationId is None:
+        raise CommandError("chat.send: comments refer to a chat's files; pass its conversationId")
     files = []
     for fid in attachments or []:
         meta = uploads.get(str(fid))
@@ -31,10 +35,24 @@ def send(text: str, conversationId: str | None = None, attachments: list | None 
     if chat.running(conversationId):
         raise CommandError("A reply is still running in this chat; chat.stop it or wait", 409)
     content = [{"type": "text", "text": text}] if text.strip() else []
-    user = insert(conversationId, "user", content, {"attachments": [f["id"] for f in files], "files": files})
+    meta = {"attachments": [f["id"] for f in files], "files": files} | ({"comments": notes} if notes else {})
+    user = insert(conversationId, "user", content, meta)
     events.publish("message.added", message=user)
     reply = chat.start(conversationId)
     return {"conversationId": conversationId, "message": user, "replyId": reply["id"]}
+
+
+def _comments(raw: list | None) -> list[dict]:
+    if not raw:
+        return []
+    if not isinstance(raw, list) or len(raw) > 20:
+        raise CommandError("chat.send: comments takes a list of up to 20 {path, quote, note}")
+    out = []
+    for c in raw:
+        if not isinstance(c, dict) or not isinstance(c.get("note"), str) or not c["note"].strip() or not isinstance(c.get("path"), str) or not c["path"].strip():
+            raise CommandError("chat.send: each comment needs a path and a note")
+        out.append({"path": c["path"].strip()[:500], "quote": str(c.get("quote") or "")[:2000], "note": c["note"].strip()[:4000]})
+    return out
 
 
 @command("chat.stop", "Stop the reply", {"conversationId": {"type": "string", "required": True}},
@@ -79,7 +97,7 @@ def edit(conversationId: str, text: str, messageId: str | None = None) -> dict:
     old = next((m for m in users if m["id"] == messageId), None) if messageId else (users[-1] if users else None)
     if old is None:
         raise CommandError("chat.edit: no message of yours with that id on the current path" if messageId else "chat.edit: there is no message of yours to edit", 404 if messageId else 400)
-    meta = {k: v for k, v in (old.get("meta") or {}).items() if k in ("attachments", "files")} | {"edited": True}
+    meta = {k: v for k, v in (old.get("meta") or {}).items() if k in ("attachments", "files", "comments")} | {"edited": True}
     user = insert(conversationId, "user", [{"type": "text", "text": text}], meta, old["parent_id"] if old["parent_id"] else ROOT)
     _publish_path(conversationId)
     reply = chat.start(conversationId)

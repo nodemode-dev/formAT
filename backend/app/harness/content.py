@@ -24,6 +24,16 @@ def _fence(name: str, text: str) -> str:
     return f"{ticks}{name}\n{text}\n{ticks}"
 
 
+def comment_blocks(comments: list | None) -> list[dict]:
+    if not comments:
+        return []
+    parts = ["The person left comments on files in this chat's folder. Each names the file, quotes the passage it is about, and gives the comment:"]
+    for c in comments:
+        quote = "\n".join(f"> {line}" for line in (c.get("quote") or "").splitlines()) or "> (the whole file)"
+        parts.append(f"On {c.get('path')}:\n{quote}\nComment: {c.get('note')}")
+    return [{"type": "text", "text": "\n\n".join(parts)}]
+
+
 def _zip_blocks(meta: dict) -> list[dict]:
     dest = meta.get("unzipped")
     if not dest:

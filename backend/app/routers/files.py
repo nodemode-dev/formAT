@@ -34,7 +34,10 @@ def chat_file(cid: str, rel: str, inline: bool = False) -> FileResponse:
         raise HTTPException(403, "Outside the chat's folder") from None
     if not path.is_file():
         raise HTTPException(404, "No such file")
-    return FileResponse(path, filename=path.name, content_disposition_type="inline" if inline else "attachment")
+    headers = {"x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "cache-control": "no-cache"}
+    if path.suffix.lower() != ".pdf":
+        headers["content-security-policy"] = "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'"
+    return FileResponse(path, filename=path.name, content_disposition_type="inline" if inline else "attachment", headers=headers)
 
 
 @router.get("/chats/{cid}/outputs.zip")

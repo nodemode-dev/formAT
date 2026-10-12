@@ -108,6 +108,7 @@ def api_messages(history: list[dict], model: dict, accepts, provider=None) -> li
         blocks: list[dict] = []
         for fid in (m.get("meta") or {}).get("attachments", []):
             blocks.extend(content.blocks_for(fid, model, accepts, provider))
+        blocks.extend(content.comment_blocks((m.get("meta") or {}).get("comments")))
         for b in m["content"]:
             if b.get("type") not in KEEP_BLOCKS or (b["type"] == "text" and not b.get("text")):
                 continue
