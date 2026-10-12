@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.4 · 2026-10-12
+
+Phase 10: the parity grade and the docs.
+
+- The manual, in `docs/`: getting started, chatting, tools and approvals, artifacts and documents, projects, memory and Customize, the built-in browser, other devices, the terminal and scheduled tasks, agents and MCP, settings, shortcuts and troubleshooting.
+- The developer wiki, in `.docs/wiki`: architecture, the engine, the window, agents and skills, checks and releasing. `BRANCHING.md` says how changes reach `main`.
+- README: the ports table now lists the other-devices listener and the MCP endpoint, and links the docs.
+- Dictation: when the local speech model cannot be downloaded or loaded, Format now says so (with what to do) instead of failing with a server error, and uses OpenAI instead when that key is set.
+
 ## 0.10.3 · 2026-10-12
 
 Closing the parity gaps, fourth part: plugins and the built-in browser.

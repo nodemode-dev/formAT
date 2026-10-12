@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.3
-Last updated: 2026-10-12 · v0.10.3: the Browser pane, Plugins in Customize
+Current build version: v0.10.4
+Last updated: 2026-10-12 · v0.10.4: no window changes; the manual in docs/ describes it
 
 ---
 
