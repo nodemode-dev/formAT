@@ -210,6 +210,14 @@ export class Composer {
     this.sendBtn.disabled = !stopMode && (!(typed || this.files.some((f) => f.file || f.comment)) || uploading);
   }
 
+  private useSkill(name: string): void {
+    const lead = `Use the ${name} skill. `;
+    if (!this.input.value.startsWith(lead)) this.input.value = lead + this.input.value;
+    this.input.setSelectionRange(this.input.value.length, this.input.value.length);
+    this.autosize();
+    this.input.focus();
+  }
+
   addComment(c: FileComment): void {
     const name = c.path.split('/').pop() || c.path;
     this.files.push({ key: `c${++this.seq}`, name: `Comment on ${name}`, comment: c });
@@ -324,7 +332,14 @@ export class Composer {
     const empty = (what: string): MenuItem[] => [{ note: `No ${what} yet` }, { label: 'Open Customize', icon: 'customize', action: () => this.hooks.openCustomize() }];
     openMenu(anchor, [
       { label: 'Add files or photos', icon: 'paperclip', hint: `${modKey}U`, action: () => this.openFilePicker() },
-      { label: 'Skills', icon: 'skills', submenu: () => empty('skills') },
+      {
+        label: 'Skills', icon: 'skills', submenu: () => {
+          const on = this.state.skills.filter((s) => s.enabled);
+          if (!on.length) return empty('skills');
+          return [...on.map((s) => ({ label: s.name, desc: s.description.slice(0, 90), action: () => this.useSkill(s.name) })),
+            { divider: true }, { label: 'Manage skills', icon: 'customize' as const, action: () => this.hooks.openCustomize() }];
+        },
+      },
       { label: 'Connectors', icon: 'plug', submenu: () => empty('connectors') },
       { divider: true },
       { label: 'Research', icon: 'research', checked: this.research, action: () => { this.research = !this.research; } },

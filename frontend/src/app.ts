@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type ProjectSummary, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type ProjectSummary, type SkillSummary, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -14,6 +14,8 @@ import { TerminalDock } from './ui/terminal-dock';
 import { ArtifactPanel } from './ui/artifact-panel';
 import { FilesPane } from './ui/files-pane';
 import { ProjectsView } from './ui/projects-view';
+import { CustomizeView } from './ui/customize-view';
+import { MemoryPanel } from './ui/memory-panel';
 import { ArtifactsView, pageView, SettingsView, type InfoLike } from './ui/views';
 
 type Layout = 'sidebar' | 'panel' | 'term';
@@ -31,6 +33,8 @@ export class App {
   private artifact: ArtifactPanel;
   private filesPane: FilesPane;
   private projectsView: ProjectsView;
+  private customizeView: CustomizeView;
+  private memoryPanel: MemoryPanel;
   private gallery: ArtifactsView;
   private outputsSeq = 0;
   private settingsView: SettingsView;
@@ -93,6 +97,8 @@ export class App {
       leaveProject: () => this.setDraftProject(null),
       chatId: () => this.state.activeId ?? '',
     });
+    this.customizeView = new CustomizeView(this.state);
+    this.memoryPanel = new MemoryPanel(this.state);
     this.projectsView = new ProjectsView(this.state, {
       openChat: (id) => void this.openChat(id),
       newChatIn: (pid) => { this.newChat(); this.setDraftProject(pid); },
@@ -138,11 +144,14 @@ export class App {
     this.shell.insertBefore(this.sidebar.root, this.shell.firstChild);
     const center = q(this.shell, '.ft-center');
     center.appendChild(this.chat.root);
-    (['scheduled', 'customize'] as const).forEach((v) => {
+    (['scheduled'] as const).forEach((v) => {
       const p = pageView(v);
       this.pages.set(v, p);
       center.appendChild(p);
     });
+    this.pages.set('customize', this.customizeView.root);
+    center.appendChild(this.customizeView.root);
+    this.settingsView.root.appendChild(this.memoryPanel.root);
     this.pages.set('projects', this.projectsView.root);
     center.appendChild(this.projectsView.root);
     this.pages.set('artifacts', this.gallery.root);
@@ -185,6 +194,10 @@ export class App {
     const projects = await run<{ projects: ProjectSummary[] }>('project.list').catch(() => ({ projects: [] as ProjectSummary[] }));
     projects.projects.forEach((p) => this.state.projects.set(p.id, p));
     this.state.emit('projects');
+    const skills = await run<{ skills: SkillSummary[] }>('skill.list').catch(() => ({ skills: [] as SkillSummary[] }));
+    this.state.skills = skills.skills;
+    this.state.emit('skills');
+    void this.memoryPanel.refresh();
     list.conversations.forEach((c) => {
       this.state.conversations.set(c.id, c);
       if (c.activity) this.state.running.add(c.id);
@@ -296,6 +309,11 @@ export class App {
     } else if (e.type === 'project.changed') {
       const p = e.project as ProjectSummary;
       if (p?.id) { this.state.projects.set(p.id, p); this.state.emit('projects'); }
+    } else if (e.type === 'skills.changed') {
+      this.state.skills = e.skills as SkillSummary[];
+      this.state.emit('skills');
+    } else if (e.type === 'memory.changed') {
+      this.state.emit('memory');
     } else if (e.type === 'project.deleted') {
       this.state.projects.delete(e.id as string);
       if (this.state.draftProject === e.id) this.setDraftProject(null);

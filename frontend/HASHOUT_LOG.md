@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.6.0
-Last updated: 2026-10-12 · v0.6.0: the Projects page, project chats and the crumb, Move to project; the streaming tail no longer shifts
+Current build version: v0.6.1
+Last updated: 2026-10-12 · v0.6.1: Customize with skills, the + menu's Skills, Settings' Memory, memory and skill steps
 
 ---
 
@@ -38,7 +38,9 @@ frontend/
     │   ├── artifact-panel.ts      the artifact beside the chat: two frames, versions, code, links
     │   ├── files-pane.ts          the chat folder's files and their previews, comments on a block
     │   ├── projects-view.ts       the Projects page: tiles, one project with chats, instructions and files
-    │   ├── views.ts               Artifacts gallery; Scheduled, Customize, Settings pages
+    │   ├── customize-view.ts      Customize: skills (list, on and off, add, write, one skill), connectors note
+    │   ├── memory-panel.ts        Settings, Memory: the setting, the scope, the memory files and their editor
+    │   ├── views.ts               Artifacts gallery; Scheduled and Settings pages
     │   └── boot-frame.ts          the engine-down fallback
     └── styles/
         ├── tokens.css ... light-mode.css   family sheets, vendored unchanged from formvis v1.66.1
@@ -64,6 +66,7 @@ frontend/
 - [src/ui/artifact-panel.ts and the gallery](#src-ui-artifact-panel)
 - [src/ui/files-pane.ts, comments and activity](#src-ui-files-pane)
 - [src/ui/projects-view.ts](#src-ui-projects-view)
+- [src/ui/customize-view.ts and src/ui/memory-panel.ts](#src-ui-customize)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -435,6 +438,24 @@ The Artifacts page lists every artifact, newest first, with its chat, version co
 One page with two modes, the list of project tiles and one project, so the sidebar's Projects entry keeps one view. A project shows its chats on the left and its instructions and knowledge files on the right, as claude.ai lays it out. Instructions save on a button, not as you type, because every save changes what the next reply in each chat receives; a "Not saved" note keeps unsaved text from being overwritten when the project refreshes. Files upload through `/api/uploads` and then `project.addFile`, the same uploads chats use, and can be dropped on the page. Delete asks once in place ("Delete? Its chats are kept") rather than in a dialog. Tiles and chat rows are keyed elements updated in place; only the files list is rebuilt when it changes, as in Outputs.
 
 New chat in this project sets a draft project: the empty chat shows "New chat in <project>" above the greeting (its space is always reserved, so showing it moves nothing), the top bar shows the project as a crumb, and the first message passes `projectId`. The draft clears on any other new chat, on opening a chat, and with the chip's close button. The crumb on a project chat opens the project; the title menu's Move to project puts a chat in a project or takes it out.
+
+---
+
+## src/ui/customize-view.ts and src/ui/memory-panel.ts {#src-ui-customize}
+
+### src/ui/customize-view.ts · skills
+- refers-to: src/ui/customize-view.ts :: CustomizeView; src/ui/composer.ts :: plusMenu (Skills), useSkill; src/ui/tool-cards.ts :: describe (skill)
+- kind: rationale
+- logged: v0.6.1 · 2026-10-12
+
+Customize lists the installed skills as keyed rows with an on/off box, and opens one skill on the same page (its description, file chips and SKILL.md rendered without its frontmatter). Skills arrive as a .zip of the folder or a SKILL.md, through the button or dropped on the page, or are written in a form that becomes SKILL.md. Delete asks once in place. The + menu's Skills submenu lists the skills that are on; picking one puts "Use the <name> skill." at the start of the message, which is plain text the person can see and change, rather than a hidden flag; the system prompt already lists every skill, so the name is enough for Claude to load it. Connectors keep a note until v0.6.2.
+
+### src/ui/memory-panel.ts · memory in Settings
+- refers-to: src/ui/memory-panel.ts :: MemoryPanel; src/app.ts (appended after About)
+- kind: rationale
+- logged: v0.6.1 · 2026-10-12
+
+The Memory section turns the memory setting on and off and shows one memory at a time, chosen by Memory of (chats outside projects, or a project). Its file list is the last thing on the Settings page, and the New and editor controls sit above it: the list changes when Claude writes memory or the scope changes, often more than half a second after any click, and anything below it would count as a layout shift (the first version, placed before API keys, measured 0.0006). Changing the scope and deleting remove rows at once, in the same input, and the empty note follows from the list. Files open in an editor with their path fixed; a new file takes a path under /memories.
 
 ---
 

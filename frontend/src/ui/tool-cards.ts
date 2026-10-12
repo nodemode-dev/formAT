@@ -137,7 +137,7 @@ export const RESULT_TYPES = new Set(['tool_result', 'web_search_tool_result', 'w
 
 const ICON: Record<string, Parameters<typeof ui>[0]> = {
   bash: 'terminal', write: 'file', edit: 'pencil', read: 'file', glob: 'search', grep: 'search', web_search: 'globe', web_fetch: 'globe',
-  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills',
+  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills', memory: 'file', skill: 'skills',
 };
 const STATE_TEXT: Record<string, string> = {
   input: 'preparing', waiting: 'needs approval', asking: 'waiting for you', running: 'running', done: '', error: 'failed', denied: 'not run',
@@ -163,6 +163,12 @@ export function describe(name: string, input: Record<string, unknown>): { title:
     case 'web_search': return { title: 'Searched the web', sub: String(input.query ?? ''), short: 'searched the web' };
     case 'web_fetch': return { title: 'Read a page', sub: String(input.url ?? ''), short: `read ${host(input.url)}` };
     case 'ask_user': return { title: 'Asked you', sub: String(input.question ?? ''), short: 'asked you' };
+    case 'memory': {
+      const path = String(input.path ?? input.old_path ?? '');
+      return input.command === 'view' ? { title: 'Checked memory', sub: path, short: 'checked memory' }
+        : { title: 'Updated memory', sub: `${String(input.command ?? '')} ${path}`.trim(), short: 'updated memory' };
+    }
+    case 'skill': return { title: 'Read a skill', sub: `${String(input.name ?? '')}${input.file ? `/${String(input.file)}` : ''}`, short: `read the ${String(input.name ?? '')} skill` };
     case 'spawn_agent': return { title: 'Ran a sub-agent', sub: String(input.title || String(input.task ?? '').split('\n')[0]), short: 'ran a sub-agent' };
     case 'task_list': {
       const tasks = (Array.isArray(input.tasks) ? input.tasks : []) as TaskItem[];
@@ -314,7 +320,8 @@ export class ToolCard {
     setText(this.title, d.title);
     setText(this.sub, d.sub.split('\n')[0].slice(0, 160));
     setAttr(this.sub, 'title', d.sub.slice(0, 2000));
-    const detail = this.name === 'bash' ? String(this.input.command ?? '') : this.name === 'write' ? String(this.input.content ?? '') : this.name === 'edit' ? `${String(this.input.old_string ?? '')}\n\n${String(this.input.new_string ?? '')}` : '';
+    const detail = this.name === 'bash' ? String(this.input.command ?? '') : this.name === 'write' ? String(this.input.content ?? '') : this.name === 'edit' ? `${String(this.input.old_string ?? '')}\n\n${String(this.input.new_string ?? '')}`
+      : this.name === 'memory' ? String(this.input.file_text ?? this.input.new_str ?? this.input.insert_text ?? '') : '';
     setText(this.inputEl, detail.slice(0, 20000));
     if (this.inputEl.hidden === !!detail) this.inputEl.hidden = !detail;
     if (this.name === 'ask_user') {

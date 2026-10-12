@@ -4,9 +4,8 @@ import { el, esc, modKey, q, setText } from './dom';
 import { ui, type UiIcon } from './icons-ft';
 import { openMenu } from './menu';
 
-const PAGES: Record<Exclude<View, 'chat' | 'settings' | 'artifacts' | 'projects'>, [string, UiIcon, string]> = {
+const PAGES: Record<Exclude<View, 'chat' | 'settings' | 'artifacts' | 'projects' | 'customize'>, [string, UiIcon, string]> = {
   scheduled: ['Scheduled', 'clock', 'Tasks that run on a schedule, with their history. They arrive in v0.7.0.'],
-  customize: ['Customize', 'customize', 'Skills, connectors (MCP servers) and providers, each with its own page. They arrive in the next v0.6 releases.'],
 };
 
 function when(ts: number): string {
@@ -71,7 +70,7 @@ export class ArtifactsView {
   }
 }
 
-export function pageView(view: Exclude<View, 'chat' | 'settings' | 'artifacts' | 'projects'>): HTMLElement {
+export function pageView(view: Exclude<View, 'chat' | 'settings' | 'artifacts' | 'projects' | 'customize'>): HTMLElement {
   const [title, ic, body] = PAGES[view];
   return el(`<section class="ft-page" data-view="${view}" hidden>
     <header class="ft-page-head"><h1>${esc(title)}</h1></header>

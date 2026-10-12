@@ -117,11 +117,14 @@ export interface Settings {
   agentLimit?: number;
   agentModel?: string;
   artifactNetwork?: boolean;
+  memory?: boolean;
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
 
-type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects';
+type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory';
+
+export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number }
 
 export interface ProjectSummary { id: string; name: string; description: string; instructions: string; created: number; updated: number; chats: number; files: number }
 
@@ -146,6 +149,7 @@ export class AppState {
   running = new Set<string>();
   waiting = new Map<string, Set<string>>();
   projects = new Map<string, ProjectSummary>();
+  skills: SkillSummary[] = [];
   draftProject: string | null = null;
   private subs = new Map<Topic, Set<() => void>>();
 
