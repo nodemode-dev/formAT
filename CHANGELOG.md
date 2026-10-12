@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.0 · 2026-10-12
+
+Closing the parity gaps, first part.
+
+- Find in page: Mod+F (or the palette) finds text in the open chat or page, highlights every match, steps through them with Enter and Shift+Enter, and opens a folded tool group when a match is inside it.
+- Research: the + menu's Research turns on Research mode for the next messages (a pill beside the microphone turns it off). Claude plans the questions, searches and reads many sources, and writes a cited report; replies show "research" in their footer.
+- Sandboxed code: Claude's commands run in a sandbox where only the chat's folder is writable, your home folder and Format's data are hidden, and there is no network unless you allow it (Settings, Tools). Linux uses bubblewrap, macOS sandbox-exec; Windows runs commands unsandboxed and says so.
+- Engine: `sandbox.status`; `chat.send` `research`; settings `sandbox` and `sandboxNetwork`. 75 commands.
+
 ## 0.9.0 · 2026-10-12
 
 Agent kits (DEV_PLAN Phase 9).
