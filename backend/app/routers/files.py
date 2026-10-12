@@ -133,10 +133,11 @@ def voice_status() -> dict:
 
 
 @router.post("/voice/transcribe")
-async def transcribe(audio: UploadFile = File(...), language: str | None = Form(default=None)) -> JSONResponse:
+async def transcribe(audio: UploadFile = File(...), language: str | None = Form(default=None), engine: str | None = Form(default=None)) -> JSONResponse:
+    from starlette.concurrency import run_in_threadpool
     data = await audio.read()
     try:
-        result = voice.transcribe(data, audio.filename or "speech.webm", audio.content_type or "audio/webm", language)
+        result = await run_in_threadpool(voice.transcribe, data, audio.filename or "speech.webm", audio.content_type or "audio/webm", language, engine)
     except voice.VoiceError as exc:
         return JSONResponse({"ok": False, "error": str(exc)}, status_code=503)
     return JSONResponse({"ok": True, **result})

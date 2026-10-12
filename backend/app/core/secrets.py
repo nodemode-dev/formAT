@@ -5,7 +5,7 @@ from pathlib import Path
 
 from app.core import config
 
-PROVIDERS = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY"}
+PROVIDERS = {"anthropic": "ANTHROPIC_API_KEY", "openai": "OPENAI_API_KEY", "elevenlabs": "ELEVENLABS_API_KEY"}
 _lock = threading.Lock()
 
 

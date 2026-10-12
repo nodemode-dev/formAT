@@ -2,6 +2,13 @@
 set -e
 source "$(dirname "$0")/lib.sh"
 py="$(ft_venv_python)"
-ft_say "installing local speech to text (faster-whisper); the model downloads on first use"
+model="${FORMAT_WHISPER_MODEL:-large-v3-turbo}"
+ft_say "installing local speech to text (faster-whisper)"
 "$py" -m pip install -r "$FORMAT_ROOT/backend/requirements_voice.txt"
-ft_say "done. Restart the engine; the microphone then transcribes on this computer"
+ft_say "downloading the $model model (about 1.6 GB for large-v3-turbo, once)"
+if "$py" -c "import sys; from faster_whisper import WhisperModel; WhisperModel(sys.argv[1], device='cpu', compute_type='int8')" "$model"; then
+  ft_say "done. Restart the engine; the microphone then transcribes on this computer with $model"
+else
+  ft_say "the package is installed but $model could not be downloaded; it is fetched from Hugging Face. Check the network and run this again, or set FORMAT_WHISPER_MODEL to a model folder"
+  exit 1
+fi

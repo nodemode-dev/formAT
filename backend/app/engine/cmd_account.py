@@ -5,7 +5,8 @@ from app.core import secrets
 from app.engine import events, store
 from app.engine.commands import CommandError, command
 
-ACCOUNT_DEFAULTS = {"displayName": "", "preferences": "", "sendKey": "enter", "voiceLanguage": "en-US"}
+ACCOUNT_DEFAULTS = {"displayName": "", "preferences": "", "sendKey": "enter", "voiceLanguage": "en-US", "voiceEngine": "auto"}
+VOICE_ENGINES = ["auto", "browser", "scribe", "local", "openai"]
 PROVIDER = {"type": "string", "required": True, "enum": list(secrets.PROVIDERS)}
 
 
@@ -17,18 +18,18 @@ def account() -> dict:
     return data
 
 
-@command("account.get", "Account", mutates=False, description="The person's profile: display name, response preferences (sent to Claude with every chat), send key and dictation language.")
+@command("account.get", "Account", mutates=False, description="The person's profile: display name, response preferences (sent to Claude with every chat), send key, dictation language and dictation engine.")
 def get() -> dict:
     return account()
 
 
 @command("account.set", "Update account",
          {"displayName": {"type": "string"}, "preferences": {"type": "string"}, "sendKey": {"type": "string", "enum": ["enter", "modEnter"]},
-          "voiceLanguage": {"type": "string"}},
-         description="Changes any of the profile fields; the rest stay as they are.")
-def set_(displayName: str | None = None, preferences: str | None = None, sendKey: str | None = None, voiceLanguage: str | None = None) -> dict:
+          "voiceLanguage": {"type": "string"}, "voiceEngine": {"type": "string", "enum": VOICE_ENGINES}},
+         description="Changes any of the profile fields; the rest stay as they are. voiceEngine picks dictation: auto (Format's best engine, else the browser), browser, scribe (ElevenLabs Scribe v2), local (Whisper large-v3-turbo) or openai.")
+def set_(displayName: str | None = None, preferences: str | None = None, sendKey: str | None = None, voiceLanguage: str | None = None, voiceEngine: str | None = None) -> dict:
     data = account()
-    for k, v in (("displayName", displayName), ("preferences", preferences), ("sendKey", sendKey), ("voiceLanguage", voiceLanguage)):
+    for k, v in (("displayName", displayName), ("preferences", preferences), ("sendKey", sendKey), ("voiceLanguage", voiceLanguage), ("voiceEngine", voiceEngine)):
         if v is not None:
             data[k] = v.strip() if k != "preferences" else v
     if len(data["preferences"]) > 8000:

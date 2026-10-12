@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.4
-Last updated: 2026-10-12 · v0.10.4: voice model load errors answered as 503 with remedies; the manual and wiki
+Current build version: v0.10.5
+Last updated: 2026-10-12 · v0.10.5: dictation engines Scribe v2, Whisper large-v3-turbo and OpenAI in order, voiceEngine, the ElevenLabs key
 
 ---
 
@@ -282,6 +282,15 @@ Local faster-whisper (MIT, optional, `./format install-voice`; model `base` unle
 - logged: v0.10.4 · 2026-10-12
 
 `./format install-voice` was run at v0.10.4 and installed faster-whisper 1.2.1 and its dependencies, but the first transcription could not fetch the `base` model: the build workspace's proxy refuses huggingface.co (ProxyError 403). Loading the model used to raise straight through as a 500; it is now a VoiceError naming the model, the cause and the two remedies (network, or `FORMAT_WHISPER_MODEL` pointing at a model folder), answered as 503 and shown in the composer. When an OpenAI key is also set, a local failure falls through to OpenAI. A transcription on a machine that can download the model is still owed.
+
+### app/engine/voice.py · Scribe v2 and large-v3-turbo
+- refers-to: app/engine/voice.py :: engines, _scribe, local_model_name, scribe_model_name, transcribe; app/routers/files.py :: transcribe (engine, run_in_threadpool); app/core/secrets.py :: PROVIDERS (elevenlabs); app/engine/cmd_account.py :: voiceEngine; setup/install_voice; backend/.env.example
+- kind: explainer
+- logged: v0.10.5 · 2026-10-12
+
+Three engines, tried in order: ElevenLabs Scribe v2 (`POST /v1/speech-to-text`, header `xi-api-key`, form `model_id=scribe_v2`, the audio as `file`, `language_code` from the dictation language, `tag_audio_events=false` and `timestamps_granularity=none` because only the text is used; the transcript is `text`), local faster-whisper with `large-v3-turbo` (int8; the distilled-decoder Whisper large-v3, close to large-v3's accuracy at a fraction of the decode time, about 1.6 GB), then OpenAI. Scribe v2 comes first because it is the most accurate where a key is present; the local model comes before OpenAI because nothing leaves the computer. `engines()` reports which are set up and the order; `transcribe` takes an optional preferred engine (the account's `voiceEngine`), puts it first, and falls through on any VoiceError, joining the failures when all fail. The route runs transcription in the thread pool: a large-v3-turbo decode on CPU takes seconds, and running it inline blocked the event loop (every window's events and commands) for that long. `FORMAT_WHISPER_MODEL`, `FORMAT_SCRIBE_MODEL` and `FORMAT_ELEVENLABS_URL` override the model names and the endpoint (the last for a test stand-in). `./format install-voice` now downloads the model during the install and says plainly when it cannot. An `.env` copied from an older example still names `base`; that is respected as an explicit choice.
+
+Verified at v0.10.5 against a local stand-in for the ElevenLabs endpoint (the real one, and Hugging Face for the local model, are refused by the build workspace's network): the request carried scribe_v2, the key, `language_code=en` and the recorded webm/opus; asking for local fell through to Scribe with the download failure; local alone answers 503 in 0.3 s with the remedy while the engine keeps answering. No transcription by a real model has run here.
 
 ### app/harness/content.py · the Files API
 - refers-to: app/harness/content.py :: remote_id, blocks_for, FILES_API_MIN; app/engine/uploads.py :: remember_remote; app/providers/anthropic_provider.py :: upload_file, delete_file, key_tag
