@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.7.1 · 2026-10-12
+
+Scheduled tasks and background work (DEV_PLAN Phase 7, second part).
+
+- Scheduled: give Claude a prompt to run every hour, every day, on weekdays, every week, once at a set time, or only when you press Run now, optionally inside a project. Each run is a new chat, listed with its status on the task's page; pause, edit and delete tasks there. Runs happen while Format is open; a run missed while it was closed runs once when it opens.
+- Background: a button in the top bar counts the chats that are working or waiting for you (amber when one waits) and lists them with their scheduled task, how long they have run, and Stop.
+- The terminal dock has a read-only Claude tab where every command Claude runs, and its output, appears live. New terminal (+) moved beside Restart and Hide.
+- Chats started in the background (scheduled runs, outside agents) join the sidebar at your next click or key press, so the list never moves while you read it.
+- Fixed: the artifact's Preview and Code tabs no longer move when a second version arrives.
+- Engine: `schedule.list`, `schedule.get`, `schedule.create`, `schedule.update`, `schedule.delete`, `schedule.run`, `background.list`; `chat.send` `title`; terminals report their kind. 72 commands.
+
 ## 0.7.0 · 2026-10-12
 
 Format for coding agents (DEV_PLAN Phase 7, first part).
