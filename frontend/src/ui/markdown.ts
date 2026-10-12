@@ -139,11 +139,15 @@ export class StreamRenderer {
     this.text = full;
     const { done, tail } = splitBlocks(full);
     while (this.doneCount < done.length) {
-      const block = document.createElement('div');
+      const block = this.tailEl;
       block.className = 'ft-md-block';
-      block.innerHTML = renderMarkdown(done[this.doneCount]);
-      this.root.insertBefore(block, this.tailEl);
+      const source = done[this.doneCount].trim();
+      if (source !== this.tailText) block.innerHTML = renderMarkdown(done[this.doneCount]);
       this.doneCount++;
+      this.tailEl = document.createElement('div');
+      this.tailEl.className = 'ft-md-tail';
+      this.tailText = '';
+      block.after(this.tailEl);
     }
     const tailSource = tail.trim();
     if (tailSource !== this.tailText) {
