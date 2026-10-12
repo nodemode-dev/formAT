@@ -467,3 +467,4 @@
 .ft-sheet dl { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-2) var(--space-4); margin: 0; font-size: var(--fs-13); }
 .ft-sheet dt { color: var(--text-secondary); }
 .ft-sheet dd { margin: 0; font: var(--fs-12) var(--font-mono); color: var(--text-primary); }
+.ft-consent .ft-set-note { margin: 0 0 var(--space-4); }

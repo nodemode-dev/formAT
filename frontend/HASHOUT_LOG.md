@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.6.2
-Last updated: 2026-10-12 · v0.6.2: connectors on Customize and in the + menu, connector steps and approvals
+Current build version: v0.7.0
+Last updated: 2026-10-12 · v0.7.0: outside-agent consent sheet, Settings Outside agents, terminal Restart
 
 ---
 
@@ -366,6 +366,20 @@ Pasted files (screenshots from the clipboard included) go through `addFiles` lik
 - logged: v0.2.0 · 2026-10-11
 
 `terminal.open` starts a PTY in the engine; the tab attaches to `WS /api/terminal/{id}`, gets the scrollback replayed, sends keystrokes as `{type: input}` and its size as `{type: resize}` whenever the fit addon changes the cell grid (a ResizeObserver on the stage). Tabs stay mounted; switching toggles `hidden`. Colours come from the theme tokens at open time.
+
+### src/ui/terminal-dock.ts · Restart
+- refers-to: src/ui/terminal-dock.ts :: restart
+- kind: explainer
+- logged: v0.7.0 · 2026-10-12
+
+Restart acts on the active tab and keeps the tab, its xterm and its socket: `terminal.restart` swaps the shell in the engine, which sends `ESC c`, and xterm resets itself in that one write, so nothing is removed or rebuilt in the DOM. The size is sent again afterwards so the new shell matches the grid even if the window was resized while the old one was busy.
+
+### src/app.ts · outside-agent consent
+- refers-to: src/app.ts :: consent, onEvent (agents.consent, settings.changed); src/ui/views.ts :: SettingsView.fillOutside
+- kind: rationale
+- logged: v0.7.0 · 2026-10-12
+
+`agents.consent` opens one sheet in `#overlay-root` (built once, then only its text changes and `hidden` toggles) naming the agent and the channel; Allow and Block set `outsideAgents`, which is what the waiting call in the engine polls, so the agent continues without another round trip. Allow takes focus so Enter answers. When the setting changes elsewhere (Settings, the CLI, another window) the sheet closes itself. Settings, Outside agents holds the same choice and the agents seen since the engine started; the section sits before Long chats and its text line only changes inside a hidden page or in place, so it shifts nothing.
 
 ### src/styles/ft-chat.css · xterm scrollbar
 - refers-to: src/styles/ft-chat.css :: .ft-term .xterm .xterm-scrollable-element > .scrollbar

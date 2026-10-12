@@ -33,6 +33,7 @@ export class TerminalDock {
         <div class="ft-dock-tabs" role="tablist"></div>
         <button type="button" class="ft-icon-btn ft-dock-new" aria-label="New terminal" title="New terminal">${ui('plus', 16)}</button>
         <span class="ft-dock-spacer"></span>
+        <button type="button" class="ft-text-btn ft-dock-restart" aria-label="Restart terminal" title="Restart this terminal's shell">${ui('retry', 16)}<span>Restart</span></button>
         <button type="button" class="ft-text-btn ft-dock-close" aria-label="Hide terminal" title="Hide terminal (${modKey}J); the shells keep running">${ui('hide', 16)}<span>Hide</span></button>
       </div>
       <div class="ft-dock-stage"></div>
@@ -41,6 +42,7 @@ export class TerminalDock {
     this.stage = q(this.root, '.ft-dock-stage');
     q(this.root, '.ft-dock-new').addEventListener('click', () => void this.open());
     q(this.root, '.ft-dock-close').addEventListener('click', onClose);
+    q(this.root, '.ft-dock-restart').addEventListener('click', () => void this.restart());
     this.ro = new ResizeObserver(() => this.fitActive());
     this.ro.observe(this.stage);
   }
@@ -129,6 +131,14 @@ export class TerminalDock {
     }
     this.fitActive();
     this.focus();
+  }
+
+  async restart(): Promise<void> {
+    const t = this.active ? this.tabs.get(this.active) : null;
+    if (!t) return;
+    await run('terminal.restart', { id: t.id }).catch(() => undefined);
+    this.sendSize(t);
+    t.term.focus();
   }
 
   private async close(id: string): Promise<void> {

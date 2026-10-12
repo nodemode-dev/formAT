@@ -254,6 +254,31 @@ export class App {
     sheet.hidden = !sheet.hidden;
   }
 
+  private consent(client: string, channel: string): void {
+    let sheet = document.getElementById('ft-consent');
+    if (!sheet) {
+      sheet = el(`<div class="ft-sheet-scrim" id="ft-consent" hidden><div class="ft-sheet ft-consent" role="alertdialog" aria-labelledby="ft-consent-h" aria-describedby="ft-consent-p">
+        <h2 id="ft-consent-h">Let outside agents use Format?</h2>
+        <p id="ft-consent-p" class="ft-set-note"><b class="ft-consent-who"></b> <span class="ft-consent-via"></span> wants to use Format: chat with Claude on your key, publish artifacts and run any Format command. This applies to every agent on this computer until you change it in Settings, Outside agents.</p>
+        <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary" data-v="allowed">Allow</button><button type="button" class="ft-btn" data-v="blocked">Block</button></div>
+      </div></div>`);
+      const box = sheet;
+      box.addEventListener('click', (ev) => {
+        const v = (ev.target as HTMLElement).closest<HTMLElement>('[data-v]')?.dataset.v;
+        if (!v) return;
+        box.hidden = true;
+        void run('settings.set', { key: 'outsideAgents', value: v }).catch(() => undefined);
+      });
+      document.addEventListener('keydown', (ev) => { if (ev.key === 'Escape' && !box.hidden) box.hidden = true; });
+      (document.getElementById('overlay-root') as HTMLElement).appendChild(box);
+    }
+    setText(q(sheet, '.ft-consent-who'), client);
+    setText(q(sheet, '.ft-consent-via'), channel === 'stdio' ? '(through ./format mcp)' : '(through the MCP server)');
+    if (sheet.hidden) sheet.hidden = false;
+    this.settingsView.fillOutside();
+    q<HTMLElement>(sheet, '[data-v="allowed"]').focus();
+  }
+
   openSettings(section: 'account' | 'keys' | 'about'): void {
     this.setView('settings');
     this.settingsView.scrollTo(section);
@@ -386,9 +411,13 @@ export class App {
         this.state.messages = e.messages as Message[];
         this.state.emit('messages');
       }
+    } else if (e.type === 'agents.consent') {
+      this.consent(String(e.client ?? 'An agent'), String(e.channel ?? ''));
     } else if (e.type === 'settings.changed') {
       this.state.settings = e.settings as Settings;
       this.state.emit('settings');
+      const sheet = document.getElementById('ft-consent');
+      if (sheet && !sheet.hidden && this.state.settings.outsideAgents !== 'ask') sheet.hidden = true;
     } else if (e.type === 'account.changed') {
       this.state.account = e.account as Account;
       this.sidebar.setAccount(this.state.account);

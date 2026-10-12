@@ -120,6 +120,7 @@ export interface Settings {
   agentModel?: string;
   artifactNetwork?: boolean;
   memory?: boolean;
+  outsideAgents?: 'ask' | 'allowed' | 'blocked';
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';

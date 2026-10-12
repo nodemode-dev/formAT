@@ -127,6 +127,12 @@ export class SettingsView {
           <label class="ft-field"><span>Sub-agent model</span><select class="ft-input" data-a2="agentModel"><option value="">Same as the chat</option></select></label>
         </div>
       </section>
+      <section class="ft-set-section" id="ft-set-agents" aria-labelledby="ft-set-agents-h">
+        <h2 id="ft-set-agents-h">${ui('plug', 16)}<span>Outside agents</span></h2>
+        <p class="ft-set-note">While Format runs it is an MCP server at <code>http://127.0.0.1:8490/mcp</code>, and <code>./format mcp</code> serves the same over stdio, so Claude Code, Codex, Cursor and other agents on this computer can chat, publish artifacts and run any Format command. Ask shows a prompt here the first time an agent calls.</p>
+        <label class="ft-field"><span>Agents on this computer</span><select class="ft-input" data-g="outsideAgents"><option value="ask">Ask me</option><option value="allowed">Allowed</option><option value="blocked">Blocked</option></select></label>
+        <div class="ft-allowed"><span class="ft-allowed-label">Seen:</span><span class="ft-agents-seen">none yet</span></div>
+      </section>
       <section class="ft-set-section" id="ft-set-chats" aria-labelledby="ft-set-chats-h">
         <h2 id="ft-set-chats-h">${ui('compress', 16)}<span>Long chats</span></h2>
         <p class="ft-set-note">When a chat fills most of the model's context window, Claude summarizes the earlier messages after a reply and continues from the summary. The earlier messages stay on screen; images and files in them are not carried into the summary. You can also run it from the command palette.</p>
@@ -197,9 +203,22 @@ export class SettingsView {
     const mod = q<HTMLSelectElement>(this.root, '[data-a2="agentModel"]');
     lim.addEventListener('change', () => void run('settings.set', { key: 'agentLimit', value: Number(lim.value) }).catch(() => undefined));
     mod.addEventListener('change', () => void run('settings.set', { key: 'agentModel', value: mod.value }).catch(() => undefined));
-    state.on('settings', () => { this.fillChats(); this.fillTools(); });
+    const outside = q<HTMLSelectElement>(this.root, '[data-g="outsideAgents"]');
+    outside.addEventListener('change', () => void run('settings.set', { key: 'outsideAgents', value: outside.value }).catch(() => undefined));
+    state.on('settings', () => { this.fillChats(); this.fillTools(); this.fillOutside(); });
     this.fillChats();
     this.fillTools();
+    this.fillOutside();
+  }
+
+  fillOutside(): void {
+    const sel = q<HTMLSelectElement>(this.root, '[data-g="outsideAgents"]');
+    const want = this.state.settings.outsideAgents ?? 'ask';
+    if (sel.value !== want) sel.value = want;
+    void run<{ clients: Array<{ name: string; channel: string }> }>('agents.status').then((r) => {
+      const text = r.clients.length ? r.clients.map((c) => `${c.name} (${c.channel})`).join(', ') : 'none yet';
+      setText(q(this.root, '.ft-agents-seen'), text);
+    }).catch(() => undefined);
   }
 
   private fillAgents(): void {
