@@ -27,6 +27,9 @@ class Session:
         self.alive = True
         self.subscribers: set[asyncio.Queue] = set()
         self.lock = threading.Lock()
+        self.gen = 0
+        self.cols = 100
+        self.rows = 30
 
     def describe(self) -> dict:
         return {"id": self.id, "title": self.title, "cwd": self.cwd, "alive": self.alive}
@@ -76,19 +79,24 @@ def _deliver(session: Session, text: str | None) -> None:
             q.put_nowait(text)
 
 
-def _pump(session: Session) -> None:
+def _pump(session: Session, proc=None, gen: int = 0) -> None:
+    proc = proc or session.proc
     while True:
         try:
-            text = session.proc.read(65536)
+            text = proc.read(65536)
         except EOFError:
             break
         except OSError:
             break
         if not text:
             continue
+        if session.gen != gen:
+            return
         session.keep(text)
         if _loop is not None and not _loop.is_closed():
             _loop.call_soon_threadsafe(_deliver, session, text)
+    if session.gen != gen:
+        return
     session.alive = False
     if _loop is not None and not _loop.is_closed():
         _loop.call_soon_threadsafe(_deliver, session, None)
@@ -102,9 +110,33 @@ def open_session(cwd: str | None = None, cols: int = 100, rows: int = 30, title:
     proc = PtyProcess.spawn(_shell(), cwd=where, env=_env(), dimensions=(max(4, rows), max(10, cols)))
     sid = uuid.uuid4().hex[:12]
     session = Session(sid, title or f"Terminal {len(SESSIONS) + 1}", where, proc)
+    session.cols, session.rows = max(10, cols), max(4, rows)
     SESSIONS[sid] = session
-    threading.Thread(target=_pump, args=(session,), name=f"pty-{sid}", daemon=True).start()
+    threading.Thread(target=_pump, args=(session, proc, 0), name=f"pty-{sid}", daemon=True).start()
     events.publish("terminal.opened", terminal=session.describe())
+    return session
+
+
+def restart(sid: str) -> Session:
+    session = get(sid)
+    old = session.proc
+    session.gen += 1
+    gen = session.gen
+    try:
+        old.terminate(force=True)
+    except Exception:
+        pass
+    proc = PtyProcess.spawn(_shell(), cwd=session.cwd if os.path.isdir(session.cwd) else str(config.workspace_dir()), env=_env(),
+                            dimensions=(session.rows, session.cols))
+    with session.lock:
+        session.chunks.clear()
+        session.size = 0
+    session.proc = proc
+    session.alive = True
+    if _loop is not None and not _loop.is_closed():
+        _loop.call_soon_threadsafe(_deliver, session, "\x1bc")
+    threading.Thread(target=_pump, args=(session, proc, gen), name=f"pty-{sid}-{gen}", daemon=True).start()
+    events.publish("terminal.restarted", terminal=session.describe())
     return session
 
 
@@ -114,6 +146,7 @@ def write(sid: str, data: str) -> None:
 
 def resize(sid: str, cols: int, rows: int) -> None:
     session = get(sid)
+    session.cols, session.rows = max(10, cols), max(4, rows)
     if session.alive:
         session.proc.setwinsize(max(4, rows), max(10, cols))
 

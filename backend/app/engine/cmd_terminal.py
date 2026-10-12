@@ -55,6 +55,13 @@ def resize(id: str, cols: int, rows: int) -> dict:
     return {"id": id, "cols": cols, "rows": rows}
 
 
+@command("terminal.restart", "Restart a terminal", {"id": ID},
+         description="Ends the terminal's shell and starts a fresh one in the same tab and folder; its output so far is cleared.")
+def restart(id: str) -> dict:
+    _session(id)
+    return terminal.restart(id).describe()
+
+
 @command("terminal.close", "Close a terminal", {"id": ID}, description="Ends the shell and closes the terminal.")
 def close(id: str) -> dict:
     _session(id)

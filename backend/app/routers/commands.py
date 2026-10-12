@@ -1,9 +1,10 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, Header
 from fastapi.responses import JSONResponse
 
+from app.engine import agents
 from app.engine.commands import REGISTRY, CommandError, catalogue, dispatch
 
 router = APIRouter(prefix="/api", tags=["commands"])
@@ -38,6 +39,11 @@ def describe(cid: str) -> Any:
 
 
 @router.post("/commands/{cid}")
-def run(cid: str, params: dict | None = Body(default=None)) -> Any:
+def run(cid: str, params: dict | None = Body(default=None), x_format_agent: str | None = Header(default=None)) -> Any:
+    if x_format_agent:
+        try:
+            agents.require(x_format_agent, "stdio")
+        except CommandError as exc:
+            return JSONResponse({"ok": False, "command": cid, "error": str(exc)}, status_code=exc.status)
     status, body = _run(cid, params)
     return body if status == 200 else JSONResponse(body, status_code=status)

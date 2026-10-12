@@ -27,7 +27,7 @@ async def attach(ws: WebSocket, sid: str) -> None:
             text = await q.get()
             if text is None:
                 await ws.send_text(json.dumps({"type": "exit"}))
-                return
+                continue
             await ws.send_text(text)
 
     sender = asyncio.create_task(outbound())

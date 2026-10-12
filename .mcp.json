@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "format": {
+      "type": "http",
+      "url": "${FORMAT_ENGINE_URL:-http://127.0.0.1:8490}/mcp"
+    }
+  }
+}

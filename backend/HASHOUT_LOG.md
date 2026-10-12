@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.6.2
-Last updated: 2026-10-12 · v0.6.2: connectors (the API's MCP connector, and MCP servers run by the engine)
+Current build version: v0.7.0
+Last updated: 2026-10-12 · v0.7.0: Format as an MCP server (HTTP and stdio), outside-agent consent, artifact.publish, terminal.restart
 
 ---
 
@@ -41,8 +41,12 @@ backend/
     │   ├── cmd_skill.py           skill.list, get, add, create, enable, delete
     │   ├── connectors.py          MCP servers: API route or engine route, sessions, tool calls
     │   ├── cmd_connector.py       connector.list, add, update, connect, delete
-    │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
+    │   ├── agents.py              outside-agent consent (ask, allowed, blocked), agents.status
+    │   └── cmd_terminal.py        terminal.open, list, write, read, resize, restart, close
+    ├── mcp_server.py              Format as an MCP server: a tool per command, resources, prompts
+    ├── mcp_stdio.py               ./format mcp: the same server over stdio, proxied to the running engine
     └── routers/
+        ├── mcp_http.py            Streamable HTTP MCP at /mcp
         ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
         ├── system.py              GET /api/health
         ├── commands.py            GET /api/commands, GET and POST /api/commands/{id}
@@ -67,6 +71,7 @@ backend/
 - [app/engine/projects.py](#app-engine-projects)
 - [app/engine/memory.py and app/engine/skills.py](#app-engine-memory-skills)
 - [app/engine/connectors.py](#app-engine-connectors)
+- [app/mcp_server.py and outside agents](#app-mcp-server)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -428,6 +433,52 @@ A comment is `{path, quote, note}` on a file of the chat; up to 20 go with one m
 - logged: v0.5.1 · 2026-10-12
 
 `conversation.list` adds `activity` to each chat: `waiting` when `tools.pending` has an approval or question for it, `running` while `chat.running`, otherwise null. It is computed at listing time from in-memory state, so it is lost with the engine like the runs themselves; the window keeps it current from events after that.
+
+---
+
+## app/mcp_server.py, routers/mcp_http.py, mcp_stdio.py, engine/agents.py {#app-mcp-server}
+
+### app/mcp_server.py · one tool per command
+- refers-to: app/mcp_server.py :: build, list_tools, call_tool
+- kind: rationale
+- logged: v0.7.0 · 2026-10-12
+
+The registry already describes every command (label, description, typed params, `mutates`), so the server is generated from it rather than hand-listed: a tool per command, named with `.` turned into `_` because several MCP clients reject dots in tool names, plus `run_command` for an id by string. Annotations come from `mutates` and the verb: not mutating is read-only and idempotent; delete, clear, removeFile, stop and close are destructive; setters, renames, pins, moves and waits are idempotent; `chat.*` is open-world because it reaches the Anthropic API. Results are the command's JSON as text, capped at 60k characters so one transcript cannot flood an agent's context; errors come back with `isError` rather than a protocol error, so the agent sees the message. Resources expose what an agent most wants to read without a tool call: a chat as Markdown (`format://conversation/{id}`) and an artifact's latest HTML (`format://artifact/{id}`), the 50 most recent of each listed, both also as templates. The lowlevel `Server` is used, not FastMCP, because the tool list is dynamic.
+
+### app/routers/mcp_http.py · Streamable HTTP at /mcp
+- refers-to: app/routers/mcp_http.py :: Endpoint, running; app/main.py :: lifespan, routes
+- kind: warning-context
+- logged: v0.7.0 · 2026-10-12
+
+`app.mount("/mcp", ...)` answered `/mcp` with a 307 to `/mcp/`, which Claude Code and Cursor do not follow for POST. The server is added as an explicit `Route("/mcp")` whose ASGI endpoint rewrites the path to `/` for the SDK's app, and the session manager's task group runs inside the engine's lifespan. It binds to the engine's own 127.0.0.1 listener, so only this computer can reach it. Calls run the command in a thread, since commands are synchronous and some (chat.wait) block.
+
+### app/mcp_stdio.py · ./format mcp
+- refers-to: app/mcp_stdio.py :: main; format, format.bat :: mcp
+- kind: rationale
+- logged: v0.7.0 · 2026-10-12
+
+Agents that only start servers themselves (Codex) get a stdio server that proxies to the running engine's REST API (`FORMAT_ENGINE_URL`, default 127.0.0.1:8490) instead of opening the store itself: one process owns SQLite, events reach the window, and a chat started by an agent streams on screen. The catalogue is read from `GET /api/commands` at start. Each call carries `x-format-agent: <client name>` so the engine applies the same consent as over HTTP.
+
+### app/engine/agents.py · consent for outside agents
+- refers-to: app/engine/agents.py :: require, status; app/engine/cmd_settings.py :: outsideAgents; app/routers/commands.py :: run
+- kind: rationale
+- logged: v0.7.0 · 2026-10-12
+
+Setting `outsideAgents` is ask, allowed or blocked, default ask. In ask, the first call publishes `agents.consent` and holds for up to 120 s, polling the setting, so the agent's call simply succeeds once the person presses Allow in the window; Block or no answer refuses with a sentence the agent can relay. The choice is one setting for every outside agent rather than per client, because client names are self-reported and cannot be trusted to tell agents apart. REST calls from the window carry no header and are never gated. `agents.status` lists the clients seen since start (name, channel, last call), kept in memory only.
+
+### app/engine/cmd_artifact.py · artifact.publish
+- refers-to: app/engine/cmd_artifact.py :: publish_
+- kind: explainer
+- logged: v0.7.0 · 2026-10-12
+
+The same `artifacts.publish` Claude's tool uses, without a message id, so a page an agent publishes lands in a chat's gallery, opens in the window and gets versions when `artifactId` is passed again. It publishes `artifact.changed`, so an open Artifacts page updates live.
+
+### app/engine/terminal.py · restart and the generation guard
+- refers-to: app/engine/terminal.py :: restart, _pump, Session.gen; app/routers/terminal_socket.py :: outbound
+- kind: rationale
+- logged: v0.7.0 · 2026-10-12
+
+Restart keeps the session id, title, folder and attached sockets and swaps the PTY underneath. Each pump thread carries the generation it was started with and drops output, and its exit, once the session's generation has moved on; without that, the old shell's last bytes or its EOF would arrive after the new shell's prompt and mark the tab exited. Scrollback is cleared and `ESC c` (full reset) is sent to attached terminals so xterm clears itself in one write. The socket's sender now keeps listening after an exit, so a tab whose shell had exited comes back on restart without reconnecting. The size is kept from the last resize so the new shell starts at the window's dimensions.
 
 ---
 

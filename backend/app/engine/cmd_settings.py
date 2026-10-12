@@ -10,9 +10,9 @@ LINE_NOTE = {"opus": "For complex work and everyday tasks", "sonnet": "Fast and 
              "fable": "The Mythos tier, with extra safeguards", "mythos": "The Mythos tier"}
 EFFORTS = EFFORT_ORDER
 DEFAULTS = {"model": "claude-opus-5-5", "effort": "medium", "thinking": True, "permissionMode": "ask", "autoCompact": True, "compactAt": 0.75,
-            "webTools": True, "workspaceTools": True, "toolAllow": [], "toolDeny": [], "agentModel": "", "agentLimit": 4, "artifactNetwork": False, "memory": False}
+            "webTools": True, "workspaceTools": True, "toolAllow": [], "toolDeny": [], "agentModel": "", "agentLimit": 4, "artifactNetwork": False, "memory": False, "outsideAgents": "ask"}
 TOOL_NAMES = ["bash", "write", "edit"]
-CHOICES = {"effort": EFFORTS, "permissionMode": ["ask", "auto", "plan"]}
+CHOICES = {"effort": EFFORTS, "permissionMode": ["ask", "auto", "plan"], "outsideAgents": ["ask", "allowed", "blocked"]}
 
 
 def _shape(m: dict) -> dict:
@@ -60,7 +60,7 @@ def get() -> dict:
 
 
 @command("settings.set", "Change a setting", {"key": {"type": "string", "required": True, "enum": list(DEFAULTS)}, "value": {"required": True}},
-         description="Sets one chat setting: model takes a model id from models.list, effort one of low, medium, high, xhigh, max, permissionMode ask, auto or plan, thinking (show Claude's thinking) true or false, autoCompact (summarize long chats) true or false, compactAt the share of the context window that triggers it, 0.05 to 0.95, webTools (web search and fetch) and workspaceTools (bash and files in the chat's folder) true or false, toolAllow and toolDeny lists of bash, write, edit, agentModel the sub-agents' model id (empty for the chat's model), agentLimit the most sub-agents in one reply, 0 to 10, artifactNetwork (let artifact pages load images and data from the internet) true or false, memory (Claude keeps notes across chats with the memory tool) true or false.")
+         description="Sets one chat setting: model takes a model id from models.list, effort one of low, medium, high, xhigh, max, permissionMode ask, auto or plan, thinking (show Claude's thinking) true or false, autoCompact (summarize long chats) true or false, compactAt the share of the context window that triggers it, 0.05 to 0.95, webTools (web search and fetch) and workspaceTools (bash and files in the chat's folder) true or false, toolAllow and toolDeny lists of bash, write, edit, agentModel the sub-agents' model id (empty for the chat's model), agentLimit the most sub-agents in one reply, 0 to 10, artifactNetwork (let artifact pages load images and data from the internet) true or false, memory (Claude keeps notes across chats with the memory tool) true or false, outsideAgents (coding agents using Format over MCP) ask, allowed or blocked.")
 def set_(key: str, value: object) -> dict:
     if key in ("thinking", "autoCompact", "webTools", "workspaceTools", "artifactNetwork", "memory") and not isinstance(value, bool):
         raise CommandError(f"settings.set: {key} takes true or false")

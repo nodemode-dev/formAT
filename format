@@ -15,6 +15,7 @@ usage: ./format [command] [options]
   build               production build of the frontend into frontend/dist
   serve               serve the built frontend from the engine on 127.0.0.1:8490
   cli <command> ...   run any engine command from the terminal (./format cli list)
+  mcp                 Format as an MCP server over stdio, for coding agents (needs the engine running)
   doctor              check the toolchain, installs and ports
   clean [--all]       remove build output (--all also venv and node_modules)
   help                this text
@@ -34,6 +35,10 @@ case "$cmd" in
     py=python3
     [ -x backend/venv/bin/python ] && py=backend/venv/bin/python
     exec "$py" setup/cli.py "$@" ;;
+  mcp)
+    cd backend
+    [ -x venv/bin/python ] || { printf '[format] run ./format install first\n' >&2; exit 1; }
+    exec venv/bin/python -m app.mcp_stdio "$@" ;;
   doctor) exec setup/doctor "$@" ;;
   clean) exec setup/clean "$@" ;;
   help|-h|--help) usage ;;

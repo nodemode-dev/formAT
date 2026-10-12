@@ -21,6 +21,23 @@ def get(id: str, version: int | None = None) -> dict:
                 "url": f"/api/artifacts/{id}/v/{v['version']}"}
 
 
+@command("artifact.publish", "Publish an artifact",
+         {"conversationId": {"type": "string", "required": True, "description": "the chat the artifact belongs to"},
+          "title": {"type": "string", "description": "required for a new artifact"},
+          "html": {"type": "string", "required": True, "description": "one self-contained HTML document"},
+          "artifactId": {"type": "string", "description": "an artifact of this chat to add a version to"}},
+         description="Publishes an HTML page as an artifact of a chat, or a new version of one, the way Claude's publish_artifact tool does; it appears in the window's Artifacts page and, when that artifact is open, in its panel. For outside agents and scripts.")
+def publish(conversationId: str, html: str, title: str | None = None, artifactId: str | None = None) -> dict:
+    from app.engine import store
+    if store.row("SELECT id FROM conversations WHERE id = ?", (conversationId,)) is None:
+        raise CommandError(f"No conversation {conversationId}; conversation.list gives the ids", 404)
+    try:
+        a = artifacts.publish(conversationId, None, title or "", html, artifactId)
+    except artifacts.ArtifactError as exc:
+        raise CommandError(f"artifact.publish: {exc}") from None
+    return a | {"url": f"/api/artifacts/{a['id']}/v/{a['version']}"}
+
+
 @command("artifact.delete", "Delete an artifact", {"id": {"type": "string", "required": True}},
          description="Deletes an artifact and all its versions. Not undoable.")
 def delete(id: str) -> dict:
