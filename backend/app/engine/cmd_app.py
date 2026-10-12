@@ -18,4 +18,5 @@ def info() -> dict:
         "commands": len(REGISTRY),
         "python": platform.python_version(),
         "os": platform.system().lower(),
+        "desktop": config.DESKTOP,
     }

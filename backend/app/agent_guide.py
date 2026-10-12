@@ -19,6 +19,8 @@ GUIDE: dict[str, tuple[str, str]] = {
     "browser.open": ("open_in_browser", "Use to open a page in Format's built-in browser, which the person watches in its Browser pane; returns the page as text with numbered elements."),
     "browser.act": ("act_in_browser", "Use to click, type, scroll or go back in Format's built-in browser, with a ref from the latest snapshot."),
     "browser.close": ("close_browser", "Use when the built-in browser is no longer needed."),
+    "browser.install": ("install_browser", "Use when the built-in browser reports that Chromium is not installed yet."),
+    "files.save_download": ("save_download", "Use to put an artifact page, an export or a chat's file into the person's Downloads folder."),
     "plugin.list": ("list_plugins", "Use to see which plugins are installed in Format and what skills and connectors each added."),
     "plugin.get": ("get_plugin", "Use to see one plugin's description, version and parts."),
     "plugin.add": ("add_plugin", "Use to install a Claude plugin from an uploaded .zip or a folder on this computer."),

@@ -1,5 +1,8 @@
 import concurrent.futures
+import os
 import queue
+import subprocess
+import sys
 import threading
 
 from fastapi import APIRouter
@@ -20,7 +23,7 @@ router = APIRouter(tags=["browser"])
 _jobs: "queue.Queue[tuple]" = queue.Queue()
 _thread: threading.Thread | None = None
 _lock = threading.Lock()
-_state = {"open": False, "url": "", "title": "", "seq": 0, "error": "", "busy": False}
+_state = {"open": False, "url": "", "title": "", "seq": 0, "error": "", "busy": False, "installing": False, "note": ""}
 _frame = b""
 
 SNAPSHOT_JS = """(cap) => {
@@ -53,6 +56,45 @@ def available() -> bool:
     return True
 
 
+def browsers_dir():
+    from pathlib import Path
+    custom = os.environ.get("PLAYWRIGHT_BROWSERS_PATH")
+    if custom and custom != "0":
+        return Path(custom)
+    home = Path.home()
+    if sys.platform == "darwin":
+        return home / "Library" / "Caches" / "ms-playwright"
+    if os.name == "nt":
+        return Path(os.environ.get("LOCALAPPDATA") or home / "AppData" / "Local") / "ms-playwright"
+    return Path(os.environ.get("XDG_CACHE_HOME") or home / ".cache") / "ms-playwright"
+
+
+def installed() -> bool:
+    root = browsers_dir()
+    return root.is_dir() and any(p.name.startswith("chromium") for p in root.iterdir())
+
+
+def _install_job() -> None:
+    from playwright._impl._driver import compute_driver_executable, get_driver_env
+    node, cli = compute_driver_executable()
+    _state.update(installing=True, error="", note="Downloading Chromium for the built-in browser")
+    _publish()
+    try:
+        proc = subprocess.run([node, cli, "install", "chromium"], env=get_driver_env(), capture_output=True, text=True, timeout=1800,
+                              stdin=subprocess.DEVNULL)
+        if proc.returncode != 0:
+            import re
+            lines = [re.sub(r"\x1b\[[0-9;]*m", "", ln).strip() for ln in ((proc.stderr or "") + "\n" + (proc.stdout or "")).splitlines()]
+            causes = [ln for ln in lines if ln.startswith("Error:") and "code=1" not in ln]
+            reason = (causes[-1][6:].strip() if causes else next((ln for ln in reversed(lines) if ln and not ln.startswith("at ")), "unknown error"))
+            _state.update(error=f"Chromium did not install ({reason[:300]}). Check the network and choose Install the browser again.")
+    except Exception as exc:
+        _state.update(error=f"Chromium did not install: {type(exc).__name__}: {str(exc)[:300]}")
+    finally:
+        _state.update(installing=False, note="")
+        _publish()
+
+
 def _profile():
     p = config.data_dir() / "browser"
     p.mkdir(parents=True, exist_ok=True)
@@ -64,7 +106,9 @@ def _publish() -> None:
 
 
 def status_dict() -> dict:
-    return {"available": available(), "open": _state["open"], "url": _state["url"], "title": _state["title"],
+    have = available()
+    return {"available": have, "installed": have and installed(), "installing": _state["installing"], "note": _state["note"],
+            "open": _state["open"], "url": _state["url"], "title": _state["title"],
             "seq": _state["seq"], "error": _state["error"], "busy": _state["busy"]}
 
 
@@ -73,9 +117,10 @@ def _worker() -> None:
     from playwright.sync_api import sync_playwright
     try:
         pw = sync_playwright().start()
-        ctx = pw.chromium.launch_persistent_context(str(_profile()), headless=True, viewport=VIEW, accept_downloads=False)
+        ctx = pw.chromium.launch_persistent_context(str(_profile()), headless=True, viewport=dict(VIEW), device_scale_factor=2, accept_downloads=False)
     except Exception as exc:
-        _state.update(open=False, error=f"The browser did not start: {str(exc).splitlines()[0][:300]}. {INSTALL}")
+        hint = "Choose Install in the Browser pane to download Chromium" if not installed() else INSTALL
+        _state.update(open=False, error=f"The browser did not start: {str(exc).splitlines()[0][:300]}. {hint}")
         _publish()
         while True:
             try:
@@ -198,7 +243,13 @@ def act(action: str, args: dict) -> str:
         elif action == "reload":
             page.reload(timeout=NAV_TIMEOUT)
         elif action == "click_at":
-            page.mouse.click(float(args.get("x", 0)) * VIEW["width"], float(args.get("y", 0)) * VIEW["height"])
+            size = page.viewport_size or VIEW
+            page.mouse.click(float(args.get("x", 0)) * size["width"], float(args.get("y", 0)) * size["height"])
+        elif action == "resize":
+            w = max(320, min(1920, int(args.get("width") or VIEW["width"])))
+            h = max(240, min(1400, int(args.get("height") or VIEW["height"])))
+            if page.viewport_size != {"width": w, "height": h}:
+                page.set_viewport_size({"width": w, "height": h})
         elif action == "keys":
             text = str(args.get("text") or "")
             if text:
@@ -260,14 +311,32 @@ def open_(url: str) -> dict:
 
 
 @command("browser.act", "Act in the built-in browser",
-         {"action": {"type": "string", "required": True, "description": "navigate, snapshot, click, type, select, press, scroll, back, forward, reload, click_at (x and y from 0 to 1) or keys (text)"},
+         {"action": {"type": "string", "required": True, "description": "navigate, snapshot, click, type, select, press, scroll, back, forward, reload, click_at (x and y from 0 to 1), keys (text) or resize (width and height in CSS pixels)"},
           "url": {"type": "string"}, "ref": {"type": "integer"}, "text": {"type": "string"}, "submit": {"type": "boolean"},
-          "key": {"type": "string"}, "direction": {"type": "string"}, "x": {"type": "number"}, "y": {"type": "number"}},
-         description="One action in the built-in browser, the same actions Claude's browser tool has plus click_at and keys for the Browser pane; returns the page snapshot.")
+          "key": {"type": "string"}, "direction": {"type": "string"}, "x": {"type": "number"}, "y": {"type": "number"},
+          "width": {"type": "integer"}, "height": {"type": "integer"}},
+         description="One action in the built-in browser, the same actions Claude's browser tool has plus click_at, keys and resize for the Browser pane; returns the page snapshot.")
 def act_(action: str, url: str | None = None, ref: int | None = None, text: str | None = None, submit: bool | None = None,
-         key: str | None = None, direction: str | None = None, x: float | None = None, y: float | None = None) -> dict:
+         key: str | None = None, direction: str | None = None, x: float | None = None, y: float | None = None,
+         width: int | None = None, height: int | None = None) -> dict:
+    if action == "resize":
+        VIEW.update(width=max(320, min(1920, int(width or VIEW["width"]))), height=max(240, min(1400, int(height or VIEW["height"]))))
+        if not _state["open"]:
+            return {"snapshot": ""} | status_dict()
+        return {"snapshot": act("resize", dict(VIEW))} | status_dict()
     args = {k: v for k, v in {"url": url, "ref": ref, "text": text, "submit": submit, "key": key, "direction": direction, "x": x, "y": y}.items() if v is not None}
     return {"snapshot": act(action, args)} | status_dict()
+
+
+@command("browser.install", "Install the built-in browser's Chromium",
+         description="Downloads the Chromium the built-in browser runs on (about 150 MB, once) in the background; browser.status reports installing and then installed. Needs the Playwright package, which the desktop app bundles.")
+def install() -> dict:
+    if not available():
+        raise CommandError(INSTALL, 503)
+    if not _state["installing"]:
+        threading.Thread(target=_install_job, name="format-browser-install", daemon=True).start()
+        _state["installing"] = True
+    return status_dict()
 
 
 @command("browser.close", "Close the built-in browser", description="Closes the built-in browser; its sign-ins stay for next time.")

@@ -44,10 +44,17 @@ def workspace_dir() -> Path:
     return root
 
 
+DESKTOP = os.environ.get("FORMAT_DESKTOP") == "1"
+
+
+def frontend_dist() -> Path:
+    return Path(os.environ.get("FORMAT_DIST") or REPO_DIR / "frontend" / "dist")
+
+
 def dist_dir() -> Path | None:
-    if os.environ.get("FORMAT_SERVE_DIST") != "1":
+    if os.environ.get("FORMAT_SERVE_DIST") != "1" and not DESKTOP:
         return None
-    dist = REPO_DIR / "frontend" / "dist"
+    dist = frontend_dist()
     return dist if (dist / "index.html").is_file() else None
 
 

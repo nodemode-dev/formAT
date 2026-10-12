@@ -121,7 +121,7 @@ class Gate:
 
 
 def _dist() -> Path:
-    return config.REPO_DIR / "frontend" / "dist"
+    return config.frontend_dist()
 
 
 async def _serve() -> None:

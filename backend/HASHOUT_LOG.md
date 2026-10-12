@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.5
-Last updated: 2026-10-12 · v0.10.5: dictation engines Scribe v2, Whisper large-v3-turbo and OpenAI in order, voiceEngine, the ElevenLabs key
+Current build version: v0.11.0
+Last updated: 2026-10-12 · v0.11.0: the desktop app (format_engine.py, the Tauri shell, the freeze), browser.install, browser resize
 
 ---
 
@@ -621,6 +621,26 @@ A plugin is the Claude plugin folder format: `.claude-plugin/plugin.json` (name,
 
 One headless Chromium (Playwright, Apache-2.0, optional through `./format install-browser`) in a persistent profile at `data/browser`, so sign-ins made in it stay in Format and apart from the person's own browser. Playwright's sync API must stay on the thread that started it, so a single worker thread owns the browser and every call (Claude's tool, the pane, the CLI) is a job on its queue; after each job the worker takes a JPEG of the page and publishes `browser.frame` with a sequence number, and the window fetches `/api/browser/frame`. Claude gets text, not pixels: each action returns the title, URL, the visible interactive elements numbered with a `data-ft-ref` attribute, and the page text (12,000 characters), and click, type and select take a ref from the latest snapshot. That keeps replies small and avoids storing screenshots in the chat. The tool is offered only when Playwright is importable and the setting `browserTools` is on, never to sub-agents (one shared page), and it asks before running in Ask mode like bash ("Always allow" adds browser to toolAllow). If Chromium is missing the worker reports how to install it and exits, so the next call tries again after an install.
 
+### app/engine/browser.py · install and size for the app
+- refers-to: app/engine/browser.py :: browsers_dir, installed, _install_job, install, act_ (resize), act (resize, click_at), _worker (device_scale_factor)
+- kind: explainer
+- logged: v0.11.0 · 2026-10-12
+
+The desktop app carries Playwright's package and its Node driver but not Chromium (about 150 MB per platform, and Playwright keeps one shared copy per user anyway). `installed()` looks for a `chromium*` folder where Playwright keeps browsers (`PLAYWRIGHT_BROWSERS_PATH`, else the per-OS cache folder), and `browser.install` runs the bundled driver's `install chromium` on a thread, publishing `installing` and then the result, so the pane can offer Install the browser and show progress. The page used to be drawn at a fixed 1280 by 800 and shrunk into a pane half that wide, which made text unreadable; now the pane reports its own size (`resize`, remembered without starting the browser and applied to a running page), the context draws at device scale 2, and `click_at` maps by the current viewport. Claude's snapshots are unaffected.
+
+### format_engine.py and src-tauri · the desktop app
+- refers-to: backend/format_engine.py :: app_data_dir, free_port, adopt_login_path, watch_parent, prepare_env, selfcheck, main; app/core/config.py :: DESKTOP, frontend_dist, dist_dir; app/engine/devices.py :: _dist; src-tauri/src/main.rs; src-tauri/tauri.conf.json; src-tauri/Info.plist; src-tauri/entitlements.plist; setup/freeze_backend(.bat), desktop_build(.bat), desktop_dev(.bat), install_desktop(.bat); .github/workflows/desktop.yml
+- kind: explainer
+- logged: v0.11.0 · 2026-10-12
+
+Modelled on formlit 0.5.0 and formvis 1.66.1: Tauri 2 (2.12.3 here), a splash window, the engine as a PyInstaller onefile sidecar whose uvicorn start line carries the port, a main window on that URL, the sidecar killed on exit, the updater dormant until a public key is set, and the same four-runner workflow with `macos-15-intel` in place of the retired `macos-13`. What Format adds: the data folder moves to the platform's app-data folder (a frozen app's own folder is temporary and read-only); port 8490 is kept when free so agents' MCP settings and the docs stay true; a macOS GUI app starts with a bare PATH, so the engine asks the login shell for it (terminals, Claude's bash and command connectors need node, npx and Homebrew tools); the engine also exits on its own when the shell's process is gone, because a killed shell skips its exit hook; the engine's output goes to `engine.log` in the app's log folder, which is what a bug report will need. Format's window does a few things a bare webview does not: downloads and exports (`on_download` saves into Downloads under the server's name and reveals the file), pop-outs and Open link (`on_new_window` and `on_navigation` send other origins to the default browser instead of opening a second webview), and dictation (`on_permission_request` grants the microphone; Info.plist and the audio-input entitlement let macOS ask). The page has no `remote` capability and never calls Tauri, so the web build and the app are the same code. `--collect-submodules app` covers every lazy import; mcp's CLI is excluded because it needs typer; Playwright and faster-whisper are collected only when installed, so a lean freeze still works; the freeze refuses to copy a binary that fails `--selfcheck`.
+
+### app/engine/cmd_files.py · files.save_download
+- refers-to: app/engine/cmd_files.py :: downloads_dir, _filename, _reveal, save_download; app/engine/cmd_app.py :: info (desktop)
+- kind: rationale
+- logged: v0.11.0 · 2026-10-12
+
+In the desktop app the window does not hand downloads to the webview: it asks the engine to fetch the engine's own URL (only paths under `/api/`) and write it to the Downloads folder under the server's `Content-Disposition` name, numbered if taken, then reveal it in the file manager. Running the Linux build showed why: WebKitGTK saved downloads itself, ignoring the destination Tauri's download hook sets (the hook was never called), so files landed in the app's working folder; macOS's WKWebView and Windows' WebView2 each have their own download plumbing that could not be checked from here. One engine path behaves the same on all three and is checked here end to end. The Downloads folder is the XDG one on Linux when set, else `~/Downloads`. The command is safe to call from the CLI or an agent too. Commands run in FastAPI's thread pool, so the engine requesting itself does not block its own event loop.
 ---
 
 ## app/routers/stream.py {#app-routers-stream}
