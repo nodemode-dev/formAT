@@ -6,6 +6,7 @@ export interface Conversation {
   model: string | null;
   created: number;
   updated: number;
+  activity?: 'running' | 'waiting' | null;
 }
 
 export interface ContentBlock {
@@ -26,6 +27,10 @@ export interface ContentBlock {
 }
 
 export interface ArtifactRef { id: string; version: number; title: string }
+
+export interface FileComment { path: string; quote: string; note: string }
+
+export interface WorkFile { path: string; name: string; size: number; modified: number; kind: string; url: string }
 
 export interface ArtifactSummary {
   id: string;
@@ -61,6 +66,7 @@ export interface MessageMeta {
   answers?: Record<string, string[]>;
   agents?: Record<string, { model: string; title?: string; blocks: ContentBlock[] }>;
   artifacts?: Record<string, ArtifactRef>;
+  comments?: FileComment[];
 }
 
 export interface Message {
@@ -131,6 +137,7 @@ export class AppState {
   account: Account = { displayName: '', preferences: '', sendKey: 'enter', voiceLanguage: 'en-US' };
   keys: Record<string, KeyStatus> = {};
   running = new Set<string>();
+  waiting = new Map<string, Set<string>>();
   private subs = new Map<Topic, Set<() => void>>();
 
   on(topic: Topic, fn: () => void): void {

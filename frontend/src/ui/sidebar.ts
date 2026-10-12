@@ -101,6 +101,7 @@ export class Sidebar {
     state.on('conversations', () => this.renderList());
     state.on('active', () => this.markActive());
     state.on('view', () => this.markView());
+    state.on('running', () => this.markActivity());
   }
 
   setTerminalOpen(open: boolean): void {
@@ -151,8 +152,9 @@ export class Sidebar {
   private row(c: Conversation): HTMLElement {
     let r = this.rows.get(c.id);
     if (!r) {
-      r = el(`<div class="ft-recent" role="listitem" data-id="${esc(c.id)}"><button type="button" class="ft-recent-title"></button><button type="button" class="ft-recent-more" aria-label="Chat options">${ui('more', 16)}</button></div>`);
+      r = el(`<div class="ft-recent" role="listitem" data-id="${esc(c.id)}"><button type="button" class="ft-recent-title"></button><span class="ft-recent-dot" aria-hidden="true"></span><button type="button" class="ft-recent-more" aria-label="Chat options">${ui('more', 16)}</button></div>`);
       this.rows.set(c.id, r);
+      this.paintActivity(c.id, r);
     }
     setText(q(r, '.ft-recent-title'), c.title);
     setAttr(q(r, '.ft-recent-title'), 'title', c.title);
@@ -178,6 +180,18 @@ export class Sidebar {
       if (this.list.children[i] !== node) this.list.insertBefore(node, this.list.children[i] ?? null);
     });
     this.markActive();
+  }
+
+  private paintActivity(id: string, r: HTMLElement): void {
+    const want = this.state.waiting.get(id)?.size ? 'waiting' : this.state.running.has(id) ? 'running' : '';
+    if ((r.dataset.activity ?? '') === want) return;
+    if (want) r.dataset.activity = want;
+    else delete r.dataset.activity;
+    setAttr(q(r, '.ft-recent-dot'), 'title', want === 'waiting' ? 'Waiting for you' : want === 'running' ? 'Working' : null);
+  }
+
+  private markActivity(): void {
+    for (const [id, r] of this.rows) this.paintActivity(id, r);
   }
 
   private markActive(): void {

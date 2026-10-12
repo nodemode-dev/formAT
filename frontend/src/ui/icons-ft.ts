@@ -47,6 +47,9 @@ const UI: Record<string, string> = {
   outputs: `<path d="M6 3h5.5L15 6.5V16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1z" ${S}/><path d="M8 10h4M8 13h4" ${S}/>`,
   external: `<path d="M11.5 4H16v4.5M16 4l-7 7" ${S}/><path d="M14 11.5V15a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h3.5" ${S}/>`,
   download: `<path d="M10 3.5v9M6 9l4 4 4-4" ${S}/><path d="M4 16.5h12" ${S}/>`,
+  folder: `<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3.2l1.6 1.8h6.2A1.5 1.5 0 0 1 17 8.3v6.2a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z" ${S}/>`,
+  comment: `<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v6a1.5 1.5 0 0 1-1.5 1.5H9l-3.5 3v-3h0A1.5 1.5 0 0 1 4 11.5z" ${S}/><path d="M7.5 7.5h5M7.5 10h3" ${S}/>`,
+  back: `<path d="M12 5l-5 5 5 5" ${S}/>`,
 };
 
 export type UiIcon = keyof typeof UI;

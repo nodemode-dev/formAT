@@ -332,7 +332,16 @@
 .ft-task[data-s="completed"] .ft-task-box { border-color: var(--ok-soft); color: var(--ok-soft); }
 .ft-file-card { display: flex; align-items: center; gap: var(--space-3); margin: 0 0 0.9em; padding: var(--space-3); border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--surface-2); max-width: 520px; }
 .ft-file-card-icon { display: inline-flex; color: var(--accent-ink); flex: none; }
-.ft-file-card-text { display: grid; min-width: 0; flex: 1; }
+.ft-file-card-text { display: grid; min-width: 0; flex: 1; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ft-file-card-text:disabled { cursor: default; }
+.ft-file-card-text:not(:disabled):hover .ft-file-card-name { text-decoration: underline; text-underline-offset: 3px; }
+.ft-panel-file-name { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ft-panel-file-name:hover { text-decoration: underline; text-underline-offset: 3px; }
+.ft-msg-comments { display: grid; justify-items: end; gap: var(--space-2); margin-bottom: var(--space-2); }
+.ft-comment-card { display: grid; gap: 4px; max-width: min(100%, 460px); padding: var(--space-2) var(--space-3); border: 1px solid var(--border-soft); border-radius: var(--radius-md); background: var(--surface-1); color: var(--text-primary); font: var(--fs-13) / 1.5 var(--font-ui); text-align: left; cursor: pointer; }
+.ft-comment-card:hover { border-color: var(--accent-line); }
+.ft-comment-file { display: inline-flex; align-items: center; gap: 6px; font: var(--fs-11) var(--font-mono); color: var(--text-muted); }
+.ft-comment-quote { padding-left: var(--space-2); border-left: 2px solid var(--accent-line); color: var(--text-secondary); font-size: var(--fs-12); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
 .ft-file-card-name { color: var(--text-primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ft-file-card-meta, .ft-file-card-caption { font-size: var(--fs-12); color: var(--text-muted); min-height: 1.4em; }
 .ft-file-card-caption[hidden] { display: none; }
@@ -412,6 +421,8 @@
 .ft-attach.is-loading .ft-attach-type { color: var(--accent-ink); }
 .ft-attach.is-error { border-color: color-mix(in srgb, var(--danger) 50%, transparent); }
 .ft-attach.is-error .ft-attach-type { color: var(--danger-text); }
+.ft-attach.is-comment { border-color: var(--accent-line); }
+.ft-attach.is-comment .ft-attach-type { color: var(--accent-ink); }
 .ft-dock-close { gap: 4px; }
 
 .ft-code .hljs-keyword, .ft-code .hljs-selector-tag, .ft-code .hljs-literal, .ft-code .hljs-meta .hljs-keyword { color: var(--ft-syn-keyword); }

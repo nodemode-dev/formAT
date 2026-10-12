@@ -29,6 +29,7 @@ export interface ChatHooks {
   approve: Approve;
   answer: Answer;
   openArtifact: OpenArtifact;
+  openFile(path: string): void;
   chatId(): string;
 }
 
@@ -93,14 +94,17 @@ export class ChatView {
     if (m.role === 'user') {
       const text = m.content.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('\n\n');
       const files = m.meta?.files ?? [];
+      const notes = m.meta?.comments ?? [];
       n = el(`<article class="ft-msg is-user" data-id="${esc(m.id)}">
         ${files.length ? `<div class="ft-msg-files">${files.map((f) => `<span class="ft-file-chip" title="${esc(f.name)}"><span class="ft-file-chip-name">${esc(f.name)}</span><span class="ft-file-chip-kind">${esc(f.kind.toUpperCase())}</span></span>`).join('')}</div>` : ''}
+        ${notes.length ? `<div class="ft-msg-comments">${notes.map((c) => `<button type="button" class="ft-comment-card" data-path="${esc(c.path)}" title="Open ${esc(c.path)}"><span class="ft-comment-file">${ui('comment', 14)}<span>${esc(c.path)}</span></span>${c.quote ? `<span class="ft-comment-quote">${esc(c.quote.slice(0, 280))}</span>` : ''}<span class="ft-comment-note">${esc(c.note)}</span></button>`).join('')}</div>` : ''}
         <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div>
         <div class="ft-msg-tools"><span class="ft-branch" hidden><button type="button" class="ft-icon-btn ft-branch-prev" title="Previous version" aria-label="Previous version">${ui('chevronLeft', 14)}</button><span class="ft-branch-count"></span><button type="button" class="ft-icon-btn ft-branch-next" title="Next version" aria-label="Next version">${ui('chevronRight', 14)}</button></span>
         <button type="button" class="ft-icon-btn ft-msg-edit" title="Edit" aria-label="Edit this message">${ui('pencil', 16)}</button></div></article>`);
       q(n, '.ft-msg-body').textContent = text;
       const id = m.id;
       q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(text, id));
+      n.querySelectorAll<HTMLElement>('.ft-comment-card').forEach((c) => c.addEventListener('click', () => this.hooks.openFile(c.dataset.path as string)));
       const step = (d: number): void => {
         const b = this.state.messages.find((x) => x.id === id)?.branch;
         const to = b?.ids[b.index + d];
@@ -158,7 +162,7 @@ export class ChatView {
     if (type === 'tool_use' && block?.name === 'send_file' && block.id) {
       const known = view.files.get(block.id);
       if (known) { known.update(block); return NOOP; }
-      const file = new FileCard(block, this.hooks.chatId());
+      const file = new FileCard(block, this.hooks.chatId(), this.hooks.openFile);
       view.group = null;
       view.blocks.appendChild(file.root);
       view.files.set(block.id, file);

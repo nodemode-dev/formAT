@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.5.0
-Last updated: 2026-10-11 · v0.5.0: artifact cards, the artifact panel, the Artifacts gallery
+Current build version: v0.5.1
+Last updated: 2026-10-12 · v0.5.1: the files pane with previews, comments on a block, activity dots
 
 ---
 
@@ -36,6 +36,7 @@ frontend/
     │   ├── palette.ts             command palette
     │   ├── tool-cards.ts          tool steps and groups, questions, file and artifact cards
     │   ├── artifact-panel.ts      the artifact beside the chat: two frames, versions, code, links
+    │   ├── files-pane.ts          the chat folder's files and their previews, comments on a block
     │   ├── views.ts               Artifacts gallery; Projects, Scheduled, Customize, Settings pages
     │   └── boot-frame.ts          the engine-down fallback
     └── styles/
@@ -60,6 +61,7 @@ frontend/
 - [src/ui/terminal-dock.ts](#src-ui-terminal-dock)
 - [src/ui/palette.ts](#src-ui-palette)
 - [src/ui/artifact-panel.ts and the gallery](#src-ui-artifact-panel)
+- [src/ui/files-pane.ts, comments and activity](#src-ui-files-pane)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -389,7 +391,7 @@ Titles are matched in the window at once from the chats already loaded. From thr
 - kind: rationale
 - logged: v0.5.0 · 2026-10-11
 
-claude.ai opens a new artifact beside the chat on its own. Here that would narrow the chat column and reflow the text while the person is reading it, a layout shift without input, so the reply shows an artifact card (title, Version n, Open) and the panel opens when the card is clicked. Each card opens the version it published; the panel's version picker reaches the others. The panel is a second grid track of `.ft-body` (`--ft-panel-w`, at least `--ft-panel-min-w`), set by `data-ft-artifact` on the root; at 760 px and below it covers the body instead (`--z-companion`). The attribute is set only after the first page has loaded, so the panel never appears empty. It is not remembered across reloads, and it closes when another chat or another view is opened, as on claude.ai.
+claude.ai opens a new artifact beside the chat on its own. Here that would narrow the chat column and reflow the text while the person is reading it, a layout shift without input, so the reply shows an artifact card (title, Version n, Open) and the panel opens when the card is clicked. Each card opens the version it published; the panel's version picker reaches the others. The panel is a second grid track of `.ft-body` (`--ft-panel-w`, at least `--ft-panel-min-w`), set by `data-ft-side="artifact"` on the root (from v0.5.1 the same track holds the files pane, `data-ft-side="files"`; v0.5.0 used `data-ft-artifact="open"`); at 760 px and below it covers the body instead (`--z-companion`). The attribute is set only after the first page has loaded, so the panel never appears empty. It is not remembered across reloads, and it closes when another chat or another view is opened, as on claude.ai.
 
 ### src/ui/artifact-panel.ts · two frames
 - refers-to: src/ui/artifact-panel.ts :: load, show, frames, front
@@ -411,6 +413,38 @@ The frames carry `sandbox="allow-scripts allow-popups allow-modals allow-downloa
 - logged: v0.5.0 · 2026-10-11
 
 The Artifacts page lists every artifact, newest first, with its chat, version count and last change (time today, date before). It is loaded at start and refreshed on `artifact.changed`, `artifact.deleted`, a deleted chat and each visit, and replaced only when its markup changes. A row opens its chat and then the panel on the latest version; its menu also goes to the chat or deletes the artifact.
+
+---
+
+## src/ui/files-pane.ts, comments and activity {#src-ui-files-pane}
+
+### src/ui/files-pane.ts · one side track, two panes
+- refers-to: src/app.ts :: side, setSide, closeSide, openFiles, toggleFiles; src/styles/ft-shell.css :: :root[data-ft-side]
+- kind: rationale
+- logged: v0.5.1 · 2026-10-12
+
+The files pane and the artifact panel share the second track of `.ft-body`; `data-ft-side` names which one shows, so opening one replaces the other without a second reflow of the chat column. Both are placed with `grid-column: 2` (and `1` in the narrow overlay, where an absolutely placed grid item would otherwise sit in an empty implicit column). The pane is tied to one chat: switching chats closes it, and closing it pauses any playing video or audio, since a hidden media element keeps playing. It opens from the folder button in the top bar, the palette, a file card's name, a file in Outputs, and a comment card in a sent message.
+
+### src/ui/files-pane.ts · previews without a blank
+- refers-to: src/ui/files-pane.ts :: open, settle, .ft-fv-layer
+- kind: rationale
+- logged: v0.5.1 · 2026-10-12
+
+Each preview is built as a new layer inside the view, hidden (`is-loading`) until it is ready (an image decoded, a frame loaded, media metadata read, or text fetched and rendered, with a 4 s ceiling), and only then are the older layers removed. So moving between files, and a file that changes on disk while open (`files.changed` after bash, write and edit, compared by size and modified time), never shows an empty pane. Images get `?v=` with the modified time so the browser does not show a stale copy. HTML files preview in a frame with an empty `sandbox` attribute and the engine's sandbox CSP, so their scripts do not run; PDFs use the browser's viewer, which a sandbox would block, and are served without the CSP for that reason. Markdown renders with the chat's renderer; code is highlighted by extension up to 300 KB; text is read through `files.read` (1 MB cap, marked when cut).
+
+### src/ui/files-pane.ts · comments on a block
+- refers-to: src/ui/files-pane.ts :: hoverBlock, onSelection, startComment, addComment; src/ui/composer.ts :: addComment, dropComments; src/ui/chat-view.ts :: .ft-comment-card
+- kind: rationale
+- logged: v0.5.1 · 2026-10-12
+
+In a Markdown preview, hovering a top-level block offers Comment for that block; in Markdown and code, selecting text offers Comment for the selection. The comment form quotes the passage and adds the comment to the composer as a chip, like an attachment, rather than sending at once: several comments can go with one message and the person can still write. They are sent as `chat.send` `comments` and shown above the message as cards that reopen the file. The button keeps the selection by cancelling its own mousedown. Comments belong to the chat whose files they quote, so switching chats drops unsent ones.
+
+### src/ui/sidebar.ts · activity dots
+- refers-to: src/ui/sidebar.ts :: paintActivity, markActivity; src/app.ts :: setWaiting; src/state/app-state.ts :: waiting
+- kind: explainer
+- logged: v0.5.1 · 2026-10-12
+
+A chat row shows a dot while its reply runs (pulsing accent) and a steady warning dot while an approval or question waits. Running comes from `message.added` and `message.completed`; waiting from `message.tool` statuses `waiting` and `asking`, kept per chat as a set of tool ids so parallel waits clear correctly. At start `conversation.list`'s `activity` seeds both (a waiting chat whose ids are unknown gets the placeholder `*`, cleared by its next status). The dot sits where the row's More button appears and hides on hover and on the active row, so it never shifts the title.
 
 ---
 

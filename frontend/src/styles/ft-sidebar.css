@@ -158,6 +158,14 @@
 
 .ft-recent:hover .ft-recent-more, .ft-recent.is-active .ft-recent-more, .ft-recent-more:focus-visible { opacity: 1; }
 .ft-recent-more:hover { color: var(--text-primary); background: var(--bg-hover); }
+.ft-recent { position: relative; }
+.ft-recent-dot { position: absolute; top: 50%; right: 14px; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; background: var(--accent-color); opacity: 0; pointer-events: none; transition: opacity var(--transition-fast); }
+.ft-recent[data-activity] .ft-recent-dot { opacity: 1; }
+.ft-recent[data-activity="running"] .ft-recent-dot { animation: ft-dot-pulse 1.4s ease-in-out infinite; }
+.ft-recent[data-activity="waiting"] .ft-recent-dot { background: var(--warn); }
+.ft-recent:hover .ft-recent-dot, .ft-recent.is-active .ft-recent-dot { opacity: 0; animation: none; }
+@keyframes ft-dot-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .ft-recent[data-activity="running"] .ft-recent-dot { animation: none; } }
 
 .ft-side-foot {
   flex: none;

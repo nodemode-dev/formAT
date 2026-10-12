@@ -1,12 +1,12 @@
 import { run } from '../engine-client/api';
-import type { AppState, FileInfo, Settings } from '../state/app-state';
+import type { AppState, FileComment, FileInfo, Settings } from '../state/app-state';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { openMenu, type MenuItem } from './menu';
 import { Dictation } from './dictation';
 
 export interface ComposerHooks {
-  send(text: string, files: FileInfo[]): Promise<void>;
+  send(text: string, files: FileInfo[], comments: FileComment[]): Promise<void>;
   edit(text: string, id: string): Promise<void>;
   stop(): void;
   isRunning(): boolean;
@@ -18,6 +18,7 @@ interface Pending {
   key: string;
   name: string;
   file?: FileInfo;
+  comment?: FileComment;
   error?: string;
   card?: HTMLElement;
 }
@@ -41,7 +42,7 @@ export class Composer {
   private research = false;
   private picker: HTMLInputElement;
   private queueRow: HTMLElement;
-  private queued: Array<{ text: string; files: FileInfo[] }> = [];
+  private queued: Array<{ text: string; files: FileInfo[]; comments: FileComment[] }> = [];
   private micBtn: HTMLButtonElement;
   private dictation: Dictation;
   private seq = 0;
@@ -206,13 +207,29 @@ export class Composer {
     setAttr(this.sendBtn, 'title', stopMode ? 'Stop the reply' : running ? 'Queue (sends when the reply finishes)' : 'Send (Enter)');
     const want = stopMode ? 'stop' : 'send';
     if (this.sendBtn.dataset.icon !== want) { this.sendBtn.dataset.icon = want; this.sendBtn.innerHTML = ui(want); }
-    this.sendBtn.disabled = !stopMode && (!(typed || this.files.some((f) => f.file)) || uploading);
+    this.sendBtn.disabled = !stopMode && (!(typed || this.files.some((f) => f.file || f.comment)) || uploading);
+  }
+
+  addComment(c: FileComment): void {
+    const name = c.path.split('/').pop() || c.path;
+    this.files.push({ key: `c${++this.seq}`, name: `Comment on ${name}`, comment: c });
+    this.renderFiles();
+    this.renderRunning();
+    this.input.focus();
+  }
+
+  dropComments(): void {
+    if (!this.files.some((f) => f.comment)) return;
+    this.files = this.files.filter((f) => !f.comment);
+    this.renderFiles();
+    this.renderRunning();
   }
 
   private async submit(): Promise<void> {
     const text = this.input.value.trim();
     const files = this.files.filter((f) => f.file).map((f) => f.file as FileInfo);
-    if ((!text && !files.length) || this.files.some((f) => !f.file && !f.error)) return;
+    const comments = this.files.filter((f) => f.comment).map((f) => f.comment as FileComment);
+    if ((!text && !files.length && !comments.length) || this.files.some((f) => !f.file && !f.comment && !f.error)) return;
     if (this.editing) {
       if (!text || this.hooks.isRunning()) return;
       this.editing = false;
@@ -227,14 +244,14 @@ export class Composer {
     this.renderFiles();
     this.autosize();
     if (this.hooks.isRunning()) {
-      this.queued.push({ text, files });
+      this.queued.push({ text, files, comments });
       this.renderQueue();
       return;
     }
-    await this.hooks.send(text, files);
+    await this.hooks.send(text, files, comments);
   }
 
-  nextQueued(): { text: string; files: FileInfo[] } | undefined {
+  nextQueued(): { text: string; files: FileInfo[]; comments: FileComment[] } | undefined {
     const next = this.queued.shift();
     this.renderQueue();
     return next;
@@ -242,7 +259,7 @@ export class Composer {
 
   private renderQueue(): void {
     this.queueRow.hidden = this.queued.length === 0;
-    this.queueRow.innerHTML = this.queued.map((m, i) => `<div class="ft-queue-row" data-q="${i}"><span class="ft-queue-text">${esc(m.text || `${m.files.length} file(s)`)}</span>${i === 0 ? '<button type="button" class="ft-text-btn ft-queue-now">Send now</button>' : ''}<button type="button" class="ft-icon-btn ft-queue-x" aria-label="Remove from queue">${ui('close', 14)}</button></div>`).join('');
+    this.queueRow.innerHTML = this.queued.map((m, i) => `<div class="ft-queue-row" data-q="${i}"><span class="ft-queue-text">${esc(m.text || (m.files.length ? `${m.files.length} file(s)` : `${m.comments.length} comment(s)`))}</span>${i === 0 ? '<button type="button" class="ft-text-btn ft-queue-now">Send now</button>' : ''}<button type="button" class="ft-icon-btn ft-queue-x" aria-label="Remove from queue">${ui('close', 14)}</button></div>`).join('');
   }
 
   private addFiles(files: File[]): void {
@@ -272,6 +289,12 @@ export class Composer {
 
   private renderCard(p: Pending): void {
     if (!p.card) return;
+    if (p.comment) {
+      p.card.classList.add('is-comment');
+      setText(q(p.card, '.ft-attach-type'), 'COMMENT');
+      setAttr(p.card, 'title', `${p.comment.quote ? `“${p.comment.quote.slice(0, 200)}”\n` : ''}${p.comment.note}`);
+      return;
+    }
     p.card.classList.toggle('is-loading', !p.file && !p.error);
     p.card.classList.toggle('is-error', !!p.error);
     const label = p.error ? 'FAILED' : p.file ? (p.file.kind === 'zip' ? `ZIP ${p.file.entries ?? 0}` : p.file.kind.toUpperCase()) : 'UPLOADING';

@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -12,6 +12,7 @@ import type { TaskItem } from './ui/tool-cards';
 import { Sidebar } from './ui/sidebar';
 import { TerminalDock } from './ui/terminal-dock';
 import { ArtifactPanel } from './ui/artifact-panel';
+import { FilesPane } from './ui/files-pane';
 import { ArtifactsView, pageView, SettingsView, type InfoLike } from './ui/views';
 
 type Layout = 'sidebar' | 'panel' | 'term';
@@ -27,6 +28,7 @@ export class App {
   private palette: Palette;
   private panel: SidePanel;
   private artifact: ArtifactPanel;
+  private filesPane: FilesPane;
   private gallery: ArtifactsView;
   private outputsSeq = 0;
   private settingsView: SettingsView;
@@ -42,6 +44,7 @@ export class App {
           <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span>${ui('chevronDown', 14)}</button>
           <span class="ft-topbar-spacer"></span>
           <button type="button" class="ft-icon-btn ft-term-toggle" aria-label="Toggle terminal" title="Terminal (${modKey}J)">${ui('terminal')}</button>
+          <button type="button" class="ft-icon-btn ft-files-toggle" aria-label="Files" title="Files in this chat's folder">${ui('folder')}</button>
           <button type="button" class="ft-icon-btn ft-panel-toggle" aria-label="Outputs" title="Outputs (${modKey}.)">${ui('outputs')}</button>
         </header>
         <div class="ft-body"><div class="ft-center"></div></div>
@@ -59,7 +62,7 @@ export class App {
       openSettings: (s) => this.openSettings(s),
     });
     this.composer = new Composer(this.state, {
-      send: (t, f) => this.send(t, f),
+      send: (t, f, c) => this.send(t, f, c),
       edit: async (t, id) => {
         if (!this.state.activeId) return;
         try { await run('chat.edit', { conversationId: this.state.activeId, text: t, messageId: id }); } catch (err) { this.composer.showError(err instanceof Error ? err.message : String(err)); }
@@ -83,9 +86,18 @@ export class App {
         run('tool.answer', { toolUseId, answer }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
       },
       openArtifact: (id, version) => this.openArtifact(id, version),
+      openFile: (path) => this.openFiles(path),
       chatId: () => this.state.activeId ?? '',
     });
     this.artifact = new ArtifactPanel(() => this.closeArtifact());
+    this.filesPane = new FilesPane({ close: () => this.closeSide(), comment: (c) => this.composer.addComment(c) });
+    this.state.on('active', () => {
+      this.composer.dropComments();
+      if (this.filesPane.conversationId && this.filesPane.conversationId !== this.state.activeId) {
+        if (this.side() === 'files') this.closeSide();
+        this.filesPane.reset();
+      }
+    });
     this.gallery = new ArtifactsView((a) => void this.openFromGallery(a), (id) => void this.openChat(id));
     this.state.on('active', () => {
       if (this.artifact.conversationId && this.artifact.conversationId !== this.state.activeId) this.closeArtifact();
@@ -94,7 +106,7 @@ export class App {
     this.state.on('active', () => this.updateContext());
     this.state.on('settings', () => this.updateContext());
     this.settingsView = new SettingsView(this.state);
-    const panel = new SidePanel(() => this.toggle('panel', false));
+    const panel = new SidePanel(() => this.toggle('panel', false), (p) => this.openFiles(p));
     this.panel = panel;
     this.state.on('active', () => this.refreshOutputs());
     this.dock = new TerminalDock(() => this.toggle('term', false));
@@ -103,6 +115,7 @@ export class App {
       { label: 'Toggle sidebar', icon: 'sidebar', hint: `${modKey}B`, run: () => this.toggle('sidebar') },
       { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
       { label: 'Artifacts', icon: 'artifacts', run: () => this.setView('artifacts') },
+      { label: 'Files in this chat', icon: 'folder', run: () => this.toggleFiles() },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
       { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
       { label: 'Summarize earlier messages', icon: 'compress', run: () => this.compactNow() },
@@ -125,12 +138,14 @@ export class App {
     this.pages.set('settings', this.settingsView.root);
     center.appendChild(this.settingsView.root);
     q(this.shell, '.ft-body').appendChild(this.artifact.root);
+    q(this.shell, '.ft-body').appendChild(this.filesPane.root);
     q(this.shell, '.ft-body').appendChild(panel.root);
     q(this.shell, '.ft-main').appendChild(this.dock.root);
     host.appendChild(this.shell);
     (document.getElementById('overlay-root') as HTMLElement).appendChild(this.palette.root);
 
     q(this.shell, '.ft-panel-toggle').addEventListener('click', () => this.toggle('panel'));
+    q(this.shell, '.ft-files-toggle').addEventListener('click', () => this.toggleFiles());
     q(this.shell, '.ft-term-toggle').addEventListener('click', () => this.toggle('term'));
     q(this.shell, '.ft-title-btn').addEventListener('click', (e) => this.titleMenu(e.currentTarget as HTMLElement));
     document.addEventListener('keydown', (e) => this.keys(e));
@@ -150,7 +165,11 @@ export class App {
       run<Record<string, KeyStatus>>('keys.status'),
       fetch('/api/voice').then((r) => r.json()).catch(() => ({ engines: undefined })),
     ]);
-    list.conversations.forEach((c) => this.state.conversations.set(c.id, c));
+    list.conversations.forEach((c) => {
+      this.state.conversations.set(c.id, c);
+      if (c.activity) this.state.running.add(c.id);
+      if (c.activity === 'waiting') this.state.waiting.set(c.id, new Set(['*']));
+    });
     this.state.settings = settings;
     this.state.account = account;
     this.state.keys = keys;
@@ -228,6 +247,19 @@ export class App {
     this.state.emit('running');
   }
 
+  private setWaiting(conversationId: string, toolUseId: string | null, on: boolean): void {
+    const set = this.state.waiting.get(conversationId);
+    const before = set?.size ?? 0;
+    if (on && toolUseId) {
+      if (set) set.add(toolUseId);
+      else this.state.waiting.set(conversationId, new Set([toolUseId]));
+    } else if (set) {
+      if (toolUseId) { set.delete(toolUseId); set.delete('*'); } else set.clear();
+      if (!set.size) this.state.waiting.delete(conversationId);
+    }
+    if ((this.state.waiting.get(conversationId)?.size ?? 0) !== before) this.state.emit('running');
+  }
+
   private onEvent(e: EngineEvent): void {
     if (e.type === 'conversation.created' || e.type === 'conversation.updated') {
       const c = e.conversation as Conversation;
@@ -257,7 +289,10 @@ export class App {
     } else if (e.type === 'message.block') {
       if (e.conversationId === this.state.activeId) this.chat.applyBlock(e.id as string, e.index as number, e.block as ContentBlock, e.parent as string | undefined);
     } else if (e.type === 'message.tool') {
+      this.setWaiting(e.conversationId as string, e.toolUseId as string, e.status === 'waiting' || e.status === 'asking');
       if (e.conversationId === this.state.activeId) this.chat.toolStatus(e.id as string, e.toolUseId as string, e.status as string);
+    } else if (e.type === 'files.changed') {
+      if (e.conversationId === this.filesPane.conversationId) void this.filesPane.refresh().catch(() => undefined);
     } else if (e.type === 'tool.output') {
       if (e.conversationId === this.state.activeId) this.chat.toolOutput(e.id as string, e.toolUseId as string, e.text as string);
     } else if (e.type === 'message.artifact') {
@@ -272,11 +307,13 @@ export class App {
       if (e.conversationId === this.state.activeId) this.panel.setTasks(e.tasks as TaskItem[]);
     } else if (e.type === 'outputs.changed') {
       if (e.conversationId === this.state.activeId) this.refreshOutputs();
+      if (e.conversationId === this.filesPane.conversationId) void this.filesPane.refresh().catch(() => undefined);
     } else if (e.type === 'message.delta') {
       if (e.conversationId === this.state.activeId) this.chat.applyDelta(e.id as string, e.index as number, e.kind as string, e.text as string);
     } else if (e.type === 'message.completed') {
       const m = e.message as Message;
       const more = !!m.meta?.compactNext;
+      this.setWaiting(m.conversation_id, null, false);
       if (!more) this.setRunning(m.conversation_id, false);
       if (m.conversation_id === this.state.activeId) {
         const i = this.state.messages.findIndex((x) => x.id === m.id);
@@ -285,7 +322,7 @@ export class App {
         this.updateContext();
         this.refreshOutputs();
         const next = more ? undefined : this.composer.nextQueued();
-        if (next) void this.send(next.text, next.files);
+        if (next) void this.send(next.text, next.files, next.comments);
       }
     } else if (e.type === 'message.deleted') {
       if (e.conversationId === this.state.activeId) {
@@ -343,15 +380,45 @@ export class App {
 
   private openArtifact(id: string, version?: number): void {
     void this.artifact.show(id, version).then((ok) => {
-      const html = document.documentElement;
-      if (ok && html.dataset.ftArtifact !== 'open') html.dataset.ftArtifact = 'open';
+      if (ok) this.setSide('artifact');
     }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
   }
 
   private closeArtifact(): void {
-    const html = document.documentElement;
-    if (html.dataset.ftArtifact === 'open') delete html.dataset.ftArtifact;
+    if (this.side() === 'artifact') this.setSide(null);
     this.artifact.reset();
+  }
+
+  private side(): string | null {
+    return document.documentElement.dataset.ftSide ?? null;
+  }
+
+  private setSide(which: 'artifact' | 'files' | null): void {
+    const html = document.documentElement;
+    if ((html.dataset.ftSide ?? null) === which) return;
+    if (which) html.dataset.ftSide = which;
+    else delete html.dataset.ftSide;
+    if (which !== 'artifact' && this.artifact.artifactId) this.artifact.reset();
+    if (which !== 'files') this.filesPane.pause();
+    setAttr(q(this.shell, '.ft-files-toggle'), 'aria-pressed', String(which === 'files'));
+  }
+
+  private closeSide(): void {
+    if (this.side() === 'artifact') this.closeArtifact();
+    else this.setSide(null);
+  }
+
+  private openFiles(path?: string): void {
+    const cid = this.state.activeId;
+    if (!cid) { this.composer.showError('Open a chat to see the files in its folder'); return; }
+    void this.filesPane.show(cid, path).then((ok) => {
+      if (ok && cid === this.state.activeId) this.setSide('files');
+    }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+  }
+
+  private toggleFiles(): void {
+    if (this.side() === 'files') this.closeSide();
+    else this.openFiles();
   }
 
   private async openFromGallery(a: ArtifactSummary): Promise<void> {
@@ -362,7 +429,7 @@ export class App {
 
   setView(view: View): void {
     closeMenus();
-    if (view !== 'chat' && this.artifact.artifactId) this.closeArtifact();
+    if (view !== 'chat' && this.side()) this.closeSide();
     if (view === 'artifacts') void this.gallery.refresh();
     this.state.view = view;
     this.chat.root.hidden = view !== 'chat';
@@ -391,11 +458,11 @@ export class App {
 
   private claimNext = false;
 
-  private async send(text: string, files: FileInfo[] = []): Promise<void> {
+  private async send(text: string, files: FileInfo[] = [], comments: FileComment[] = []): Promise<void> {
     const id = this.state.activeId;
     if (!id) this.claimNext = true;
     try {
-      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id) });
+      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}) });
     } catch (err) {
       this.claimNext = false;
       this.composer.showError(err instanceof Error ? err.message : String(err));

@@ -17,7 +17,7 @@ export class SidePanel {
   private empty: HTMLElement;
   private all: HTMLAnchorElement;
 
-  constructor(onClose: () => void) {
+  constructor(onClose: () => void, onOpen: (path: string) => void = () => undefined) {
     this.root = el(`<aside class="ft-panel" aria-label="Outputs">
       <div class="ft-panel-head">
         <span class="ft-panel-title">Outputs</span>
@@ -46,6 +46,10 @@ export class SidePanel {
     this.progress = q(this.root, '.ft-panel-progress');
     this.tasks = q(this.progress, '.ft-tasks');
     this.files = q(this.root, '.ft-panel-files');
+    this.files.addEventListener('click', (e) => {
+      const path = (e.target as HTMLElement).closest<HTMLElement>('.ft-panel-file-name')?.dataset.path;
+      if (path) onOpen(path);
+    });
     this.empty = q(this.root, '.ft-panel-empty');
     this.all = q<HTMLAnchorElement>(this.root, '.ft-download-all');
   }
@@ -59,7 +63,7 @@ export class SidePanel {
   }
 
   setOutputs(files: OutputFile[], zip: string | null, used: Used): void {
-    const html = files.map((f) => `<li class="ft-panel-file"><span class="ft-panel-file-icon">${ui('file', 16)}</span><span class="ft-panel-file-name" title="${esc(f.caption || f.path)}">${esc(f.name)}</span><a class="ft-icon-btn" href="${esc(f.url)}" download title="Download ${esc(f.name)}" aria-label="Download ${esc(f.name)}">${ui('arrowDown', 14)}</a></li>`).join('');
+    const html = files.map((f) => `<li class="ft-panel-file"><span class="ft-panel-file-icon">${ui('file', 16)}</span><button type="button" class="ft-panel-file-name" data-path="${esc(f.path)}" title="Preview ${esc(f.caption || f.path)}">${esc(f.name)}</button><a class="ft-icon-btn" href="${esc(f.url)}" download title="Download ${esc(f.name)}" aria-label="Download ${esc(f.name)}">${ui('arrowDown', 14)}</a></li>`).join('');
     if (this.files.dataset.v !== html) { this.files.dataset.v = html; this.files.innerHTML = html; }
     if (this.empty.hidden !== files.length > 0) this.empty.hidden = files.length > 0;
     if (this.all.hidden === !!zip) this.all.hidden = !zip;

@@ -24,15 +24,19 @@ export class FileCard {
   private link: HTMLAnchorElement;
   private path = '';
 
-  constructor(b: ContentBlock, private chatId: string) {
+  private open: HTMLButtonElement;
+
+  constructor(b: ContentBlock, private chatId: string, onOpen: (path: string) => void = () => undefined) {
     this.id = b.id ?? '';
     this.root = el(`<div class="ft-file-card" data-status="input"><span class="ft-file-card-icon">${ui('file', 20)}</span>
-      <div class="ft-file-card-text"><span class="ft-file-card-name"></span><span class="ft-file-card-meta"></span><span class="ft-file-card-caption" hidden></span></div>
+      <button type="button" class="ft-file-card-text" disabled title="Preview"><span class="ft-file-card-name"></span><span class="ft-file-card-meta"></span><span class="ft-file-card-caption" hidden></span></button>
       <a class="ft-btn ft-file-card-dl" download aria-disabled="true" tabindex="-1">Download</a></div>`);
     this.name = q(this.root, '.ft-file-card-name');
     this.meta = q(this.root, '.ft-file-card-meta');
     this.caption = q(this.root, '.ft-file-card-caption');
     this.link = q<HTMLAnchorElement>(this.root, '.ft-file-card-dl');
+    this.open = q<HTMLButtonElement>(this.root, '.ft-file-card-text');
+    this.open.addEventListener('click', () => { if (this.path) onOpen(this.path); });
     this.update(b);
   }
 
@@ -56,6 +60,7 @@ export class FileCard {
       if (this.link.getAttribute('href') !== href) this.link.setAttribute('href', href);
       this.link.removeAttribute('aria-disabled');
       this.link.removeAttribute('tabindex');
+      if (this.open.disabled) this.open.disabled = false;
     }
   }
 
