@@ -99,6 +99,13 @@ CREATE TABLE IF NOT EXISTS schedule_runs (
   error TEXT NOT NULL DEFAULT ''
 );
 CREATE INDEX IF NOT EXISTS runs_by_schedule ON schedule_runs(schedule_id, started);
+CREATE TABLE IF NOT EXISTS shares (
+  token TEXT PRIMARY KEY,
+  artifact_id TEXT NOT NULL REFERENCES artifacts(id) ON DELETE CASCADE,
+  version INTEGER,
+  created REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS shares_by_artifact ON shares(artifact_id);
 """
 
 _lock = threading.RLock()
@@ -130,8 +137,8 @@ def conn() -> sqlite3.Connection:
                         prev = mid
                     c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
-            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '7')")
-            c.execute("UPDATE meta SET value = '7' WHERE key = 'schema'")
+            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '8')")
+            c.execute("UPDATE meta SET value = '8' WHERE key = 'schema'")
             _conn = c
         return _conn
 

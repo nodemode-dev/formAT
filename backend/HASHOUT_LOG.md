@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.1
-Last updated: 2026-10-12 · v0.10.1: documents, spreadsheets and slides (write_document, artifact.write, artifact.export), section comments
+Current build version: v0.10.2
+Last updated: 2026-10-12 · v0.10.2: other devices (LAN pairing, devices.*), share links (artifact.share, artifact.unshare, artifact.shares), schema 8
 
 ---
 
@@ -574,6 +574,22 @@ Documents, spreadsheets and decks are artifacts with a kind (doc, sheet, deck) a
 - logged: v0.10.1 · 2026-10-12
 
 `artifact.export` writes the file into `data/exports` and returns its path and the download URL; `artifact.write` is the same write as Claude's tool for agents and the CLI.
+
+### app/engine/devices.py · other devices and share links
+- refers-to: app/engine/devices.py :: Gate, _serve, _start, _launch, stop_server, bind, lan_addresses, base_url, _paired, _secret, status, start, stop, forget, share, unshare, shares, shared_page; app/engine/store.py :: shares (schema 8); app/routers/__init__.py :: startup, shutdown
+- kind: explainer
+- logged: v0.10.2 · 2026-10-12
+
+The engine itself stays on 127.0.0.1. Opening to other devices starts a second uvicorn server inside the engine's own event loop (scheduled with `run_coroutine_threadsafe` on the loop bound at startup, signal capture disabled so it never takes over Ctrl+C) on 0.0.0.0:8492, wrapping the same FastAPI app in `Gate`. Gate lets `/s/` share links and the favicon through to anyone, turns `/pair?code=` with the right secret into a one-year HttpOnly SameSite=Lax cookie and a redirect, and refuses everything else without that cookie (a 401 page, or a WebSocket close before accept, which uvicorn answers with 403). Paired devices get the built window from `frontend/dist` and the full API and event stream, so a chat started on the computer continues on the phone live and the other way round. The secret lives in `data/pairing.json` (mode 600); `devices.forget` replaces it, which unpairs every device at once. The pairing QR is an inline SVG from segno (BSD-3, pinned in both requirements files), so no image service is involved. One pairing secret for all devices instead of per-device tokens: a home network with one person's phone and laptop is the case, and Forget is the revocation. Turning it off stops the server; nothing listens on the network unless the person turned it on.
+
+Share links: `artifact.share` makes (or reuses) an unguessable token per artifact in the `shares` table; `/s/{token}` serves the latest version with the artifact CSP plus `frame-ancestors 'none'`, read-only, and `artifact.unshare` revokes it so the link answers 410. The URL uses the LAN address while other devices are open, otherwise 127.0.0.1, and the window says which.
+
+### app/engine/devices.py · testing behind a proxy
+- refers-to: app/engine/devices.py :: Gate
+- kind: warning-context
+- logged: v0.10.2 · 2026-10-12
+
+A client that honours HTTPS_PROXY sends `ws://` to the LAN address through the proxy, and a corporate or sandbox proxy refuses it with its own 403 (header `X-Proxy-Error`). That is the proxy, not Gate: clear the proxy variables, or launch the browser with `--no-proxy-server`, when checking a paired device.
 
 ---
 
