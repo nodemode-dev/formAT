@@ -29,7 +29,7 @@ The page never calls into the shell (no `remote` capability), so the web build a
 
 ## Building
 
-`./format desktop build` runs the window build, the freeze and `tauri build`. `.github/workflows/desktop.yml` does it on `macos-latest` (arm64), `macos-15-intel` (x64; GitHub retired `macos-13` in December 2025), `ubuntu-22.04` and `windows-latest`. Without Apple secrets the macOS bundle is signed ad hoc (`signingIdentity "-"`); with them it is signed and notarized. Pushing a `v*.*.*` tag also drafts a release with every bundle.
+`./build_app` at the root (also `./format desktop build`) is the one entry on macOS and Linux: tool checks, rustup's stable compiler (installed if missing), `setup/install_all`, `setup/install_desktop`, the window build, the freeze and `tauri build --bundles app` (macOS, then its own `hdiutil` disk image and the copy to Applications) or `--bundles deb` (Linux, `FORMAT_BUNDLES` to change). `ft_rust_env` in `setup/lib.sh` puts `~/.cargo/bin` first and clears `RUSTC`, wrappers, `RUSTFLAGS` and target overrides; `ft_rust_fresh` cleans `src-tauri/target` when the compiler differs from the one stamped in `target/.format-rustc`. Proc macros and build scripts are not stripped (`profile.release.build-override`). `setup/desktop_build` stays as the bare build without installs. `.github/workflows/desktop.yml` does it on `macos-latest` (arm64), `macos-15-intel` (x64; GitHub retired `macos-13` in December 2025), `ubuntu-22.04` and `windows-latest`. Without Apple secrets the macOS bundle is signed ad hoc (`signingIdentity "-"`); with them it is signed and notarized. Pushing a `v*.*.*` tag also drafts a release with every bundle.
 
 ## Checking it
 

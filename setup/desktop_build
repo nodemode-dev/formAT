@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 set -e
 source "$(dirname "$0")/lib.sh"
+ft_rust_env
+ft_rust_fresh
 "$FORMAT_ROOT/setup/build_frontend"
 "$FORMAT_ROOT/setup/freeze_backend"
 cd "$FORMAT_ROOT"

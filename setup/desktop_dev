@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -e
 source "$(dirname "$0")/lib.sh"
-triple="$(ft_target_triple)" || ft_die "rustc not found; run ./format install-desktop"
+ft_rust_env
+triple="$(ft_target_triple)" || ft_die "rustc not found; from the Format folder run ./build_app"
 [ -x "$FORMAT_ROOT/src-tauri/binaries/format-engine-${triple}" ] || "$FORMAT_ROOT/setup/freeze_backend"
 cd "$FORMAT_ROOT"
 exec frontend/node_modules/.bin/tauri dev "$@"

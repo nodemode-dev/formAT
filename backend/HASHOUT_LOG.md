@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.11.0
-Last updated: 2026-10-12 · v0.11.0: the desktop app (format_engine.py, the Tauri shell, the freeze), browser.install, browser resize
+Current build version: v0.11.1
+Last updated: 2026-10-12 · v0.11.1: ./build_app, one command for the desktop app, and the Rust toolchain fix for macOS
 
 ---
 
@@ -641,6 +641,13 @@ Modelled on formlit 0.5.0 and formvis 1.66.1: Tauri 2 (2.12.3 here), a splash wi
 - logged: v0.11.0 · 2026-10-12
 
 In the desktop app the window does not hand downloads to the webview: it asks the engine to fetch the engine's own URL (only paths under `/api/`) and write it to the Downloads folder under the server's `Content-Disposition` name, numbered if taken, then reveal it in the file manager. Running the Linux build showed why: WebKitGTK saved downloads itself, ignoring the destination Tauri's download hook sets (the hook was never called), so files landed in the app's working folder; macOS's WKWebView and Windows' WebView2 each have their own download plumbing that could not be checked from here. One engine path behaves the same on all three and is checked here end to end. The Downloads folder is the XDG one on Linux when set, else `~/Downloads`. The command is safe to call from the CLI or an agent too. Commands run in FastAPI's thread pool, so the engine requesting itself does not block its own event loop.
+
+### build_app and setup/lib.sh · one command for the desktop app
+- refers-to: build_app (file); setup/lib.sh :: ft_rust_env, ft_rust_fresh, ft_venv_python; setup/freeze_backend, desktop_build, desktop_dev, install_desktop; format :: desktop build; src-tauri/Cargo.toml :: profile.release.build-override
+- kind: rationale
+- logged: v0.11.1 · 2026-10-12
+
+The owner's first macOS build stopped twice. Run from `setup/`, `desktop_build` said to run `./format install-desktop`, which is not in that folder; after that, cargo compiled `phf_macros` and then could not load it (`E0463 can't find crate for phf_macros`, rustc 1.97.1 while rustup's stable is newer, so most likely Homebrew's `rust` on PATH). A proc macro is a dylib that one rustc builds and the next rustc loads, so anything that splits the two (two Rust installs on PATH, a `RUSTC_WRAPPER` cache such as sccache, a target folder from another compiler, a stripped dylib) fails exactly this way. `build_app` is the one entry the owner asked for: it runs from its own folder, so the folder you call it from does not matter; it uses rustup's stable everywhere (`~/.cargo/bin` first, `RUSTUP_TOOLCHAIN`, the environment overrides cleared, and a stop if `rustc` and `cargo` still come from different folders); it stamps the compiler into `target/.format-rustc` and cleans the target when that changes, and cleans and retries once on a Rust compile error. Proc macros and build scripts are no longer stripped. The macOS disk image is made with `hdiutil` from the built `.app`, since Tauri's `bundle_dmg.sh` scripts Finder and fails without Automation permission in a plain terminal. The app is copied to Applications with its quarantine flag cleared, so the ad-hoc signed build opens without the warning. The exact cause on that Mac could not be reproduced here; the script removes every split it can see and leaves `build_app.log` for the next report.
 ---
 
 ## app/routers/stream.py {#app-routers-stream}

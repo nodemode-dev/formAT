@@ -13,7 +13,7 @@ usage: ./format [command] [options]
   install-browser     install the built-in browser Claude can use (optional)
   install-desktop     install PyInstaller, the browser and dictation packages, and check the Rust and Tauri toolchain
   freeze              freeze the engine into the desktop app's sidecar binary
-  desktop dev|build   run the desktop app, or bundle it (.app and .dmg, .deb, .rpm and AppImage, .msi and setup.exe)
+  desktop dev|build   run the desktop app, or build it start to finish (same as ./build_app)
   backend             boot the engine only
   frontend            boot the frontend only
   build               production build of the frontend into frontend/dist
@@ -41,7 +41,7 @@ case "$cmd" in
     [ $# -gt 0 ] && shift
     case "$sub" in
       dev) exec setup/desktop_dev "$@" ;;
-      build) exec setup/desktop_build "$@" ;;
+      build) exec ./build_app "$@" ;;
       *) echo "usage: ./format desktop dev|build" >&2; exit 2 ;;
     esac ;;
   backend) exec setup/boot_backend "$@" ;;

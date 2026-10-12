@@ -45,13 +45,21 @@ The desktop app keeps its own data, separate from a Format you run from the repo
 
 ## Building it yourself
 
-You need what `./format install` needs, plus Rust (rustup.rs). On Linux also the webview libraries (`./format install-desktop` prints the apt line).
+On macOS or Linux, one command in the Format folder does all of it:
 
 ```bash
-./format install            # once
-./format install-desktop    # once: PyInstaller, the browser and dictation packages, Rust and Tauri checks
-./format desktop build      # the frozen engine, then the bundles in src-tauri/target/release/bundle
-./format desktop dev        # or run the app without bundling
+./build_app
 ```
 
-On Windows use `.\format.bat install`, `.\format.bat install-desktop` and `.\format.bat desktop build`. A build makes the app for the machine it runs on; the GitHub workflow makes all four.
+It checks Python (3.12 or newer), Node (20.19 or newer) and, on macOS, the Xcode command line tools; installs Rust with rustup into `~/.cargo` if there is none, and always builds with rustup's stable compiler even when Homebrew's `rust` is also installed; installs the engine, the window and the desktop packages; freezes the engine; and builds the app. On macOS it then packs a `.dmg`, copies `Format.app` to Applications (replacing an older copy) and clears the download warning, so Format opens from Launchpad. On Linux it builds the `.deb` and prints the line that installs it. Everything it prints is also kept in `build_app.log`.
+
+| Option | Does |
+| --- | --- |
+| `--open` | opens the app when the build is done |
+| `--no-install` | macOS: leaves the app in `src-tauri/target/release/bundle/macos` |
+| `--install` | Linux: installs the `.deb` with apt |
+| `--clean` | rebuilds the Rust side and the frozen engine from nothing |
+
+The first build takes a while (about 500 Rust crates, and the engine is frozen with everything inside); later builds reuse the compiled crates. If the Rust compiler changed since the last build, it cleans the old build first; if the Rust compile still fails, it cleans and tries once more.
+
+On Linux the webview libraries come first (`sudo apt install libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev patchelf`; `./build_app` prints the line if they are missing). On Windows use `.\format.bat install`, `.\format.bat install-desktop` and `.\format.bat desktop build`. `./format desktop dev` runs the app without bundling. A build makes the app for the machine it runs on; the GitHub workflow makes all four.
