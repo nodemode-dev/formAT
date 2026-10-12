@@ -23,7 +23,12 @@ def _local(path: str, language: str | None) -> str:
     global _local_model
     from faster_whisper import WhisperModel
     if _local_model is None:
-        _local_model = WhisperModel(os.environ.get("FORMAT_WHISPER_MODEL", "base"), device="auto", compute_type="int8")
+        name = os.environ.get("FORMAT_WHISPER_MODEL", "base")
+        try:
+            _local_model = WhisperModel(name, device="auto", compute_type="int8")
+        except Exception as exc:
+            raise VoiceError(f"The local speech model {name} could not be loaded ({type(exc).__name__}: {str(exc).splitlines()[0][:160]}). "
+                             "It downloads from Hugging Face on first use; check the network, or set FORMAT_WHISPER_MODEL to a model folder on this computer") from None
     segments, _ = _local_model.transcribe(path, language=(language or "").split("-")[0] or None, vad_filter=True)
     return " ".join(s.text.strip() for s in segments).strip()
 
@@ -52,6 +57,9 @@ def transcribe(data: bytes, filename: str, mime: str, language: str | None) -> d
             path = fh.name
         try:
             return {"text": _local(path, language), "engine": "local"}
+        except VoiceError:
+            if not available["openai"]:
+                raise
         finally:
             os.unlink(path)
     if available["openai"]:

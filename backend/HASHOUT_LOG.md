@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.3
-Last updated: 2026-10-12 · v0.10.3: plugins (plugin.*), the built-in browser (browser.*, Claude's browser tool, setting browserTools)
+Current build version: v0.10.4
+Last updated: 2026-10-12 · v0.10.4: voice model load errors answered as 503 with remedies; the manual and wiki
 
 ---
 
@@ -275,6 +275,13 @@ One thread per running reply. The assistant message is stored empty with status 
 - logged: v0.3.0 · 2026-10-11
 
 Local faster-whisper (MIT, optional, `./format install-voice`; model `base` unless `FORMAT_WHISPER_MODEL`) is preferred; otherwise OpenAI's transcription endpoint with `FORMAT_TRANSCRIBE_MODEL` (default `whisper-1`). Neither was run here: no OpenAI key, no network to OpenAI, and the local model downloads on first use. Without either the endpoint answers 503 with how to enable one, which the window shows.
+
+### app/engine/voice.py · a model that cannot load
+- refers-to: app/engine/voice.py :: _local, transcribe
+- kind: warning-context
+- logged: v0.10.4 · 2026-10-12
+
+`./format install-voice` was run at v0.10.4 and installed faster-whisper 1.2.1 and its dependencies, but the first transcription could not fetch the `base` model: the build workspace's proxy refuses huggingface.co (ProxyError 403). Loading the model used to raise straight through as a 500; it is now a VoiceError naming the model, the cause and the two remedies (network, or `FORMAT_WHISPER_MODEL` pointing at a model folder), answered as 503 and shown in the composer. When an OpenAI key is also set, a local failure falls through to OpenAI. A transcription on a machine that can download the model is still owed.
 
 ### app/harness/content.py · the Files API
 - refers-to: app/harness/content.py :: remote_id, blocks_for, FILES_API_MIN; app/engine/uploads.py :: remember_remote; app/providers/anthropic_provider.py :: upload_file, delete_file, key_tag
