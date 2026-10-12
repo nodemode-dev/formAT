@@ -106,7 +106,7 @@ export class ChatView {
       const notes = m.meta?.comments ?? [];
       n = el(`<article class="ft-msg is-user" data-id="${esc(m.id)}">
         ${files.length ? `<div class="ft-msg-files">${files.map((f) => `<span class="ft-file-chip" title="${esc(f.name)}"><span class="ft-file-chip-name">${esc(f.name)}</span><span class="ft-file-chip-kind">${esc(f.kind.toUpperCase())}</span></span>`).join('')}</div>` : ''}
-        ${notes.length ? `<div class="ft-msg-comments">${notes.map((c) => `<button type="button" class="ft-comment-card" data-path="${esc(c.path)}" title="Open ${esc(c.path)}"><span class="ft-comment-file">${ui('comment', 14)}<span>${esc(c.path)}</span></span>${c.quote ? `<span class="ft-comment-quote">${esc(c.quote.slice(0, 280))}</span>` : ''}<span class="ft-comment-note">${esc(c.note)}</span></button>`).join('')}</div>` : ''}
+        ${notes.length ? `<div class="ft-msg-comments">${notes.map((c) => `<button type="button" class="ft-comment-card" data-path="${esc(c.path)}" title="Open ${esc(c.path)}"><span class="ft-comment-file">${ui('comment', 14)}<span>${esc(c.path.startsWith('artifact:') ? (c.path.split('#')[1] || 'Document') : c.path)}</span></span>${c.quote ? `<span class="ft-comment-quote">${esc(c.quote.slice(0, 280))}</span>` : ''}<span class="ft-comment-note">${esc(c.note)}</span></button>`).join('')}</div>` : ''}
         <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div>
         <div class="ft-msg-tools"><span class="ft-branch" hidden><button type="button" class="ft-icon-btn ft-branch-prev" title="Previous version" aria-label="Previous version">${ui('chevronLeft', 14)}</button><span class="ft-branch-count"></span><button type="button" class="ft-icon-btn ft-branch-next" title="Next version" aria-label="Next version">${ui('chevronRight', 14)}</button></span>
         <button type="button" class="ft-icon-btn ft-msg-edit" title="Edit" aria-label="Edit this message">${ui('pencil', 16)}</button></div></article>`);
@@ -178,7 +178,11 @@ export class ChatView {
       view.parts[index] = { type, api: NOOP };
       return NOOP;
     }
-    if (type === 'tool_use' && block?.name === 'publish_artifact' && block.id) {
+    if (type === 'tool_use' && block?.name === 'write_document' && block.id && !view.arts.has(block.id) && !view.cards.has(block.id)
+        && !Object.keys((block.input as Record<string, unknown> | undefined) ?? {}).length) {
+      return NOOP;
+    }
+    if (type === 'tool_use' && block?.id && (block.name === 'publish_artifact' || (block.name === 'write_document' && !(block.input as Record<string, unknown> | undefined)?.artifact_id))) {
       const known = view.arts.get(block.id);
       if (known) { known.update(block); return NOOP; }
       const card = new ArtifactCard(block, this.hooks.openArtifact);

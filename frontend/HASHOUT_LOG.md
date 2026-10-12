@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.0
-Last updated: 2026-10-12 · v0.10.0: find in page, the Research pill, sandbox settings
+Current build version: v0.10.1
+Last updated: 2026-10-12 · v0.10.1: the Create picker, documents, slides and sheets in the artifact panel, the Export menu
 
 ---
 
@@ -586,6 +586,13 @@ Mod+F opens a find bar over the current view (the chat thread, or the open page)
 - logged: v0.10.0 · 2026-10-12
 
 The + menu's Research item now turns Research mode on for the messages that follow; a pill beside the microphone shows it and turns it off when clicked. Each send carries `research: true` while it is on, and the reply's footer reads "model · research". The pill appears only through the person's own click, so it moves nothing without input.
+
+### src/ui/doc-view.ts · documents, slides and sheets beside the chat
+- refers-to: src/ui/doc-view.ts :: DocView, kindLabel, exportsFor; src/ui/artifact-panel.ts :: show, the export menu; src/ui/chat-view.ts :: write_document cards; src/ui/tool-cards.ts :: write_document steps; src/ui/composer.ts :: setOutput (Create picker)
+- kind: rationale
+- logged: v0.10.1 · 2026-10-12
+
+HTML pages stay in the sandboxed double-buffered iframes; documents, slides and spreadsheets render natively in the panel from their source, because comments need the window and the source is plain text Format controls. Sections and slides are keyed by position and re-rendered only when their own source changed, so a document growing section by section updates in place; spreadsheet cells are patched with `setText`. Each document section has a Comment button that opens a note box and adds a comment chip to the composer. Slides show one at a time with previous, next, arrow keys and Present (fullscreen); spreadsheets show a grid with row numbers and right-aligned numbers. The download button becomes an Export menu (Word, PDF, Markdown; Excel, CSV; PowerPoint, PDF). In the chat, the first `write_document` call is an artifact card (opening it shows the latest version) and later section writes are steps in the tool group; a `write_document` block arriving without its input yet is held until the input arrives, so the right element is created once. The + menu's Create submenu sets a one-message pill (Document, Spreadsheet, Slides) that sends `output` and clears after sending.
 
 ---
 

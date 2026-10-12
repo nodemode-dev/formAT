@@ -1,8 +1,11 @@
 import hljs from 'highlight.js/lib/common';
 import { run } from '../engine-client/api';
 import type { ArtifactSummary } from '../state/app-state';
+import type { FileComment } from '../state/app-state';
+import { DocView, exportsFor, type DocKind } from './doc-view';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
+import { openMenu } from './menu';
 
 interface Opened extends ArtifactSummary {
   version: number;
@@ -32,8 +35,9 @@ export class ArtifactPanel {
   private seq = 0;
   private following = true;
   private tab: 'preview' | 'code' = 'preview';
+  private doc: DocView;
 
-  constructor(private onClose: () => void) {
+  constructor(private onClose: () => void, comment: (c: FileComment) => void = () => undefined) {
     this.root = el(`<aside class="ft-art" aria-label="Artifact">
       <div class="ft-art-head">
         <span class="ft-art-title"></span>
@@ -62,6 +66,19 @@ export class ArtifactPanel {
     this.download = q<HTMLAnchorElement>(this.root, '.ft-art-dl');
     this.popout = q<HTMLAnchorElement>(this.root, '.ft-art-pop');
     this.copy = q<HTMLButtonElement>(this.root, '.ft-art-copy');
+    this.doc = new DocView({ comment });
+    q(this.root, '.ft-art-body').insertBefore(this.doc.root, this.codeBox);
+    this.download.addEventListener('click', (e) => {
+      const a = this.current;
+      if (!a || (a.kind ?? 'html') === 'html') return;
+      e.preventDefault();
+      openMenu(this.download, exportsFor(a.kind).map(([fmt, label]) => ({ label, icon: 'download' as const, action: () => {
+        const link = document.createElement('a');
+        link.href = `/api/artifacts/${a.id}/v/${a.version}/export/${fmt}`;
+        link.download = '';
+        link.click();
+      } })), 'down', 0, 'Export as');
+    });
     q(this.root, '.ft-art-close').addEventListener('click', () => this.onClose());
     this.select.addEventListener('change', () => {
       if (this.current) void this.show(this.current.id, Number(this.select.value));
@@ -100,8 +117,16 @@ export class ArtifactPanel {
       return true;
     }
     if (seq !== this.seq) return false;
-    const loaded = await this.load(a.url);
-    if (!loaded || seq !== this.seq) return false;
+    const kind = (a.kind || 'html') as DocKind | 'html';
+    if (kind === 'html') {
+      const loaded = await this.load(a.url);
+      if (!loaded || seq !== this.seq) return false;
+      this.doc.hide();
+    } else {
+      this.doc.show(kind, a.id, a.content);
+    }
+    if (this.root.dataset.kind !== kind) this.root.dataset.kind = kind;
+    setAttr(this.download, 'title', kind === 'html' ? 'Download' : 'Export');
     this.say('');
     this.current = a;
     this.following = a.version === a.latest;
@@ -177,8 +202,9 @@ export class ArtifactPanel {
     if (this.codeFor === key) return;
     this.codeFor = key;
     let html = esc(a.content);
+    const lang = a.kind === 'doc' || a.kind === 'deck' ? 'markdown' : a.kind === 'sheet' ? 'plaintext' : 'xml';
     if (a.content.length <= HIGHLIGHT_CAP) {
-      try { html = hljs.highlight(a.content, { language: 'xml', ignoreIllegals: true }).value; } catch { html = esc(a.content); }
+      try { html = hljs.highlight(a.content, { language: lang, ignoreIllegals: true }).value; } catch { html = esc(a.content); }
     }
     this.code.innerHTML = html;
   }

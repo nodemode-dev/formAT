@@ -111,7 +111,7 @@ export class App {
       newChatIn: (pid) => { this.newChat(); this.setDraftProject(pid); },
       showError: (m) => this.composer.showError(m),
     });
-    this.artifact = new ArtifactPanel(() => this.closeArtifact());
+    this.artifact = new ArtifactPanel(() => this.closeArtifact(), (c) => this.composer.addComment(c));
     this.filesPane = new FilesPane({ close: () => this.closeSide(), comment: (c) => this.composer.addComment(c) });
     this.state.on('active', () => {
       this.composer.dropComments();
@@ -525,6 +525,7 @@ export class App {
   }
 
   private openFiles(path?: string): void {
+    if (path?.startsWith('artifact:')) { this.openArtifact(path.slice(9).split('#')[0]); return; }
     const cid = this.state.activeId;
     if (!cid) { this.composer.showError('Open a chat to see the files in its folder'); return; }
     void this.filesPane.show(cid, path).then((ok) => {
@@ -601,7 +602,8 @@ export class App {
     if (!id) this.claimNext = true;
     try {
       const project = !id && this.state.draftProject ? { projectId: this.state.draftProject } : {};
-      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project, ...(this.composer.researchOn ? { research: true } : {}) });
+      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project, ...(this.composer.researchOn ? { research: true } : {}), ...(this.composer.outputKind ? { output: this.composer.outputKind } : {}) });
+      if (this.composer.outputKind) this.composer.setOutput(null);
     } catch (err) {
       this.claimNext = false;
       this.composer.showError(err instanceof Error ? err.message : String(err));

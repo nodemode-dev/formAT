@@ -28,7 +28,7 @@ export interface ContentBlock {
   server_name?: string;
 }
 
-export interface ArtifactRef { id: string; version: number; title: string }
+export interface ArtifactRef { id: string; version: number; title: string; kind?: string }
 
 export interface FileComment { path: string; quote: string; note: string }
 

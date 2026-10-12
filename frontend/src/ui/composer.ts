@@ -40,6 +40,7 @@ export class Composer {
   private attachRow: HTMLElement;
   private files: Pending[] = [];
   private research = false;
+  private output: 'doc' | 'sheet' | 'deck' | null = null;
   private picker: HTMLInputElement;
   private queueRow: HTMLElement;
   private queued: Array<{ text: string; files: FileInfo[]; comments: FileComment[] }> = [];
@@ -98,6 +99,7 @@ export class Composer {
         <div class="ft-bar-left">
           <button type="button" class="ft-icon-btn ft-plus" data-menu-anchor aria-label="Add" title="Add files, skills, connectors">${ui('plus')}</button>
           <button type="button" class="ft-icon-btn ft-mic" aria-label="Dictation" aria-pressed="false" title="Dictation">${ui('mic')}</button>
+          <button type="button" class="ft-pill ft-output-pill" title="The answer comes as this kind of artifact. Click to turn it off." hidden>${ui('file', 14)}<span></span>${ui('close', 12)}</button>
           <button type="button" class="ft-pill ft-research-pill" title="Research mode is on: Claude searches and reads many sources and writes a cited report. Click to turn it off." hidden>${ui('research', 14)}<span>Research</span>${ui('close', 12)}</button>
         </div>
         <div class="ft-bar-notice"></div>
@@ -129,6 +131,7 @@ export class Composer {
     });
     this.micBtn.addEventListener('click', () => this.dictation.toggle());
     q(this.root, '.ft-research-pill').addEventListener('click', () => this.setResearch(false));
+    q(this.root, '.ft-output-pill').addEventListener('click', () => this.setOutput(null));
     this.editBar = q(this.root, '.ft-editing');
     this.contextEl = q(this.root, '.ft-context');
     q(this.root, '.ft-edit-cancel').addEventListener('click', () => this.cancelEdit());
@@ -232,7 +235,7 @@ export class Composer {
   }
 
   addComment(c: FileComment): void {
-    const name = c.path.split('/').pop() || c.path;
+    const name = c.path.startsWith('artifact:') ? (c.path.split('#')[1] || 'the document') : (c.path.split('/').pop() || c.path);
     this.files.push({ key: `c${++this.seq}`, name: `Comment on ${name}`, comment: c });
     this.renderFiles();
     this.renderRunning();
@@ -362,9 +365,25 @@ export class Composer {
           { divider: true }, { label: 'Manage connectors', icon: 'customize' as const, action: () => this.hooks.openCustomize() }];
         },
       },
+      {
+        label: 'Create', icon: 'file', submenu: () => ([['doc', 'Document', 'Written section by section, with comments; Word or PDF'], ['sheet', 'Spreadsheet', 'A table you can export to Excel or CSV'],
+          ['deck', 'Slides', 'A deck you can present or export to PowerPoint or PDF']] as const).map(([k, label, desc]) => ({ label, desc, checked: this.output === k, action: () => this.setOutput(this.output === k ? null : k) })),
+      },
       { divider: true },
       { label: 'Research', icon: 'research', checked: this.research, action: () => this.setResearch(!this.research) },
     ], 'up');
+  }
+
+  get outputKind(): 'doc' | 'sheet' | 'deck' | null {
+    return this.output;
+  }
+
+  setOutput(kind: 'doc' | 'sheet' | 'deck' | null): void {
+    this.output = kind;
+    const pill = q(this.root, '.ft-output-pill');
+    setText(q(pill, 'span'), kind === 'doc' ? 'Document' : kind === 'sheet' ? 'Spreadsheet' : kind === 'deck' ? 'Slides' : '');
+    if (pill.hidden === !!kind) pill.hidden = !kind;
+    this.input.focus();
   }
 
   private modelMenu(): void {

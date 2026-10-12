@@ -90,7 +90,7 @@ export class ArtifactCard {
     this.name = q(this.root, '.ft-art-card-name');
     this.meta = q(this.root, '.ft-art-card-meta');
     this.open = q<HTMLButtonElement>(this.root, '.ft-art-card-open');
-    this.open.addEventListener('click', () => { if (this.ref) this.onOpen(this.ref.id, this.ref.version); });
+    this.open.addEventListener('click', () => { if (this.ref) this.onOpen(this.ref.id, this.ref.kind && this.ref.kind !== 'html' ? undefined : this.ref.version); });
     this.update(b);
   }
 
@@ -124,7 +124,8 @@ export class ArtifactCard {
   private paint(): void {
     if (this.root.dataset.status !== this.status) this.root.dataset.status = this.status;
     setText(this.name, this.title || 'Writing a page');
-    const meta = this.status === 'error' ? 'Could not publish this page' : this.ref ? `Version ${this.ref.version} · HTML` : 'Writing the page';
+    const label = this.ref?.kind === 'doc' ? 'Document' : this.ref?.kind === 'sheet' ? 'Spreadsheet' : this.ref?.kind === 'deck' ? 'Slides' : 'HTML';
+    const meta = this.status === 'error' ? 'Could not publish this page' : this.ref ? `Version ${this.ref.version} · ${label}` : 'Writing the page';
     setText(this.meta, meta);
     const off = !this.ref;
     if (this.open.disabled !== off) this.open.disabled = off;
@@ -142,7 +143,7 @@ export function connectorParts(name: string): { connector: string; tool: string 
 
 const ICON: Record<string, Parameters<typeof ui>[0]> = {
   bash: 'terminal', write: 'file', edit: 'pencil', read: 'file', glob: 'search', grep: 'search', web_search: 'globe', web_fetch: 'globe',
-  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills', memory: 'file', skill: 'skills',
+  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills', memory: 'file', skill: 'skills', write_document: 'pencil',
 };
 const STATE_TEXT: Record<string, string> = {
   input: 'preparing', waiting: 'needs approval', asking: 'waiting for you', running: 'running', done: '', error: 'failed', denied: 'not run',
@@ -161,6 +162,7 @@ export function describe(name: string, input: Record<string, unknown>): { title:
   switch (name) {
     case 'bash': return { title: 'Ran a command', sub: String(input.command ?? ''), short: 'ran a command' };
     case 'write': return { title: 'Wrote a file', sub: String(input.path ?? ''), short: `wrote ${base(input.path)}` };
+    case 'write_document': return { title: input.section ? 'Wrote a section' : 'Revised the document', sub: String(input.section ?? input.title ?? ''), short: input.section ? `wrote ${String(input.section)}` : 'revised the document' };
     case 'edit': return { title: 'Edited a file', sub: String(input.path ?? ''), short: `edited ${base(input.path)}` };
     case 'read': return { title: 'Read a file', sub: String(input.path ?? ''), short: `read ${base(input.path)}` };
     case 'glob': return { title: 'Listed files', sub: String(input.pattern ?? ''), short: 'listed files' };
