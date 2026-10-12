@@ -4,7 +4,7 @@ import threading
 import time
 
 from app import providers
-from app.engine import events, projects, tools
+from app.engine import events, projects, terminal, tools
 from app.engine.cmd_account import account
 from app.engine.cmd_message import insert, messages_of, update
 from app.engine.cmd_settings import current, find_model
@@ -250,14 +250,21 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
     buf: list[str] = []
     last = [time.monotonic()]
 
+    mirror = _mirror(conversation_id, args) if name == "bash" else None
+
     def on_output(text: str) -> None:
         buf.append(text)
+        if mirror is not None:
+            terminal.agent_write(mirror, text)
         if time.monotonic() - last[0] > 0.08:
             events.publish("tool.output", id=mid, conversationId=conversation_id, toolUseId=tid, text="".join(buf))
             buf.clear()
             last[0] = time.monotonic()
 
     text, is_error = tools.run(name, args, conversation_id, on_output, cancel, mid)
+    if mirror is not None:
+        tail = text.rsplit("\n", 1)[-1] if text.endswith("]") else ""
+        terminal.agent_write(mirror, f"\n\x1b[2m{tail or ('[failed]' if is_error else '[done]')}\x1b[0m\n\n")
     if name == "publish_artifact" and not is_error:
         from app.engine import store
         row = store.row("SELECT v.artifact_id, v.version, a.title FROM artifact_versions v JOIN artifacts a ON a.id = v.artifact_id WHERE v.message_id = ? ORDER BY v.created DESC LIMIT 1", (mid,))
@@ -270,6 +277,14 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
     if buf:
         events.publish("tool.output", id=mid, conversationId=conversation_id, toolUseId=tid, text="".join(buf))
     return result(text, is_error, "error" if is_error else "done")
+
+
+def _mirror(conversation_id: str, args: dict):
+    from app.engine import store
+    conv = store.row("SELECT title FROM conversations WHERE id = ?", (conversation_id,)) or {}
+    session = terminal.agent_session(conversation_id, conv.get("title") or "chat", str(tools.workspace(conversation_id)))
+    terminal.agent_write(session, f"\x1b[38;5;208m$\x1b[0m {str(args.get('command') or '').strip()}\n")
+    return session
 
 
 AGENT_ROUNDS = 20

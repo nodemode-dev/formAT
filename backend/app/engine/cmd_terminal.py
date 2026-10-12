@@ -23,7 +23,7 @@ def open_(cwd: str | None = None, cols: int | None = None, rows: int | None = No
         raise CommandError(str(exc), 404) from None
 
 
-@command("terminal.list", "Terminals", mutates=False, description="Open terminals with their ids, titles, folders and whether the shell is still running.")
+@command("terminal.list", "Terminals", mutates=False, description="Open terminals with their ids, titles, folders and whether the shell is still running. kind is shell, or agent for the read-only Claude tab where every bash command Claude runs, and its output, appears live.")
 def list_() -> dict:
     items = [s.describe() for s in terminal.SESSIONS.values()]
     return {"terminals": items, "count": len(items)}
@@ -35,6 +35,8 @@ def write(id: str, data: str) -> dict:
     session = _session(id)
     if not session.alive:
         raise CommandError(f"Terminal {id} has exited; open a new one with terminal.open", 409)
+    if session.kind == "agent":
+        raise CommandError(f"Terminal {id} shows Claude's commands and takes no input; open a shell with terminal.open", 409)
     terminal.write(id, data)
     return {"written": len(data)}
 
@@ -58,7 +60,8 @@ def resize(id: str, cols: int, rows: int) -> dict:
 @command("terminal.restart", "Restart a terminal", {"id": ID},
          description="Ends the terminal's shell and starts a fresh one in the same tab and folder; its output so far is cleared.")
 def restart(id: str) -> dict:
-    _session(id)
+    if _session(id).kind == "agent":
+        raise CommandError(f"Terminal {id} shows Claude's commands and has no shell to restart", 409)
     return terminal.restart(id).describe()
 
 

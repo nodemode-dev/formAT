@@ -75,6 +75,30 @@ CREATE TABLE IF NOT EXISTS connectors (
   created REAL NOT NULL,
   updated REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS schedules (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  prompt TEXT NOT NULL,
+  cadence TEXT NOT NULL,
+  at TEXT NOT NULL DEFAULT '09:00',
+  weekday INTEGER NOT NULL DEFAULT 0,
+  run_at REAL,
+  project_id TEXT,
+  enabled INTEGER NOT NULL DEFAULT 1,
+  next_run REAL,
+  last_run REAL,
+  created REAL NOT NULL,
+  updated REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS schedule_runs (
+  id TEXT PRIMARY KEY,
+  schedule_id TEXT NOT NULL REFERENCES schedules(id) ON DELETE CASCADE,
+  conversation_id TEXT,
+  trigger TEXT NOT NULL,
+  started REAL NOT NULL,
+  error TEXT NOT NULL DEFAULT ''
+);
+CREATE INDEX IF NOT EXISTS runs_by_schedule ON schedule_runs(schedule_id, started);
 """
 
 _lock = threading.RLock()
@@ -106,8 +130,8 @@ def conn() -> sqlite3.Connection:
                         prev = mid
                     c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
-            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '6')")
-            c.execute("UPDATE meta SET value = '6' WHERE key = 'schema'")
+            c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '7')")
+            c.execute("UPDATE meta SET value = '7' WHERE key = 'schema'")
             _conn = c
         return _conn
 

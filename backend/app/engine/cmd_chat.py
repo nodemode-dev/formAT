@@ -9,9 +9,10 @@ from app.engine.commands import CommandError, command
          {"text": {"type": "string", "required": True}, "conversationId": {"type": "string", "description": "omit to start a new chat"},
           "attachments": {"type": "array", "items": {"type": "string"}, "description": "file ids from POST /api/uploads"},
           "comments": {"type": "array", "items": {"type": "object"}, "description": "comments on files in the chat's folder: {path, quote, note}, up to 20"},
-          "projectId": {"type": "string", "description": "with no conversationId: start the new chat inside this project"}},
+          "projectId": {"type": "string", "description": "with no conversationId: start the new chat inside this project"},
+          "title": {"type": "string", "description": "with no conversationId: the new chat's title (default: the first line of text)"}},
          description="Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
-def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None) -> dict:
+def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None, title: str | None = None) -> dict:
     notes = _comments(comments)
     if projectId and store.row("SELECT id FROM projects WHERE id = ?", (projectId,)) is None:
         raise CommandError(f"No project {projectId}; project.list gives the ids", 404)
@@ -26,7 +27,7 @@ def send(text: str, conversationId: str | None = None, attachments: list | None 
             raise CommandError(f"chat.send: no uploaded file {fid}", 404)
         files.append(uploads.public(meta))
     if conversationId is None:
-        title = (text.strip().split("\n")[0] or (files[0]["name"] if files else "New chat"))[:60]
+        title = ((title or "").strip() or text.strip().split("\n")[0] or (files[0]["name"] if files else "New chat"))[:60]
         cid, t = store.new_id(), store.now()
         store.run("INSERT INTO conversations(id, title, project_id, created, updated) VALUES (?, ?, ?, ?, ?)", (cid, title, projectId or None, t, t))
         conv = store.row("SELECT * FROM conversations WHERE id = ?", (cid,)) or {}

@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.7.0
-Last updated: 2026-10-12 · v0.7.0: Format as an MCP server (HTTP and stdio), outside-agent consent, artifact.publish, terminal.restart
+Current build version: v0.7.1
+Last updated: 2026-10-12 · v0.7.1: scheduled tasks and the scheduler, background.list, Claude's bash in a read-only terminal, chat.send title
 
 ---
 
@@ -42,6 +42,7 @@ backend/
     │   ├── connectors.py          MCP servers: API route or engine route, sessions, tool calls
     │   ├── cmd_connector.py       connector.list, add, update, connect, delete
     │   ├── agents.py              outside-agent consent (ask, allowed, blocked), agents.status
+    │   ├── schedules.py           scheduled tasks, the scheduler thread, run history, background.list
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, restart, close
     ├── mcp_server.py              Format as an MCP server: a tool per command, resources, prompts
     ├── mcp_stdio.py               ./format mcp: the same server over stdio, proxied to the running engine
@@ -72,6 +73,7 @@ backend/
 - [app/engine/memory.py and app/engine/skills.py](#app-engine-memory-skills)
 - [app/engine/connectors.py](#app-engine-connectors)
 - [app/mcp_server.py and outside agents](#app-mcp-server)
+- [app/engine/schedules.py and the Claude terminal](#app-engine-schedules)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -479,6 +481,31 @@ The same `artifacts.publish` Claude's tool uses, without a message id, so a page
 - logged: v0.7.0 · 2026-10-12
 
 Restart keeps the session id, title, folder and attached sockets and swaps the PTY underneath. Each pump thread carries the generation it was started with and drops output, and its exit, once the session's generation has moved on; without that, the old shell's last bytes or its EOF would arrive after the new shell's prompt and mark the tab exited. Scrollback is cleared and `ESC c` (full reset) is sent to attached terminals so xterm clears itself in one write. The socket's sender now keeps listening after an exit, so a tab whose shell had exited comes back on restart without reconnecting. The size is kept from the last resize so the new shell starts at the window's dimensions.
+
+---
+
+## app/engine/schedules.py and the Claude terminal {#app-engine-schedules}
+
+### app/engine/schedules.py · the scheduler
+- refers-to: app/engine/schedules.py :: next_after, tick, fire, start; app/routers/__init__.py :: startup, shutdown
+- kind: rationale
+- logged: v0.7.1 · 2026-10-12
+
+A scheduled task is a row with a cadence (manual, once, hourly, daily, weekdays, weekly), a local time `at` and, for weekly, a weekday; `next_run` is stored, so the loop is a single indexed query every 15 s (`FORMAT_SCHEDULER_TICK` shortens it for checks). Times are the engine computer's local time through `datetime.fromtimestamp`, which follows daylight saving changes. A run is `chat.send` with the task's prompt, project and name as the chat title, so a run is an ordinary chat: it streams in the window, shows activity dots, can be continued, and is listed in `schedule_runs` with its trigger (schedule or manual) and any error that stopped it starting. Missed runs are not replayed one by one: on start the first tick finds `next_run` in the past, runs once and moves `next_run` past now, which is what a person who closed the laptop overnight expects. Once tasks clear `next_run` after their run. Run now does not move the schedule. Runs follow the person's permission mode; nothing is approved on their behalf, so a run that needs an approval or an answer waits and shows as waiting in Background and on the task's page.
+
+### app/engine/schedules.py · run status and background.list
+- refers-to: app/engine/schedules.py :: run_status, _run, background
+- kind: explainer
+- logged: v0.7.1 · 2026-10-12
+
+A run's status is read, not stored: waiting when `tools.pending` has an item for its chat, running while `chat.running`, otherwise the last assistant message's status (done, stopped, error as failed); a chat deleted since shows as deleted. `background.list` is the same reading over `chat.RUNS` (replies, summaries and runs alike), with the scheduled task a chat belongs to.
+
+### app/engine/terminal.py, app/engine/chat.py · the Claude terminal
+- refers-to: app/engine/terminal.py :: agent_session, agent_write; app/engine/chat.py :: _mirror, the bash branch of the tool executor; app/engine/cmd_terminal.py :: write, restart
+- kind: rationale
+- logged: v0.7.1 · 2026-10-12
+
+Every bash command Claude runs is mirrored into one read-only terminal session of kind `agent`, titled Claude: the command after an orange prompt, its output as it streams, and the exit line. It has no PTY (`proc` is None), so write, resize and restart are refused or skipped for it, and it rides the same scrollback, socket and events as a shell, which is why the dock can show it without new plumbing. One tab for all chats, not one per chat, keeps the dock from filling with a tab for every chat that ever ran a command; a bold line with the chat's title and folder marks each switch between chats. Two chats running commands at the same moment interleave their output in that tab; the cards in each chat stay separate. Newlines become CRLF so xterm returns to the first column.
 
 ---
 

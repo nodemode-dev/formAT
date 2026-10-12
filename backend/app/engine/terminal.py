@@ -30,9 +30,11 @@ class Session:
         self.gen = 0
         self.cols = 100
         self.rows = 30
+        self.kind = "shell"
+        self.conversation_id: str | None = None
 
     def describe(self) -> dict:
-        return {"id": self.id, "title": self.title, "cwd": self.cwd, "alive": self.alive}
+        return {"id": self.id, "title": self.title, "cwd": self.cwd, "alive": self.alive, "kind": self.kind, "conversationId": self.conversation_id}
 
     def keep(self, text: str) -> None:
         with self.lock:
@@ -140,14 +142,40 @@ def restart(sid: str) -> Session:
     return session
 
 
+def agent_session(conversation_id: str, title: str, cwd: str) -> Session:
+    session = next((s for s in SESSIONS.values() if s.kind == "agent"), None)
+    if session is None:
+        sid = uuid.uuid4().hex[:12]
+        session = Session(sid, "Claude", cwd, None)
+        session.kind = "agent"
+        SESSIONS[sid] = session
+        events.publish("terminal.opened", terminal=session.describe())
+    if session.conversation_id != conversation_id:
+        session.conversation_id = conversation_id
+        session.cwd = cwd
+        agent_write(session, f"{'' if session.size == 0 else chr(10)}\x1b[1m{title[:60]}\x1b[0m \x1b[2m{cwd}\x1b[0m\n")
+    return session
+
+
+def agent_write(session: Session, text: str) -> None:
+    if SESSIONS.get(session.id) is not session:
+        return
+    text = text.replace("\r\n", "\n").replace("\n", "\r\n")
+    session.keep(text)
+    if _loop is not None and not _loop.is_closed():
+        _loop.call_soon_threadsafe(_deliver, session, text)
+
+
 def write(sid: str, data: str) -> None:
-    get(sid).proc.write(data)
+    session = get(sid)
+    if session.proc is not None:
+        session.proc.write(data)
 
 
 def resize(sid: str, cols: int, rows: int) -> None:
     session = get(sid)
     session.cols, session.rows = max(10, cols), max(4, rows)
-    if session.alive:
+    if session.alive and session.proc is not None:
         session.proc.setwinsize(max(4, rows), max(10, cols))
 
 
