@@ -1,3 +1,7 @@
+import shutil
+from pathlib import Path
+
+from app.core import config
 from app.engine import events, store, uploads
 
 MAX_FILES = 50
@@ -77,6 +81,7 @@ def delete(pid: str) -> list[str]:
     moved = [r["id"] for r in store.rows("SELECT id FROM conversations WHERE project_id = ?", (pid,))]
     store.run("UPDATE conversations SET project_id = NULL WHERE project_id = ?", (pid,))
     store.run("DELETE FROM projects WHERE id = ?", (pid,))
+    shutil.rmtree(config.data_dir() / "memory" / "projects" / Path(pid).name, ignore_errors=True)
     events.publish("project.deleted", id=pid)
     return moved
 

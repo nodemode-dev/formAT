@@ -138,7 +138,7 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     req: dict = {
         "model": model["id"],
         "max_tokens": max_tokens,
-        "system": prompt.system_prompt(account, bool(tools), chat_folder, project),
+        "system": prompt.system_prompt(account, bool(tools), chat_folder, project, any(t.get("name") == "memory" for t in tools or [])),
         "messages": messages,
         "cache_control": {"type": "ephemeral"},
     }

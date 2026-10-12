@@ -17,10 +17,23 @@ TOOLS = """You have tools. bash, read, write, edit, glob and grep work inside th
 PROJECT = """This chat belongs to the person's project "{name}". Every chat in the project shares its instructions and its knowledge files; the files come at the start of the conversation."""
 
 
-def system_prompt(account: dict, tools: bool = False, chat_folder: str | None = None, project: dict | None = None) -> list[dict]:
+SKILLS = """The person has installed skills: folders of instructions for particular kinds of work. When a task matches a skill's description, load it with the skill tool first and follow it; a message may also name one. Available skills:"""
+
+MEMORY_GENERAL = """Your memory folder (/memories, through the memory tool) is shared by the person's chats outside projects. Keep durable things there: facts about the person and their work that will matter in later chats, not the details of this one. The person can read and edit it in Settings."""
+
+MEMORY_PROJECT = """Your memory folder (/memories, through the memory tool) belongs to the project "{name}" and is shared by its chats only. Keep durable things about the project's work there. The person can read and edit it in Settings."""
+
+
+def system_prompt(account: dict, tools: bool = False, chat_folder: str | None = None, project: dict | None = None, memory: bool = False) -> list[dict]:
     text = BASE.format(workspace=chat_folder or config.workspace_dir(), today=datetime.date.today().strftime("%A, %B %d, %Y"), os=f"{platform.system()} {platform.release()}")
     if tools:
         text += "\n\n" + TOOLS.format(chat_folder=chat_folder or config.workspace_dir())
+        from app.engine import skills
+        found = skills.enabled()
+        if found:
+            text += "\n\n" + SKILLS + "\n" + "\n".join(f"- {s['name']}: {s['description']}" for s in found)
+        if memory:
+            text += "\n\n" + (MEMORY_PROJECT.format(name=project["name"]) if project else MEMORY_GENERAL)
     if project:
         text += "\n\n" + PROJECT.format(name=project["name"])
         if (project.get("instructions") or "").strip():

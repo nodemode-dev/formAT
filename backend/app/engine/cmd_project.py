@@ -35,7 +35,7 @@ def update(id: str, name: str | None = None, description: str | None = None, ins
 
 
 @command("project.delete", "Delete a project", {"id": PID},
-         description="Deletes a project and its list of knowledge files. Its chats are kept and move out of the project.")
+         description="Deletes a project, its list of knowledge files and its memory. Its chats are kept and move out of the project.")
 def delete(id: str) -> dict:
     moved = _do(projects.delete, id)
     for cid in moved:
