@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.1 · 2026-10-12
+
+Memory and skills (DEV_PLAN Phase 6, second part).
+
+- Memory: turn on Settings, Memory, Let Claude remember across chats, and Claude keeps notes with Anthropic's memory tool that carry from one chat to the next. Chats outside projects share one memory; each project has its own. Read, change, add and delete memory files in Settings.
+- Skills: Customize lists your skills (folders with a SKILL.md); add one as a .zip or SKILL.md, or write one there, turn each on or off, and open it to read it. Claude sees the skills that are on and loads one when a task matches; the + menu's Skills puts one in your message.
+- Deleting a project now also deletes its memory.
+- Engine: the memory tool; `memory.list`, `memory.read`, `memory.write`, `memory.delete`; the skill tool; `skill.list`, `skill.get`, `skill.add`, `skill.create`, `skill.enable`, `skill.delete`; setting `memory`. 57 commands.
+
 ## 0.6.0 · 2026-10-12
 
 Projects (DEV_PLAN Phase 6, first part).

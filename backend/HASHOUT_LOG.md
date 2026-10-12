@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.6.0
-Last updated: 2026-10-12 · v0.6.0: projects (instructions, knowledge files, chats), conversation.move, chat.send projectId
+Current build version: v0.6.1
+Last updated: 2026-10-12 · v0.6.1: the memory tool (general and per project), skills and the skill tool
 
 ---
 
@@ -35,6 +35,10 @@ backend/
     │   ├── cmd_files.py           files.list, files.read: the chat folder for the files pane
     │   ├── projects.py            projects, their knowledge files, the context a project chat receives
     │   ├── cmd_project.py         project.list, get, create, update, delete, addFile, removeFile; conversation.move
+    │   ├── memory.py              the memory tool's six commands on data/memory, general or per project
+    │   ├── cmd_memory.py          memory.list, read, write, delete
+    │   ├── skills.py              skills in data/skills: parse, install, on and off, the skill tool
+    │   ├── cmd_skill.py           skill.list, get, add, create, enable, delete
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
     └── routers/
         ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
@@ -59,6 +63,7 @@ backend/
 - [app/engine/artifacts.py and serving](#app-engine-artifacts)
 - [app/engine/cmd_files.py, comments and activity](#app-engine-cmd-files)
 - [app/engine/projects.py](#app-engine-projects)
+- [app/engine/memory.py and app/engine/skills.py](#app-engine-memory-skills)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -359,6 +364,24 @@ An artifact is a row per page and a row per version; a version is never changed,
 - logged: v0.6.0 · 2026-10-12
 
 A project is a row with a name, a description (for the person, never sent) and instructions; its knowledge files are uploads (the same store chat attachments use), linked in `project_files`, at most 50. `conversations.project_id` existed since v0.1.0 and is now used. Schema 5. A chat's project is read at the start of each reply (`projects.context`), so edits to instructions or files, and moving a chat, take effect on the next reply. The instructions go in the system prompt after Format's own text, marked as the person's; the files go at the start of the first user turn as the same blocks an attachment would make (text fenced inline, images and PDFs as blocks, large ones once through the Files API). Placing them in the first turn rather than the system prompt keeps images and PDFs possible and lets the top-level cache breakpoint cover them, so they are paid for once per cache lifetime. Sub-agents do not receive the project, only their task. Deleting a project keeps its chats, which move out (`chatsMoved` in the result); `project.changed` carries chat and file counts so the window's tiles stay right.
+
+---
+
+## app/engine/memory.py and app/engine/skills.py {#app-engine-memory-skills}
+
+### app/engine/memory.py · the memory tool
+- refers-to: app/engine/memory.py :: handle, resolve, root, scope_of; app/engine/tools.py :: MEMORY, definitions, run (memory); app/engine/cmd_memory.py; app/harness/prompt.py :: MEMORY_GENERAL, MEMORY_PROJECT
+- kind: rationale
+- logged: v0.6.1 · 2026-10-12
+
+Anthropic's memory tool (`memory_20250818`, read on platform.claude.com 2026-10-12: no beta header, no input schema, six commands, results and error texts given) is a client tool: Claude asks, Format runs the command. Format follows the documented reference behaviour, including `create` refusing nothing (it overwrites, which the page allows) and `delete` and `rename` refusing the root. `/memories` maps to `data/memory/general` for chats outside projects and `data/memory/projects/<id>` for a project's chats, decided per reply from the chat's project; deleting the project deletes that folder. Paths are checked as the page asks: under `/memories`, resolved inside the folder, with `..`, encoded `%2e`/`%2f`/`%5c` and backslashes refused. The API adds its own memory protocol to the system prompt when the tool is present ("ALWAYS VIEW YOUR MEMORY DIRECTORY BEFORE DOING ANYTHING ELSE"), which costs a round per reply; that is why the setting defaults to off. Format adds one paragraph saying which memory the chat has and what belongs in it. Memory calls need no approval (they never touch the person's files) and sub-agents do not get the tool.
+
+### app/engine/skills.py · skills
+- refers-to: app/engine/skills.py; app/engine/cmd_skill.py; app/engine/tools.py :: SKILL; app/harness/prompt.py :: SKILLS
+- kind: rationale
+- logged: v0.6.1 · 2026-10-12
+
+A skill is a folder in `data/skills` with a SKILL.md whose frontmatter has `name` (lowercase, digits, hyphens, up to 64) and `description`, the format Claude Code and claude.ai use. Every skill that is on is listed by name and description in the system prompt (progressive disclosure: the body loads only when needed) and a `skill` tool returns the SKILL.md with its file list, or one file inside the folder, confined to it. A .zip upload installs the shallowest folder holding a SKILL.md (the folder name is the fallback name); a lone SKILL.md or a written skill installs through a staging folder. The list takes only valid names, since `skills.changed` is published while the staging folder exists. On and off is a list in the `meta` table. Skills run on the person's computer through Format's own tools; the Skills API with code execution containers is not used.
 
 ---
 
