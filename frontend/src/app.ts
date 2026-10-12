@@ -483,6 +483,13 @@ export class App {
     closeMenus();
     if (view !== 'chat' && this.side()) this.closeSide();
     if (view === 'artifacts') void this.gallery.refresh();
+    if (view === 'customize') {
+      void run<{ skills: SkillSummary[] }>('skill.list').then((s) => {
+        if (JSON.stringify(s.skills) === JSON.stringify(this.state.skills)) return;
+        this.state.skills = s.skills;
+        this.state.emit('skills');
+      }).catch(() => undefined);
+    }
     this.state.view = view;
     this.chat.root.hidden = view !== 'chat';
     for (const [v, p] of this.pages) if (p.hidden === (v === view)) p.hidden = v !== view;
