@@ -109,6 +109,11 @@ export class SettingsView {
           <label class="ft-field ft-check"><input type="checkbox" data-t="webTools"><span>Web search and fetch</span></label>
         </div>
         <label class="ft-field ft-check"><input type="checkbox" data-t="artifactNetwork"><span>Artifacts can load images and data from the internet</span></label>
+        <div class="ft-field-row">
+          <label class="ft-field ft-check"><input type="checkbox" data-t="sandbox"><span>Run Claude's commands in a sandbox</span></label>
+          <label class="ft-field ft-check"><input type="checkbox" data-t="sandboxNetwork" data-off="1"><span>Sandboxed commands can use the network</span></label>
+        </div>
+        <small class="ft-set-note ft-sandbox-note">checking the sandbox</small>
         <div class="ft-allowed"><span class="ft-allowed-label">Always allowed:</span><span class="ft-allowed-list"></span></div>
         <div class="ft-field-row">
           <label class="ft-field"><span>Sub-agents in one reply</span><select class="ft-input" data-a2="agentLimit"><option value="0">Off</option><option value="2">Up to 2</option><option value="4">Up to 4</option><option value="6">Up to 6</option><option value="10">Up to 10</option></select></label>
@@ -233,9 +238,15 @@ export class SettingsView {
     this.fillAgents();
     const s = this.state.settings;
     this.root.querySelectorAll<HTMLInputElement>('[data-t]').forEach((box) => {
-      const on = (s as unknown as Record<string, unknown>)[box.dataset.t as string] !== false;
+      const v = (s as unknown as Record<string, unknown>)[box.dataset.t as string];
+      const on = box.dataset.off ? v === true : v !== false;
       if (box.checked !== on) box.checked = on;
     });
+    void run<{ note: string; available: boolean }>('sandbox.status').then((sb) => {
+      setText(q(this.root, '.ft-sandbox-note'), sb.note);
+      const box = q<HTMLInputElement>(this.root, '[data-t="sandbox"]');
+      if (box.disabled === sb.available) box.disabled = !sb.available;
+    }).catch(() => undefined);
     const list = q(this.root, '.ft-allowed-list');
     const names = s.toolAllow ?? [];
     const want = names.join(',');

@@ -250,7 +250,7 @@ export class ChatView {
     const streaming = status === 'streaming';
     view.root.classList.toggle('is-streaming', streaming);
     if (view.actions.hidden !== streaming) view.actions.hidden = streaming;
-    setText(q(view.actions, '.ft-msg-model'), m.meta?.model ?? '');
+    setText(q(view.actions, '.ft-msg-model'), `${m.meta?.model ?? ''}${(m.meta as { research?: boolean } | undefined)?.research ? ' · research' : ''}`);
     const note = status === 'error' ? (m.meta.error ?? 'The reply failed') : status === 'stopped' ? 'Stopped' : '';
     view.status.classList.toggle('is-error', status === 'error');
     setText(view.status, note);

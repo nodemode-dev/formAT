@@ -119,3 +119,13 @@
 .ft-bg-badge:empty { visibility: hidden; }
 .ft-bg-toggle[data-state="waiting"] .ft-bg-badge { background: var(--warn); color: var(--surface-0); }
 @media (prefers-reduced-motion: reduce) { .ft-bg-dot { animation: none; } }
+
+.ft-find { position: fixed; top: calc(var(--ft-topbar-h) + 8px); right: 16px; z-index: var(--z-menu); display: flex; align-items: center; gap: var(--space-1); width: min(380px, calc(100vw - 32px)); padding: 4px 4px 4px var(--space-3); border: 1px solid var(--line-2); border-radius: var(--radius-lg); background: var(--ft-menu-bg); box-shadow: var(--shadow-lg); color: var(--text-secondary); }
+.ft-find[hidden] { display: none; }
+.ft-find-input { flex: 1; min-width: 0; height: 28px; padding: 0 var(--space-1); border: 0; background: transparent; color: var(--text-primary); font: var(--fs-13) var(--font-ui); outline: none; }
+.ft-find-input::-webkit-search-cancel-button { display: none; }
+.ft-find-count { flex: none; min-width: 64px; text-align: right; font: var(--fs-12) var(--font-ui); color: var(--text-muted); }
+.ft-find .ft-icon-btn { width: 28px; height: 28px; }
+.ft-find-prev svg { transform: rotate(180deg); }
+::highlight(ft-find) { background-color: var(--accent-color-dim); color: inherit; }
+::highlight(ft-find-current) { background-color: var(--accent-color); color: var(--surface-0); }

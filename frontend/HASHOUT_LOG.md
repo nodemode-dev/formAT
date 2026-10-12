@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.9.0
-Last updated: 2026-10-12 · v0.9.0: no window changes (agent kits are engine and repo files); last window entries v0.8.0
+Current build version: v0.10.0
+Last updated: 2026-10-12 · v0.10.0: find in page, the Research pill, sandbox settings
 
 ---
 
@@ -70,6 +70,7 @@ frontend/
 - [src/ui/projects-view.ts](#src-ui-projects-view)
 - [src/ui/customize-view.ts and src/ui/memory-panel.ts](#src-ui-customize)
 - [src/ui/scheduled-view.ts and src/ui/background-panel.ts](#src-ui-scheduled)
+- [Gap closures in the window](#src-gaps)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -567,6 +568,24 @@ A preview swaps in only after its file has loaded (no blank frame), so the back 
 - logged: v0.8.0 · 2026-10-12
 
 About gains one fact, filled once from `native.status` at start: not built, built and off, on with the adapter and backend, or on with the probe's error. The terminal in the window is unchanged; the native renderer serves `terminal.snapshot` and the desktop shell to come.
+
+---
+
+## Gap closures in the window {#src-gaps}
+
+### src/ui/find-bar.ts · find in page without touching the DOM
+- refers-to: src/ui/find-bar.ts :: FindBar; src/app.ts :: keys (Mod+F), the palette entry; src/styles/ft-overlays.css :: .ft-find, ::highlight
+- kind: rationale
+- logged: v0.10.0 · 2026-10-12
+
+Mod+F opens a find bar over the current view (the chat thread, or the open page). Matches are Range objects painted with the CSS Custom Highlight API (`ft-find` for all, `ft-find-current` for the current one), so the thread's DOM is never wrapped in mark elements, split or re-rendered: the check counted 0 mutations in the thread while finding. Text in hidden or unrendered elements is skipped; a match inside a closed details group (the tool steps) is counted and the group opens when that match becomes current, the way the browser's own find opens details. The current match is scrolled to a third of the way down when it is off screen (scrolling is not a layout shift). Up to 2,000 matches; the bar closes on Esc, on a view change and on a chat change, clearing the highlights.
+
+### src/ui/composer.ts · the Research pill
+- refers-to: src/ui/composer.ts :: setResearch, researchOn; src/app.ts :: send
+- kind: explainer
+- logged: v0.10.0 · 2026-10-12
+
+The + menu's Research item now turns Research mode on for the messages that follow; a pill beside the microphone shows it and turns it off when clicked. Each send carries `research: true` while it is on, and the reply's footer reads "model · research". The pill appears only through the person's own click, so it moves nothing without input.
 
 ---
 

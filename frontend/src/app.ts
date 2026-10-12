@@ -19,6 +19,7 @@ import { MemoryPanel } from './ui/memory-panel';
 import { ArtifactsView, SettingsView, type InfoLike } from './ui/views';
 import { ScheduledView, type ScheduleSummary } from './ui/scheduled-view';
 import { BackgroundPanel } from './ui/background-panel';
+import { FindBar } from './ui/find-bar';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -40,6 +41,7 @@ export class App {
   private gallery: ArtifactsView;
   private scheduledView: ScheduledView;
   private background: BackgroundPanel;
+  private find: FindBar;
   private outputsSeq = 0;
   private settingsView: SettingsView;
   private pages = new Map<View, HTMLElement>();
@@ -137,6 +139,7 @@ export class App {
       { label: 'Artifacts', icon: 'artifacts', run: () => this.setView('artifacts') },
       { label: 'Projects', icon: 'projects', run: () => this.setView('projects') },
       { label: 'Scheduled', icon: 'clock', run: () => this.setView('scheduled') },
+      { label: 'Find in page', icon: 'search', hint: `${modKey}F`, run: () => this.find.open() },
       { label: 'Background work', icon: 'activity', run: () => this.background.toggle(q(this.shell, '.ft-bg-toggle')) },
       { label: 'Files in this chat', icon: 'folder', run: () => this.toggleFiles() },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
@@ -157,6 +160,14 @@ export class App {
     this.background = new BackgroundPanel(this.state, { openChat: (id) => void this.openChat(id) });
     (document.getElementById('overlay-root') as HTMLElement).appendChild(this.background.root);
     this.state.on('running', () => this.paintBadge());
+    this.find = new FindBar(() => {
+      if (this.state.view === 'chat') return { root: q(this.chat.root, '.ft-thread'), scroller: q(this.chat.root, '.ft-chat-scroll') };
+      const page = this.pages.get(this.state.view);
+      return page ? { root: page, scroller: page } : null;
+    });
+    (document.getElementById('overlay-root') as HTMLElement).appendChild(this.find.root);
+    this.state.on('view', () => this.find.close());
+    this.state.on('active', () => this.find.close());
     this.pages.set('customize', this.customizeView.root);
     center.appendChild(this.customizeView.root);
     this.settingsView.root.appendChild(this.memoryPanel.root);
@@ -254,7 +265,7 @@ export class App {
   private shortcuts(): void {
     let sheet = document.getElementById('ft-shortcuts');
     if (!sheet) {
-      const rows: Array<[string, string]> = [['New chat', `${modKey}⇧O`], ['Command palette and search', `${modKey}K`], ['Sidebar open or rail', `${modKey}B`], ['Terminal', `${modKey}J`], ['Outputs', `${modKey}.`], ['Add files', `${modKey}U`], ['Keyboard shortcuts', `${modKey}/`], ['Send', 'Enter'], ['New line', '⇧Enter'], ['Close a menu or dialog', 'Esc']];
+      const rows: Array<[string, string]> = [['New chat', `${modKey}⇧O`], ['Command palette and search', `${modKey}K`], ['Sidebar open or rail', `${modKey}B`], ['Terminal', `${modKey}J`], ['Outputs', `${modKey}.`], ['Add files', `${modKey}U`], ['Find in page', `${modKey}F`], ['Keyboard shortcuts', `${modKey}/`], ['Send', 'Enter'], ['New line', '⇧Enter'], ['Close a menu or dialog', 'Esc']];
       sheet = el(`<div class="ft-sheet-scrim" id="ft-shortcuts" hidden><div class="ft-sheet" role="dialog" aria-label="Keyboard shortcuts"><h2>Keyboard shortcuts</h2><dl>${rows.map(([a, k]) => `<dt>${a}</dt><dd>${k}</dd>`).join('')}</dl></div></div>`);
       sheet.addEventListener('pointerdown', (e) => { if (e.target === sheet) sheet!.hidden = true; });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet && !sheet.hidden) sheet.hidden = true; });
@@ -590,7 +601,7 @@ export class App {
     if (!id) this.claimNext = true;
     try {
       const project = !id && this.state.draftProject ? { projectId: this.state.draftProject } : {};
-      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project });
+      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project, ...(this.composer.researchOn ? { research: true } : {}) });
     } catch (err) {
       this.claimNext = false;
       this.composer.showError(err instanceof Error ? err.message : String(err));
@@ -646,6 +657,7 @@ export class App {
     else if (k === '.') { e.preventDefault(); this.toggle('panel'); }
     else if (k === 'o' && e.shiftKey) { e.preventDefault(); this.newChat(); }
     else if (k === '/') { e.preventDefault(); this.shortcuts(); }
+    else if (k === 'f' && !e.shiftKey && !this.find.isOpen) { e.preventDefault(); this.find.open(); }
     else if (k === 'u' && !e.shiftKey && this.state.view === 'chat') { e.preventDefault(); this.composer.openFilePicker(); }
   }
 }

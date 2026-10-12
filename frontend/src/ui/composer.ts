@@ -67,6 +67,17 @@ export class Composer {
     this.autosize();
   }
 
+  get researchOn(): boolean {
+    return this.research;
+  }
+
+  setResearch(on: boolean): void {
+    this.research = on;
+    const pill = q(this.root, '.ft-research-pill');
+    if (pill.hidden === on) pill.hidden = !on;
+    this.input.focus();
+  }
+
   setContext(text: string, title: string, high: boolean): void {
     this.contextEl.classList.toggle('is-empty', !text);
     setText(this.contextEl, text);
@@ -87,6 +98,7 @@ export class Composer {
         <div class="ft-bar-left">
           <button type="button" class="ft-icon-btn ft-plus" data-menu-anchor aria-label="Add" title="Add files, skills, connectors">${ui('plus')}</button>
           <button type="button" class="ft-icon-btn ft-mic" aria-label="Dictation" aria-pressed="false" title="Dictation">${ui('mic')}</button>
+          <button type="button" class="ft-pill ft-research-pill" title="Research mode is on: Claude searches and reads many sources and writes a cited report. Click to turn it off." hidden>${ui('research', 14)}<span>Research</span>${ui('close', 12)}</button>
         </div>
         <div class="ft-bar-notice"></div>
         <div class="ft-bar-right">
@@ -116,6 +128,7 @@ export class Composer {
       error: (msg) => this.flash(msg),
     });
     this.micBtn.addEventListener('click', () => this.dictation.toggle());
+    q(this.root, '.ft-research-pill').addEventListener('click', () => this.setResearch(false));
     this.editBar = q(this.root, '.ft-editing');
     this.contextEl = q(this.root, '.ft-context');
     q(this.root, '.ft-edit-cancel').addEventListener('click', () => this.cancelEdit());
@@ -350,7 +363,7 @@ export class Composer {
         },
       },
       { divider: true },
-      { label: 'Research', icon: 'research', checked: this.research, action: () => { this.research = !this.research; } },
+      { label: 'Research', icon: 'research', checked: this.research, action: () => this.setResearch(!this.research) },
     ], 'up');
   }
 

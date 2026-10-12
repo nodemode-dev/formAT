@@ -194,6 +194,9 @@
 }
 
 .ft-bar-left, .ft-bar-right { display: flex; align-items: center; gap: var(--space-1); }
+.ft-pill { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 8px 0 10px; border: 1px solid color-mix(in srgb, var(--accent-color) 45%, transparent); border-radius: 13px; background: var(--accent-color-dim); color: var(--accent-ink); font: 500 var(--fs-12) var(--font-ui); cursor: pointer; white-space: nowrap; }
+.ft-pill[hidden] { display: none; }
+.ft-pill:hover { border-color: var(--accent-color); }
 .ft-bar-notice { text-align: center; font-size: var(--fs-11); color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .ft-panel {
