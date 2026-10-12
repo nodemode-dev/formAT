@@ -56,7 +56,7 @@ export class ChatView {
       <div class="ft-chat-scroll" tabindex="-1">
         <div class="ft-greeting"><span class="ft-greeting-project" aria-hidden="true">${ui('projects', 14)}<span>New chat in <b></b></span><button type="button" aria-label="Start outside the project" title="Start outside the project">${ui('close', 12)}</button></span><span class="ft-greeting-text">${esc(greeting())}</span></div>
         <div class="ft-thread" role="log" aria-live="polite"></div>
-        <p class="ft-thread-note" hidden>No reply: add an Anthropic API key in Settings, then retry.</p>
+        <p class="ft-thread-note" hidden>No reply: add an Anthropic API key in Settings, or install Claude Code and sign in with claude, then retry.</p>
       </div>
       <div class="ft-chat-dock">
         <button type="button" class="ft-to-bottom" aria-label="Scroll to the latest message" hidden>${ui('arrowDown', 16)}</button>
@@ -396,7 +396,7 @@ export class ChatView {
     const empty = msgs.length === 0;
     this.root.classList.toggle('is-empty', empty);
     const last = msgs[msgs.length - 1];
-    const showNote = !!last && last.role === 'user' && !this.state.anthropicKey;
+    const showNote = !!last && last.role === 'user' && !this.state.route();
     if (this.note.hidden === showNote) this.note.hidden = !showNote;
     if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
     this.updateToBottom();

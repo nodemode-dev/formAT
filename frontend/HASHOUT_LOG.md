@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.11.0
-Last updated: 2026-10-12 · v0.11.0: the Browser pane sized to itself with Install the browser; the desktop splash
+Current build version: v0.12.0
+Last updated: 2026-10-12 · v0.12.0: the route (API key or Claude Code) in the composer, sidebar and model menu
 
 ---
 
@@ -334,6 +334,13 @@ The rail is the same DOM: `.ft-label` elements hide, the search field becomes an
 ---
 
 ## src/ui/composer.ts {#src-ui-composer}
+
+### src/ui/composer.ts and state/app-state.ts · who answers
+- refers-to: src/state/app-state.ts :: route, Settings.chatEngine; src/ui/composer.ts :: renderSettings, modelMenu (Answer through); src/ui/sidebar.ts :: setKey; src/ui/chat-view.ts :: showNote
+- kind: rationale
+- logged: v0.12.0 · 2026-10-12
+
+`route()` mirrors the engine's `claude_code.route` from what the window already holds: the Anthropic key's status, `keys['claude-code'].set` (Claude Code found by the engine) and the `chatEngine` setting. It decides the composer line, the sidebar's account line and the no-reply note, so a person without a key who has Claude Code is not told to add one. The window does not run anything differently: the engine picks the route on `chat.send`, and Claude Code's tools arrive already named as Format's (`bash`, `edit`, `read`), so the cards, the approval card and the question card are the existing ones. Answer through appears in the model menu only when Claude Code is found. The sidebar line also listens to `settings`, since changing Answer through changes it without a keys event.
 
 ### src/ui/composer.ts · attachments
 - refers-to: src/ui/composer.ts :: renderFiles

@@ -414,6 +414,13 @@ export class Composer {
         ...this.state.models.map((m) => ({ label: m.name, desc: m.id, checked: m.id === s.model, action: () => set('model', m.id) })),
       ],
     });
+    if (this.state.keys['claude-code']?.set) {
+      const engine = s.chatEngine ?? 'auto';
+      items.push({ divider: true }, {
+        label: 'Answer through', submenu: () => ([['auto', 'Automatic', 'Your API key when set, otherwise Claude Code'], ['api', 'Anthropic API key', 'Billed to your API key'], ['claude-code', 'Claude Code', 'Your Claude plan, through the claude CLI']] as const)
+          .map(([id, label, desc]) => ({ label, desc, checked: engine === id, action: () => set('chatEngine', id) })),
+      });
+    }
     if (!this.state.anthropicKey) items.push({ divider: true }, { label: 'Add an API key', icon: 'key', action: () => this.hooks.openKeys() });
     openMenu(this.modelBtn, items, 'up');
   }
@@ -434,6 +441,7 @@ export class Composer {
     const mode = MODES.find(([id]) => id === s.permissionMode);
     setText(this.modeBtn, mode ? mode[1] : s.permissionMode);
     if (this.notice.classList.contains('is-alert')) return;
-    setText(this.notice, this.state.anthropicKey ? `${name} through the Anthropic API can make mistakes.` : 'Add an Anthropic API key in Settings to start chatting.');
+    const via = this.state.route();
+    setText(this.notice, via === 'api' ? `${name} through the Anthropic API can make mistakes.` : via === 'claude-code' ? `${name} through Claude Code can make mistakes.` : 'Add an Anthropic API key in Settings, or install Claude Code, to start chatting.');
   }
 }

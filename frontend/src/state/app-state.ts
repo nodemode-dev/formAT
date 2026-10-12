@@ -124,6 +124,7 @@ export interface Settings {
   artifactNetwork?: boolean;
   memory?: boolean;
   outsideAgents?: 'ask' | 'allowed' | 'blocked';
+  chatEngine?: 'auto' | 'api' | 'claude-code';
 }
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
@@ -201,5 +202,12 @@ export class AppState {
 
   model(): Model | undefined {
     return this.models.find((m) => m.id === this.settings.model);
+  }
+
+  route(): 'api' | 'claude-code' | '' {
+    const cc = !!this.keys['claude-code']?.set, choice = this.settings.chatEngine ?? 'auto';
+    if (choice === 'claude-code') return cc ? 'claude-code' : '';
+    if (choice === 'api' || this.anthropicKey) return this.anthropicKey ? 'api' : '';
+    return cc ? 'claude-code' : '';
   }
 }

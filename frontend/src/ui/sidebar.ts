@@ -110,6 +110,7 @@ export class Sidebar {
     state.on('active', () => this.markActive());
     state.on('view', () => this.markView());
     state.on('running', () => this.markActivity());
+    state.on('settings', () => this.setKey(this.state.anthropicKey));
   }
 
   setTerminalOpen(open: boolean): void {
@@ -121,7 +122,8 @@ export class Sidebar {
   }
 
   setKey(present: boolean): void {
-    setText(this.keyLine, present ? 'Anthropic key set' : 'No API key yet');
+    const via = this.state.route();
+    setText(this.keyLine, present && via === 'api' ? 'Anthropic key set' : via === 'claude-code' ? 'Through Claude Code' : present ? 'Anthropic key set' : 'No API key yet');
   }
 
   setAccount(a: Account): void {
