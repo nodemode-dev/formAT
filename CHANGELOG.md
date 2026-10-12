@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.12.0 · 2026-10-12
+
+No API key needed: Format answers through Claude Code.
+
+- With no Anthropic API key set and Claude Code installed and signed in, Format runs each reply through Claude Code on your Claude plan, in the chat's own folder, streaming text, thinking and tool steps into the chat. The composer and the sidebar say "through Claude Code".
+- Claude Code's tools show as Format's cards; Ask, Auto and Plan apply (in Ask, its commands and file changes wait for Allow once, Always allow or Deny in the chat); its questions use Format's question card; its sub-agents show nested; Stop ends the run.
+- Each reply continues the chat's Claude Code session, and editing an earlier message branches from that point.
+- The model menu has Answer through: Automatic, Anthropic API key or Claude Code.
+- Engine: `claudecode.status`; `settings.set` `chatEngine` (auto, api, claude-code); `keys.status` reports `claude-code`; `FORMAT_CLAUDE_BIN`. 96 commands.
+
 ## 0.11.1 · 2026-10-12
 
 One command builds the desktop app.
