@@ -46,6 +46,7 @@ export class ArtifactPanel {
         <span class="ft-art-spacer"></span>
         <button type="button" class="ft-icon-btn ft-art-copy" title="Copy the code" aria-label="Copy the code">${ui('copy', 16)}</button>
         <a class="ft-icon-btn ft-art-dl" title="Download" aria-label="Download">${ui('download', 16)}</a>
+        <button type="button" class="ft-icon-btn ft-art-share" title="Share a link" aria-label="Share a link">${ui('share', 16)}</button>
         <a class="ft-icon-btn ft-art-pop" target="_blank" rel="noopener" title="Open in a new tab" aria-label="Open in a new tab">${ui('external', 16)}</a>
         <button type="button" class="ft-icon-btn ft-art-close" title="Close" aria-label="Close the artifact">${ui('close', 16)}</button>
       </div>
@@ -79,6 +80,7 @@ export class ArtifactPanel {
         link.click();
       } })), 'down', 0, 'Export as');
     });
+    q(this.root, '.ft-art-share').addEventListener('click', (e) => void this.shareMenu(e.currentTarget as HTMLElement));
     q(this.root, '.ft-art-close').addEventListener('click', () => this.onClose());
     this.select.addEventListener('change', () => {
       if (this.current) void this.show(this.current.id, Number(this.select.value));
@@ -207,6 +209,26 @@ export class ArtifactPanel {
       try { html = hljs.highlight(a.content, { language: lang, ignoreIllegals: true }).value; } catch { html = esc(a.content); }
     }
     this.code.innerHTML = html;
+  }
+
+  private async shareMenu(anchor: HTMLElement): Promise<void> {
+    const a = this.current;
+    if (!a) return;
+    let link: { url: string; lan: boolean };
+    try {
+      link = await run<{ url: string; lan: boolean }>('artifact.share', { id: a.id });
+    } catch (err) {
+      this.say(err instanceof Error ? err.message : String(err));
+      return;
+    }
+    openMenu(anchor, [
+      { note: link.lan ? 'Anyone on your network with this link can view the latest version, read-only.' : 'Only this computer can open the link. Turn on Settings, Other devices to share it on your network.' },
+      { note: link.url },
+      { label: 'Copy link', icon: 'copy', action: () => { void navigator.clipboard?.writeText(link.url); } },
+      { label: 'Open link', icon: 'external', action: () => { window.open(link.url, '_blank', 'noopener'); } },
+      { divider: true },
+      { label: 'Stop sharing', icon: 'close', action: () => { void run('artifact.unshare', { id: a.id }).catch(() => undefined); } },
+    ], 'down', 0, 'Share');
   }
 
   private say(text: string): void {

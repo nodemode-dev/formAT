@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.1
-Last updated: 2026-10-12 · v0.10.1: the Create picker, documents, slides and sheets in the artifact panel, the Export menu
+Current build version: v0.10.2
+Last updated: 2026-10-12 · v0.10.2: Share in the artifact panel, Settings Other devices, phone drawer and first-open chat list
 
 ---
 
@@ -593,6 +593,27 @@ The + menu's Research item now turns Research mode on for the messages that foll
 - logged: v0.10.1 · 2026-10-12
 
 HTML pages stay in the sandboxed double-buffered iframes; documents, slides and spreadsheets render natively in the panel from their source, because comments need the window and the source is plain text Format controls. Sections and slides are keyed by position and re-rendered only when their own source changed, so a document growing section by section updates in place; spreadsheet cells are patched with `setText`. Each document section has a Comment button that opens a note box and adds a comment chip to the composer. Slides show one at a time with previous, next, arrow keys and Present (fullscreen); spreadsheets show a grid with row numbers and right-aligned numbers. The download button becomes an Export menu (Word, PDF, Markdown; Excel, CSV; PowerPoint, PDF). In the chat, the first `write_document` call is an artifact card (opening it shows the latest version) and later section writes are steps in the tool group; a `write_document` block arriving without its input yet is held until the input arrives, so the right element is created once. The + menu's Create submenu sets a one-message pill (Document, Spreadsheet, Slides) that sends `output` and clears after sending.
+
+### src/ui/artifact-panel.ts · Share
+- refers-to: src/ui/artifact-panel.ts :: shareMenu, .ft-art-share; src/ui/icons-ft.ts :: share; src/styles/ft-overlays.css :: .ft-menu-note (overflow-wrap)
+- kind: explainer
+- logged: v0.10.2 · 2026-10-12
+
+The Share button makes or reuses the artifact's link (`artifact.share`) and opens a menu: a note on who can open it (anyone on the network while other devices are open, otherwise only this computer), the link itself, Copy link, Open link and Stop sharing. Menu notes wrap anywhere so a long link stays inside the menu.
+
+### src/ui/views.ts · Settings, Other devices
+- refers-to: src/ui/views.ts :: refreshDevices, toggleDevices, paintDevices, #ft-set-devices; src/ui/icons-ft.ts :: devices; src/styles/ft-shell.css :: .ft-dev-*
+- kind: explainer
+- logged: v0.10.2 · 2026-10-12
+
+One button opens or closes Format to other devices on the network; while open the section shows the pairing QR (inline SVG from the engine), the pair link and any other addresses, and Forget paired devices unpairs everything. The pairing box keeps its reserved size whether shown or not changes only through the person's click, so nothing moves without input.
+
+### src/app.ts · phones and the first socket open
+- refers-to: src/app.ts :: load (stream.onState), setView; index.html :: the layout boot script
+- kind: rationale
+- logged: v0.10.2 · 2026-10-12
+
+The chat list is fetched before the event socket opens, so a chat created in between (another device sending at that moment) would be missing until reload; on the socket's first open the list is read once more and only the missing chats are added. On a phone-width window (760 px or less) the sidebar is an overlay drawer, so it starts closed whatever the stored preference says and closes when a view or chat is chosen, as claude.ai's mobile layout does; the boot script decides it before first paint. A chat arriving from another device while the sidebar is visible still waits for the person's next touch or key before rows move (sidebar.ts renderList).
 
 ---
 

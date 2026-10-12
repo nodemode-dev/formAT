@@ -15,6 +15,8 @@ const UI: Record<string, string> = {
   artifacts: `<circle cx="7" cy="7" r="3" ${S}/><rect x="11" y="4" width="5.5" height="5.5" rx="1" ${S}/><path d="M7 11.5l3.5 5h-7z" ${S}/><path d="M11.5 12h5M11.5 15h5" ${S}/>`,
   clock: `<circle cx="10" cy="10" r="6.5" ${S}/><path d="M10 6.5V10l2.5 1.5" ${S}/>`,
   activity: `<path d="M3 10h3l2-5 4 10 2-5h3" ${S}/>`,
+  share: `<path d="M10 12V3.5M6.5 7L10 3.5 13.5 7" ${S}/><path d="M4.5 11v3.5A1.5 1.5 0 0 0 6 16h8a1.5 1.5 0 0 0 1.5-1.5V11" ${S}/>`,
+  devices: `<rect x="2.5" y="4" width="10" height="8" rx="1.5" ${S}/><path d="M5.5 15h4" ${S}/><rect x="13" y="7" width="4.5" height="9" rx="1.2" ${S}/>`,
   customize: `<path d="M4 6h7M14 6h2M4 14h2M9 14h7" ${S}/><circle cx="12.5" cy="6" r="1.5" ${S}/><circle cx="7.5" cy="14" r="1.5" ${S}/>`,
   chevronRight: `<path d="M8 5l5 5-5 5" ${S}/>`,
   chevronLeft: `<path d="M12 5l-5 5 5 5" ${S}/>`,

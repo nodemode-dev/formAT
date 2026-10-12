@@ -77,7 +77,7 @@
   <script>
 (function () {
   var root = document.documentElement, get = function (k, d) { try { return localStorage.getItem(k) || d; } catch (e) { return d; } };
-  root.dataset.ftSidebar = get('format.sidebar', 'open') === 'rail' ? 'rail' : 'open';
+  root.dataset.ftSidebar = get('format.sidebar', 'open') === 'rail' || window.matchMedia('(max-width: 760px)').matches ? 'rail' : 'open';
   root.dataset.ftPanel = get('format.panel', 'closed') === 'open' ? 'open' : 'closed';
   root.dataset.ftTerm = get('format.terminal', 'closed') === 'open' ? 'open' : 'closed';
 })();

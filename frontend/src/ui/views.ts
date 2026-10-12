@@ -84,6 +84,8 @@ function sourceText(k: KeyStatus | undefined): string {
   return `Set ${k.hint ?? ''} · ${where}`;
 }
 
+interface DevicesStatus { on: boolean; port: number; urls: string[]; pairUrl: string | null; qr: string | null }
+
 export class SettingsView {
   readonly root: HTMLElement;
   private saved: HTMLElement;
@@ -119,6 +121,12 @@ export class SettingsView {
           <label class="ft-field"><span>Sub-agents in one reply</span><select class="ft-input" data-a2="agentLimit"><option value="0">Off</option><option value="2">Up to 2</option><option value="4">Up to 4</option><option value="6">Up to 6</option><option value="10">Up to 10</option></select></label>
           <label class="ft-field"><span>Sub-agent model</span><select class="ft-input" data-a2="agentModel"><option value="">Same as the chat</option></select></label>
         </div>
+      </section>
+      <section class="ft-set-section" id="ft-set-devices" aria-labelledby="ft-set-devices-h">
+        <h2 id="ft-set-devices-h">${ui('devices', 16)}<span>Other devices</span></h2>
+        <p class="ft-set-note">Continue on your phone or another computer on the same network: turn this on, then scan the code or open the link there. Paired devices see the same chats live; shared artifact links open for anyone who can reach this computer, read-only. Turn it off to keep Format on this computer only.</p>
+        <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-dev-toggle">Open to other devices</button><button type="button" class="ft-btn ft-dev-forget" hidden>Forget paired devices</button><span class="ft-saved ft-dev-msg" aria-live="polite"></span></div>
+        <div class="ft-dev-pair" hidden><div class="ft-dev-qr" aria-label="Pairing code"></div><div class="ft-dev-text"><small>Open on the other device:</small><code class="ft-dev-url"></code><small class="ft-dev-also"></small></div></div>
       </section>
       <section class="ft-set-section" id="ft-set-agents" aria-labelledby="ft-set-agents-h">
         <h2 id="ft-set-agents-h">${ui('plug', 16)}<span>Outside agents</span></h2>
@@ -197,12 +205,46 @@ export class SettingsView {
     const mod = q<HTMLSelectElement>(this.root, '[data-a2="agentModel"]');
     lim.addEventListener('change', () => void run('settings.set', { key: 'agentLimit', value: Number(lim.value) }).catch(() => undefined));
     mod.addEventListener('change', () => void run('settings.set', { key: 'agentModel', value: mod.value }).catch(() => undefined));
+    q(this.root, '.ft-dev-toggle').addEventListener('click', () => void this.toggleDevices());
+    q(this.root, '.ft-dev-forget').addEventListener('click', () => void run<DevicesStatus>('devices.forget').then((d) => this.paintDevices(d, 'Paired devices were forgotten; pair again with the new code.')).catch(() => undefined));
+    void this.refreshDevices();
     const outside = q<HTMLSelectElement>(this.root, '[data-g="outsideAgents"]');
     outside.addEventListener('change', () => void run('settings.set', { key: 'outsideAgents', value: outside.value }).catch(() => undefined));
     state.on('settings', () => { this.fillChats(); this.fillTools(); this.fillOutside(); });
     this.fillChats();
     this.fillTools();
     this.fillOutside();
+  }
+
+  async refreshDevices(): Promise<void> {
+    try { this.paintDevices(await run<DevicesStatus>('devices.status')); } catch { /* engine down */ }
+  }
+
+  private async toggleDevices(): Promise<void> {
+    const on = q(this.root, '.ft-dev-toggle').dataset.on === '1';
+    try {
+      this.paintDevices(await run<DevicesStatus>(on ? 'devices.stop' : 'devices.start'));
+    } catch (err) {
+      setText(q(this.root, '.ft-dev-msg'), err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  private paintDevices(d: DevicesStatus, msg = ''): void {
+    const btn = q(this.root, '.ft-dev-toggle');
+    btn.dataset.on = d.on ? '1' : '0';
+    setText(btn, d.on ? 'Close to other devices' : 'Open to other devices');
+    const forget = q(this.root, '.ft-dev-forget');
+    if (forget.hidden === d.on) forget.hidden = !d.on;
+    const pair = q(this.root, '.ft-dev-pair');
+    const show = !!(d.on && d.pairUrl);
+    if (show) {
+      const qr = q(this.root, '.ft-dev-qr');
+      if (qr.dataset.v !== d.pairUrl) { qr.dataset.v = d.pairUrl ?? ''; qr.innerHTML = d.qr ?? ''; }
+      setText(q(this.root, '.ft-dev-url'), d.pairUrl ?? '');
+      setText(q(this.root, '.ft-dev-also'), d.urls.length > 1 ? `Also reachable at ${d.urls.slice(1).join(', ')}` : `Listening on port ${d.port}`);
+    }
+    if (pair.hidden === show) pair.hidden = !show;
+    setText(q(this.root, '.ft-dev-msg'), msg);
   }
 
   fillOutside(): void {

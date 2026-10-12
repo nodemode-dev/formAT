@@ -240,6 +240,16 @@ export class App {
     this.state.emit('keys');
     this.state.emit('view');
     this.stream.on((e) => this.onEvent(e));
+    const off = this.stream.onState((s) => {
+      if (s !== 'open') return;
+      off();
+      void run<{ conversations: Conversation[] }>('conversation.list').then((fresh) => {
+        const missing = fresh.conversations.filter((c) => !this.state.conversations.has(c.id));
+        if (!missing.length) return;
+        missing.forEach((c) => this.state.conversations.set(c.id, c));
+        this.state.emit('conversations');
+      }).catch(() => undefined);
+    });
     this.stream.start();
   }
 
@@ -546,6 +556,7 @@ export class App {
 
   setView(view: View): void {
     closeMenus();
+    if (this.layout('sidebar') === 'open' && window.matchMedia('(max-width: 760px)').matches) document.documentElement.dataset.ftSidebar = 'rail';
     if (view !== 'chat' && this.side()) this.closeSide();
     if (view === 'artifacts') void this.gallery.refresh();
     if (view === 'scheduled') this.scheduledView.shown();
