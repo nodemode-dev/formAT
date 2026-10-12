@@ -13,7 +13,7 @@ from app.core import config
 from app.engine import events
 
 READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user", "spawn_agent", "publish_artifact", "write_document", "memory", "skill"}
-AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list", "publish_artifact", "write_document", "memory"}
+AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list", "publish_artifact", "write_document", "memory", "browser"}
 MEMORY = {"type": "memory_20250818", "name": "memory"}
 SKILL = {"name": "skill", "description": "Load one of the person's skills: returns its SKILL.md instructions and the list of its files. Load a skill before doing a task its description matches, then follow it. Pass file to read one of the skill's other files.",
          "input_schema": {"type": "object", "properties": {"name": {"type": "string", "description": "The skill's name, from the list in your instructions"},
@@ -79,7 +79,7 @@ DEFINITIONS = [
                                                         "caption": {"type": "string", "description": "One line of context, optional"}},
                       "required": ["path"]}},
 ]
-NAMES = {d["name"] for d in DEFINITIONS} | {"memory", "skill"}
+NAMES = {d["name"] for d in DEFINITIONS} | {"memory", "skill", "browser"}
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
 
 _waits: dict[str, dict] = {}
@@ -107,6 +107,10 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
             out.append(dict(WEB_SEARCH))
         if (caps.get("web_fetch") or {}).get("supported", True):
             out.append(dict(WEB_FETCH))
+    if settings.get("browserTools", True) and not agent:
+        from app.engine import browser
+        if browser.available():
+            out.append(dict(browser.DEFINITION))
     if settings.get("memory") and not agent:
         out.append(dict(MEMORY))
     from app.engine import connectors, skills
@@ -254,6 +258,9 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
         if name == "skill":
             from app.engine import skills
             return skills.load(args)
+        if name == "browser":
+            from app.engine import browser
+            return browser.tool(args)
         if name.startswith("mcp__"):
             from app.engine import connectors
             return connectors.call(name, args)

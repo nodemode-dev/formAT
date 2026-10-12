@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.2
-Last updated: 2026-10-12 · v0.10.2: other devices (LAN pairing, devices.*), share links (artifact.share, artifact.unshare, artifact.shares), schema 8
+Current build version: v0.10.3
+Last updated: 2026-10-12 · v0.10.3: plugins (plugin.*), the built-in browser (browser.*, Claude's browser tool, setting browserTools)
 
 ---
 
@@ -590,6 +590,20 @@ Share links: `artifact.share` makes (or reuses) an unguessable token per artifac
 - logged: v0.10.2 · 2026-10-12
 
 A client that honours HTTPS_PROXY sends `ws://` to the LAN address through the proxy, and a corporate or sandbox proxy refuses it with its own 403 (header `X-Proxy-Error`). That is the proxy, not Gate: clear the proxy variables, or launch the browser with `--no-proxy-server`, when checking a paired device.
+
+### app/engine/plugins.py · Claude plugins
+- refers-to: app/engine/plugins.py :: install, set_enabled, owner_of_skill, plugin_list, plugin_get, plugin_add, plugin_enable, plugin_delete; app/engine/skills.py :: _summary (plugin)
+- kind: explainer
+- logged: v0.10.3 · 2026-10-12
+
+A plugin is the Claude plugin folder format: `.claude-plugin/plugin.json` (name, description, version, author) with `skills/<name>/SKILL.md`, `commands/*.md` and `.mcp.json` (or `mcpServers` in plugin.json, inline or as a path). Format copies the folder into `data/plugins/<name>` and installs its parts into the systems it already has, so nothing new runs at request time: each skill becomes a Format skill named `<plugin>-<skill>` (the namespacing Claude Code shows as plugin:skill, with a hyphen because skill names are lowercase letters, digits and hyphens), each command becomes a skill whose description is the command's (Format has no slash commands; Claude loads it by description or the person picks it from the + menu), and each MCP server becomes a connector (stdio servers as a command with `${CLAUDE_PLUGIN_ROOT}` expanded to the installed folder and their env; URL servers with a Bearer token taken from an Authorization header). What a plugin added is recorded in `.format-plugin.json` inside its folder, so turning the plugin off turns those skills and connectors off together, and removing it removes them; re-adding a plugin of the same name replaces it cleanly. A failed install rolls back whatever it had added. Hooks and agents folders are kept on disk but not run: Format has no hook points or agent definitions of that shape, and running a plugin's hook scripts automatically would execute code the person never looked at.
+
+### app/engine/browser.py · the built-in browser
+- refers-to: app/engine/browser.py :: _worker, _do, act, tool, DEFINITION, SNAPSHOT_JS, frame, status, open_, act_, close, stop; app/engine/tools.py :: definitions, run (browser); app/engine/cmd_settings.py :: browserTools, TOOL_NAMES; setup/install_browser; backend/requirements_browser.txt
+- kind: explainer
+- logged: v0.10.3 · 2026-10-12
+
+One headless Chromium (Playwright, Apache-2.0, optional through `./format install-browser`) in a persistent profile at `data/browser`, so sign-ins made in it stay in Format and apart from the person's own browser. Playwright's sync API must stay on the thread that started it, so a single worker thread owns the browser and every call (Claude's tool, the pane, the CLI) is a job on its queue; after each job the worker takes a JPEG of the page and publishes `browser.frame` with a sequence number, and the window fetches `/api/browser/frame`. Claude gets text, not pixels: each action returns the title, URL, the visible interactive elements numbered with a `data-ft-ref` attribute, and the page text (12,000 characters), and click, type and select take a ref from the latest snapshot. That keeps replies small and avoids storing screenshots in the chat. The tool is offered only when Playwright is importable and the setting `browserTools` is on, never to sub-agents (one shared page), and it asks before running in Ask mode like bash ("Always allow" adds browser to toolAllow). If Chromium is missing the worker reports how to install it and exits, so the next call tries again after an install.
 
 ---
 

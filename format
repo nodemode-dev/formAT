@@ -10,6 +10,7 @@ usage: ./format [command] [options]
   (none) | boot       boot the engine (8490) and the frontend (5490) together
   install             install the engine and the frontend
   install-voice       install local speech to text for the microphone (optional)
+  install-browser     install the built-in browser Claude can use (optional)
   backend             boot the engine only
   frontend            boot the frontend only
   build               production build of the frontend into frontend/dist
@@ -29,6 +30,7 @@ case "$cmd" in
   boot|dev) exec setup/boot_all "$@" ;;
   install) exec setup/install_all "$@" ;;
   install-voice) exec setup/install_voice "$@" ;;
+  install-browser) exec setup/install_browser "$@" ;;
   backend) exec setup/boot_backend "$@" ;;
   frontend) exec setup/boot_frontend "$@" ;;
   build) exec setup/build_frontend "$@" ;;

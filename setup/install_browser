@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+py="$(ft_venv_python)"
+ft_say "installing the built-in browser (Playwright and its Chromium)"
+"$py" -m pip install -r "$FORMAT_ROOT/backend/requirements_browser.txt"
+"$py" -m playwright install chromium
+ft_say "done. Restart the engine; Claude can then use the browser and you can watch it in the Browser pane"

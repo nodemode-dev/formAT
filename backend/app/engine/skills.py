@@ -60,8 +60,10 @@ def _folder(name: str) -> Path:
 def _summary(p: Path, off: set[str]) -> dict:
     front, body = parse((p / "SKILL.md").read_text(encoding="utf-8", errors="replace"))
     files = [f for f in p.rglob("*") if f.is_file()]
+    from app.engine import plugins
     return {"name": p.name, "description": front.get("description", "")[:1024], "enabled": p.name not in off,
-            "files": len(files), "size": sum(f.stat().st_size for f in files), "modified": (p / "SKILL.md").stat().st_mtime}
+            "files": len(files), "size": sum(f.stat().st_size for f in files), "modified": (p / "SKILL.md").stat().st_mtime,
+            "plugin": plugins.owner_of_skill(p.name)}
 
 
 def list_() -> list[dict]:
