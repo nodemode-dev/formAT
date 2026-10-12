@@ -17,6 +17,7 @@ usage: ./format [command] [options]
   cli <command> ...   run any engine command from the terminal (./format cli list)
   mcp                 Format as an MCP server over stdio, for coding agents (needs the engine running)
   native [build|info|window]  the optional wgpu renderer: build it, show its GPU, or open its demo window
+  agents [sync|install [--user]]  regenerate the agent tool reference and the .agents/skills mirror; install also registers Format
   doctor             check the toolchain, installs and ports
   clean [--all]       remove build output (--all also venv and node_modules)
   help                this text
@@ -40,6 +41,9 @@ case "$cmd" in
     cd backend
     [ -x venv/bin/python ] || { printf '[format] run ./format install first\n' >&2; exit 1; }
     exec venv/bin/python -m app.mcp_stdio "$@" ;;
+  agents)
+    [ -x backend/venv/bin/python ] || { printf '[format] run ./format install first\n' >&2; exit 1; }
+    exec backend/venv/bin/python setup/agents.py "$@" ;;
   native)
     command -v cargo >/dev/null || { printf '[format] the native renderer needs Rust (rustup.rs)\n' >&2; exit 1; }
     cd native/format-render

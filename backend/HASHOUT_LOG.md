@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.8.0
-Last updated: 2026-10-12 · v0.8.0: the native wgpu terminal grid (format-render), native.status, terminal.snapshot, ./format native
+Current build version: v0.9.0
+Last updated: 2026-10-12 · v0.9.0: agent kits (verb_noun MCP tools with when-sentences, ./format agents, the format-harness and format-driving skills, Codex config)
 
 ---
 
@@ -46,6 +46,7 @@ backend/
     │   ├── native.py              the optional wgpu renderer: native.status, terminal snapshots through its binary
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, restart, close
     ├── mcp_server.py              Format as an MCP server: a tool per command, resources, prompts
+    ├── agent_guide.py             agent-facing tool names (verb_noun) and when-sentences; id rewriting in errors
     ├── mcp_stdio.py               ./format mcp: the same server over stdio, proxied to the running engine
     └── routers/
         ├── mcp_http.py            Streamable HTTP MCP at /mcp
@@ -448,6 +449,20 @@ A comment is `{path, quote, note}` on a file of the chat; up to 20 go with one m
 - logged: v0.7.0 · 2026-10-12
 
 The registry already describes every command (label, description, typed params, `mutates`), so the server is generated from it rather than hand-listed: a tool per command, named with `.` turned into `_` because several MCP clients reject dots in tool names, plus `run_command` for an id by string. Annotations come from `mutates` and the verb: not mutating is read-only and idempotent; delete, clear, removeFile, stop and close are destructive; setters, renames, pins, moves and waits are idempotent; `chat.*` is open-world because it reaches the Anthropic API. Results are the command's JSON as text, capped at 60k characters so one transcript cannot flood an agent's context; errors come back with `isError` rather than a protocol error, so the agent sees the message. Resources expose what an agent most wants to read without a tool call: a chat as Markdown (`format://conversation/{id}`) and an artifact's latest HTML (`format://artifact/{id}`), the 50 most recent of each listed, both also as templates. The lowlevel `Server` is used, not FastMCP, because the tool list is dynamic.
+
+### app/agent_guide.py · names and when-sentences for agents
+- refers-to: app/agent_guide.py :: GUIDE, tool_name, command_of, when, for_agents; app/mcp_server.py :: describe, call_tool, INSTRUCTIONS
+- kind: rationale
+- logged: v0.9.0 · 2026-10-12
+
+From v0.9.0 tools are named verb_noun (`send_message`, `wait_for_reply`, `publish_artifact`, `list_conversations`), because agents choose tools by reading a name as an action, and `chat_send` or `conversation_list` read as nouns. The names and one "Use when" sentence per command live in one table in `agent_guide.py` rather than in each `@command`, so the CLI's dotted ids stay the engine's vocabulary and the agent vocabulary is reviewed in one place; a command missing from the table falls back to the dotted id with underscores, and so do the v0.7 names, which still answer. Each description is the command's description with dotted ids rewritten to tool names, the when-sentence, and the command id in parentheses (for `run_command` and the CLI). Error messages get the same rewrite, so "conversation.list gives the ids" reaches an agent as "list_conversations gives the ids". `setup/agents.py` builds the generated references from the same table.
+
+### setup/agents.py · ./format agents
+- refers-to: setup/agents.py :: sync, install, tools_md, tool_map_md, command_map_md; format, format.bat :: agents
+- kind: explainer
+- logged: v0.9.0 · 2026-10-12
+
+`sync` imports the registry without starting the engine and writes three generated references (`.claude/skills/format-driving/references/tools.md`, `format-harness/references/tool-map.md`, `command-map.md`), each with a contents list and no tag-shaped text, so the skill validator passes; then it replaces `.agents/skills` with a copy of `.claude/skills`, because Codex reads skills from `.agents/skills` and a symlink would not survive Windows checkouts or zips. Files are rewritten only when their text changed. `install` runs sync, reports the three project configs, and with `--user` appends Format to `~/.codex/config.toml` (once) and registers it at Claude Code's user scope when the `claude` command exists; nothing outside the repo changes without `--user`.
 
 ### app/routers/mcp_http.py · Streamable HTTP at /mcp
 - refers-to: app/routers/mcp_http.py :: Endpoint, running; app/main.py :: lifespan, routes

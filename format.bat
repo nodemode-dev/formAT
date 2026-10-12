@@ -12,7 +12,8 @@ if /i "%CMD%"=="frontend" ( call frontend\boot_frontend.bat & goto :eof )
 if /i "%CMD%"=="cli" goto cli
 if /i "%CMD%"=="mcp" goto mcp
 if /i "%CMD%"=="native" goto native
-echo usage: .\format.bat [boot^|install^|backend^|frontend^|cli ^<command^>^|mcp^|native [build^|info^|window]]
+if /i "%CMD%"=="agents" goto agents
+echo usage: .\format.bat [boot^|install^|backend^|frontend^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync^|install [--user]]]
 echo Always run it as .\format.bat from this folder: plain "format" elsewhere is Windows' disk formatter.
 exit /b 2
 :boot
@@ -28,6 +29,10 @@ goto :eof
 if not exist backend\venv\Scripts\python.exe ( echo [format] run .\format.bat install first & exit /b 1 )
 cd backend
 venv\Scripts\python.exe -m app.mcp_stdio
+goto :eof
+:agents
+if not exist backend\venv\Scripts\python.exe ( echo [format] run .\format.bat install first & exit /b 1 )
+backend\venv\Scripts\python.exe setup\agents.py %1 %2
 goto :eof
 :native
 where cargo >nul 2>nul || ( echo [format] the native renderer needs Rust ^(rustup.rs^) & exit /b 1 )
