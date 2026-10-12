@@ -49,7 +49,7 @@ Deletes the last reply (if it is Claude's) and asks again with the same history 
 
 Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait. Use to ask Claude something in Format: omit conversationId to start a new chat, then call wait_for_reply with the conversationId it returns.
 
-- changes state · command `chat.send` · params: `text` string, `conversationId?` string, `attachments?` array, `comments?` array, `projectId?` string, `title?` string, `research?` boolean
+- changes state · command `chat.send` · params: `text` string, `conversationId?` string, `attachments?` array, `comments?` array, `projectId?` string, `title?` string, `research?` boolean, `output?` string
 
 ### stop_reply
 
@@ -121,6 +121,12 @@ Deletes an artifact and all its versions. Not undoable. Use only when the person
 
 - changes state · command `artifact.delete` · params: `id` string
 
+### export_artifact
+
+Writes an artifact version as a file: a document as md, docx or pdf; a spreadsheet as csv or xlsx; slides as pptx, pdf or md; a page as html. Returns the file's path and a download URL. Use when the person wants a file: a document as Word, PDF or Markdown, a spreadsheet as Excel or CSV, slides as PowerPoint or PDF.
+
+- changes state · command `artifact.export` · params: `id` string, `format` string, `version?` integer
+
 ### get_artifact
 
 One artifact with its versions and the source of one version (the latest unless version is given), plus the URL the window shows it from. Use when you need a published page's HTML or its version list, for example before publishing a new version.
@@ -138,6 +144,12 @@ Artifacts Claude published, newest first, in one chat or all chats, with their t
 Publishes an HTML page as an artifact of a chat, or a new version of one, the way Claude's publish_artifact tool does; it appears in the window's Artifacts page and, when that artifact is open, in its panel. For outside agents and scripts. Use when you want to show the person a page, app or document: it appears in that chat and on the Artifacts page; pass artifactId to add a version.
 
 - changes state · command `artifact.publish` · params: `conversationId` string, `title?` string, `html` string, `artifactId?` string
+
+### write_document
+
+Creates or revises a document, spreadsheet or slide deck in a chat, the way Claude's write_document tool does; each write is a new version shown live beside the chat. Returns the artifact with its id and version. Use to create or revise a document, spreadsheet or slide deck in a chat; pass section to change one part.
+
+- changes state · command `artifact.write` · params: `conversationId` string, `kind?` string, `title?` string, `content` string, `artifactId?` string, `section?` string
 
 ## Chat files and outputs
 

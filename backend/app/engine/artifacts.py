@@ -38,7 +38,7 @@ def list_(conversation_id: str | None = None) -> list[dict]:
     return [_summary(a) | {"chatTitle": titles.get(a["conversation_id"], "")} for a in rows]
 
 
-def publish(conversation_id: str, message_id: str | None, title: str, content: str, artifact_id: str | None = None) -> dict:
+def publish(conversation_id: str, message_id: str | None, title: str, content: str, artifact_id: str | None = None, kind: str = "html") -> dict:
     title = (title or "").strip()[:120]
     if not isinstance(content, str) or not content.strip():
         raise ArtifactError("the page is empty")
@@ -56,8 +56,8 @@ def publish(conversation_id: str, message_id: str | None, title: str, content: s
         if not title:
             raise ArtifactError("a new artifact needs a title")
         artifact_id, number = store.new_id(), 1
-        store.run("INSERT INTO artifacts(id, conversation_id, title, kind, created, updated) VALUES (?, ?, ?, 'html', ?, ?)",
-                  (artifact_id, conversation_id, title, now, now))
+        store.run("INSERT INTO artifacts(id, conversation_id, title, kind, created, updated) VALUES (?, ?, ?, ?, ?, ?)",
+                  (artifact_id, conversation_id, title, kind, now, now))
     store.run("INSERT INTO artifact_versions(artifact_id, version, message_id, content, created) VALUES (?, ?, ?, ?, ?)",
               (artifact_id, number, message_id, content, now))
     summary = get(artifact_id) or {}

@@ -87,7 +87,35 @@ def artifact_page(aid: str, number: int, download: bool = False) -> Response:
     if download:
         safe = "".join(ch if ch.isalnum() or ch in "-_ " else "_" for ch in a["title"]).strip() or "artifact"
         headers["content-disposition"] = f'attachment; filename="{safe}-v{number}.html"'
+    if a["kind"] != "html":
+        from app.engine import documents
+        return Response(documents.standalone_html(a["kind"], v["content"], a["title"]), media_type="text/html; charset=utf-8", headers=headers)
     return Response(v["content"], media_type="text/html; charset=utf-8", headers=headers)
+
+
+@router.get("/artifacts/{aid}/v/{number}/source")
+def artifact_source(aid: str, number: int) -> Response:
+    v = artifacts.version(aid, number)
+    if v is None:
+        raise HTTPException(404, "No such artifact version")
+    return Response(v["content"], media_type="text/plain; charset=utf-8", headers={"cache-control": "no-store", "x-content-type-options": "nosniff"})
+
+
+@router.get("/artifacts/{aid}/v/{number}/export/{fmt}")
+def artifact_export(aid: str, number: int, fmt: str) -> Response:
+    from app.engine import documents
+    from app.engine.commands import CommandError
+    v = artifacts.version(aid, number)
+    a = artifacts.get(aid)
+    if v is None or a is None:
+        raise HTTPException(404, "No such artifact version")
+    try:
+        data = documents.render_export(a["kind"], v["content"], fmt, a["title"])
+    except CommandError as exc:
+        raise HTTPException(400, str(exc)) from None
+    name = documents.filename(a["title"], number, fmt)
+    return Response(data, media_type=documents.MIME.get(fmt, "application/octet-stream"),
+                    headers={"content-disposition": f'attachment; filename="{name}"', "cache-control": "no-store", "x-content-type-options": "nosniff"})
 
 
 @router.get("/native/snapshots/{name}")

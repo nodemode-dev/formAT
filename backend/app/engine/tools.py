@@ -12,8 +12,8 @@ from pathlib import Path
 from app.core import config
 from app.engine import events
 
-READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user", "spawn_agent", "publish_artifact", "memory", "skill"}
-AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list", "publish_artifact", "memory"}
+READ_ONLY = {"read", "glob", "grep", "task_list", "send_file", "ask_user", "spawn_agent", "publish_artifact", "write_document", "memory", "skill"}
+AGENT_EXCLUDED = {"spawn_agent", "ask_user", "send_file", "task_list", "publish_artifact", "write_document", "memory"}
 MEMORY = {"type": "memory_20250818", "name": "memory"}
 SKILL = {"name": "skill", "description": "Load one of the person's skills: returns its SKILL.md instructions and the list of its files. Load a skill before doing a task its description matches, then follow it. Pass file to read one of the skill's other files.",
          "input_schema": {"type": "object", "properties": {"name": {"type": "string", "description": "The skill's name, from the list in your instructions"},
@@ -67,6 +67,13 @@ DEFINITIONS = [
                                                         "html": {"type": "string", "description": "The complete HTML document"},
                                                         "artifact_id": {"type": "string", "description": "The id of an artifact from this chat to add a version to"}},
                       "required": ["title", "html"]}},
+    {"name": "write_document", "description": "Create or revise a document, spreadsheet or slide deck that opens beside the chat, where the person reads it, comments on sections and exports it (document: Markdown, Word, PDF; spreadsheet: CSV, Excel; slides: PowerPoint, PDF). kind doc takes Markdown with one ## heading per section; kind sheet takes CSV with a header row; kind deck takes Markdown slides separated by lines of ---, each starting with a # title and a few bullets. Build long documents section by section: first write the title and the outline (all ## headings with a line each), then call again with artifact_id and section set to a heading to write that section in full; each call is a new version the person watches arrive. For a deck, section is a slide number.",
+     "input_schema": {"type": "object", "properties": {"kind": {"type": "string", "enum": ["doc", "sheet", "deck"], "description": "For a new artifact"},
+                                                        "title": {"type": "string", "description": "A short name, for a new artifact"},
+                                                        "content": {"type": "string", "description": "The whole artifact, or with section the one section or slide"},
+                                                        "artifact_id": {"type": "string", "description": "An artifact from this chat to revise"},
+                                                        "section": {"type": "string", "description": "With artifact_id: the ## heading or slide number to replace (appended when missing)"}},
+                      "required": ["content"]}},
     {"name": "send_file", "description": "Give the person a file from the workspace folder: it appears in the conversation as a file card they can download, and in the Outputs panel. Use it for every file that is a deliverable, after writing it.",
      "input_schema": {"type": "object", "properties": {"path": {"type": "string", "description": "Path relative to the workspace folder"},
                                                         "caption": {"type": "string", "description": "One line of context, optional"}},
@@ -272,6 +279,16 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
             except artifacts.ArtifactError as exc:
                 raise ToolError(f"Not published: {exc}") from None
             return f"Published \"{a['title']}\" as artifact {a['id']}, version {a['version']}. The person sees it as a card in your reply and opens it beside the chat from there; to revise it, call publish_artifact again with artifact_id {a['id']}.", False
+        if name == "write_document":
+            from app.engine import documents
+            from app.engine.commands import CommandError
+            try:
+                a = documents.write(conversation_id, message_id, str(args.get("title") or ""), str(args.get("kind") or ""), str(args.get("content") or ""),
+                                    args.get("artifact_id") or None, str(args.get("section") or "") or None)
+            except CommandError as exc:
+                raise ToolError(f"Not written: {exc}") from None
+            label = documents.LABELS.get(a.get("kind", ""), "Artifact").lower()
+            return f"Wrote the {label} \"{a['title']}\" (artifact {a['id']}, version {a['version']}); it shows beside the chat and updates as you write. Continue section by section with artifact_id {a['id']} and section.", False
         if name == "send_file":
             path = _inside(root, args.get("path", ""))
             if not path.is_file():

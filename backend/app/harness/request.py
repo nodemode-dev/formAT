@@ -144,6 +144,8 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     }
     if settings.get("research"):
         req["system"].append({"type": "text", "text": prompt.RESEARCH})
+    if settings.get("output") in prompt.OUTPUTS:
+        req["system"].append({"type": "text", "text": prompt.OUTPUTS[settings["output"]]})
     if tools:
         req["tools"] = tools
     if effort:

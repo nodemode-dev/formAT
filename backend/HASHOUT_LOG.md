@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.0
-Last updated: 2026-10-12 · v0.10.0: Research mode, sandboxed code (sandbox.status)
+Current build version: v0.10.1
+Last updated: 2026-10-12 · v0.10.1: documents, spreadsheets and slides (write_document, artifact.write, artifact.export), section comments
 
 ---
 
@@ -560,6 +560,20 @@ Research is a property of one user message (`meta.research`), set by `chat.send 
 - logged: v0.10.0 · 2026-10-12
 
 Claude's bash runs inside an OS sandbox when one is available and setting `sandbox` is on (default on). Linux uses bubblewrap: the whole filesystem read-only, a fresh /tmp, the person's home folder and Format's data folder replaced by empty tmpfs mounts (so keys, other chats and personal files are not readable), only the chat's own folder bound writable and used as HOME, separate pid, ipc and uts namespaces, killed with the parent, and no network unless `sandboxNetwork` is on. macOS uses sandbox-exec with a profile that denies writes outside the chat folder and temp, denies reads of the home and data folders, and denies network likewise (written from Apple's profile language, not run here). Windows has no equivalent and runs commands unsandboxed, which `sandbox.status` and Settings say. The bash tool's description tells Claude about the sandbox so it reports a failed install instead of retrying it. Verified on Linux: writes inside the folder work, the repo is read-only, the home and data folders are empty, the network fails without the setting and works with it.
+
+### app/engine/documents.py · documents, spreadsheets and slides
+- refers-to: app/engine/documents.py :: write, merge, split_doc, split_deck, render_export, standalone_html, export, write_command; app/engine/tools.py :: write_document; app/engine/artifacts.py :: publish (kind); app/routers/files.py :: artifact_page, artifact_source, artifact_export; app/harness/prompt.py :: OUTPUTS; app/harness/content.py :: comment_blocks
+- kind: rationale
+- logged: v0.10.1 · 2026-10-12
+
+Documents, spreadsheets and decks are artifacts with a kind (doc, sheet, deck) and a plain-text source: Markdown with one `##` heading per section, CSV with a header row, Markdown slides separated by `---` lines. Plain text keeps versions, diffs, the code view and Claude's own editing simple, and every richer format is rendered from it. Claude writes them with the `write_document` tool; with `artifact_id` and `section` it replaces one section (matched by heading, case-insensitive) or one slide (by number or title), or appends it when missing, so a long document is built outline first and then section by section, each call a new version the person watches arrive. Exports are generated on request from the source: docx with python-docx, xlsx with openpyxl (numbers become numbers, the header bold), pptx with python-pptx (16:9, Studio Dark colours, title, accent bar, bullets), and PDF with reportlab (A4 flowing document, or 16:9 slide pages), all MIT or BSD licensed and pinned in both requirements files. The artifact page URL serves a standalone read-only HTML rendering for these kinds, so pop-out, share and agents see something sensible. The composer's Create picker sends `output` with the message; the reply then carries the matching OUTPUTS instruction. A comment on a section arrives as `artifact:[id]#[heading]` and `comment_blocks` tells Claude which artifact and section it is about and how to revise it.
+
+### app/engine/documents.py · export and write for agents
+- refers-to: app/engine/documents.py :: export, write_command; app/agent_guide.py :: export_artifact, write_document
+- kind: explainer
+- logged: v0.10.1 · 2026-10-12
+
+`artifact.export` writes the file into `data/exports` and returns its path and the download URL; `artifact.write` is the same write as Claude's tool for agents and the CLI.
 
 ---
 

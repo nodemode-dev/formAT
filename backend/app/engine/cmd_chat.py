@@ -11,10 +11,11 @@ from app.engine.commands import CommandError, command
           "comments": {"type": "array", "items": {"type": "object"}, "description": "comments on files in the chat's folder: {path, quote, note}, up to 20"},
           "projectId": {"type": "string", "description": "with no conversationId: start the new chat inside this project"},
           "title": {"type": "string", "description": "with no conversationId: the new chat's title (default: the first line of text)"},
-          "research": {"type": "boolean", "description": "Research mode for this message: Claude plans, searches and reads many sources, and writes a cited report (web tools on, high effort)"}},
+          "research": {"type": "boolean", "description": "Research mode for this message: Claude plans, searches and reads many sources, and writes a cited report (web tools on, high effort)"},
+          "output": {"type": "string", "enum": ["doc", "sheet", "deck"], "description": "Ask for the answer as a document, spreadsheet or slide deck beside the chat (the composer's Create picker)"}},
          description="Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
 def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None, title: str | None = None,
-         research: bool | None = None) -> dict:
+         research: bool | None = None, output: str | None = None) -> dict:
     notes = _comments(comments)
     if projectId and store.row("SELECT id FROM projects WHERE id = ?", (projectId,)) is None:
         raise CommandError(f"No project {projectId}; project.list gives the ids", 404)
@@ -44,7 +45,7 @@ def send(text: str, conversationId: str | None = None, attachments: list | None 
     if chat.running(conversationId):
         raise CommandError("A reply is still running in this chat; chat.stop it or wait", 409)
     content = [{"type": "text", "text": text}] if text.strip() else []
-    meta = {"attachments": [f["id"] for f in files], "files": files} | ({"comments": notes} if notes else {}) | ({"research": True} if research else {})
+    meta = {"attachments": [f["id"] for f in files], "files": files} | ({"comments": notes} if notes else {}) | ({"research": True} if research else {}) | ({"output": output} if output else {})
     user = insert(conversationId, "user", content, meta)
     events.publish("message.added", message=user)
     reply = chat.start(conversationId)

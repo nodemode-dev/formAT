@@ -40,9 +40,12 @@ def start(conversation_id: str) -> dict:
     settings = current()
     model = find_model(settings["model"])
     path = messages_of(conversation_id)
-    research = bool(path and path[-1]["role"] == "user" and (path[-1].get("meta") or {}).get("research"))
+    asked = (path[-1].get("meta") or {}) if path and path[-1]["role"] == "user" else {}
+    research = bool(asked.get("research"))
     if research:
         settings = settings | {"research": True, "webTools": True, "effort": "high"}
+    if asked.get("output") in ("doc", "sheet", "deck"):
+        settings = settings | {"output": asked["output"], "workspaceTools": True}
     placeholder = insert(conversation_id, "assistant", [], {"model": model["id"], "status": "streaming"} | ({"research": True} if research else {}))
     events.publish("message.added", message=placeholder)
     threading.Thread(target=_run, args=(conversation_id, placeholder["id"], model, settings, cancel), name=f"chat-{conversation_id[:8]}", daemon=True).start()
@@ -269,11 +272,11 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
     if mirror is not None:
         tail = text.rsplit("\n", 1)[-1] if text.endswith("]") else ""
         terminal.agent_write(mirror, f"\n\x1b[2m{tail or ('[failed]' if is_error else '[done]')}\x1b[0m\n\n")
-    if name == "publish_artifact" and not is_error:
+    if name in ("publish_artifact", "write_document") and not is_error:
         from app.engine import store
-        row = store.row("SELECT v.artifact_id, v.version, a.title FROM artifact_versions v JOIN artifacts a ON a.id = v.artifact_id WHERE v.message_id = ? ORDER BY v.created DESC LIMIT 1", (mid,))
+        row = store.row("SELECT v.artifact_id, v.version, a.title, a.kind FROM artifact_versions v JOIN artifacts a ON a.id = v.artifact_id WHERE v.message_id = ? ORDER BY v.created DESC, v.version DESC LIMIT 1", (mid,))
         if row:
-            info = {"id": row["artifact_id"], "version": row["version"], "title": row["title"]}
+            info = {"id": row["artifact_id"], "version": row["version"], "title": row["title"], "kind": row["kind"]}
             meta.setdefault("artifacts", {})[tid] = info
             events.publish("message.artifact", id=mid, conversationId=conversation_id, toolUseId=tid, artifact=info)
     if name in ("bash", "write", "edit"):
