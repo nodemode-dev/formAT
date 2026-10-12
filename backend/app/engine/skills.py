@@ -66,7 +66,7 @@ def _summary(p: Path, off: set[str]) -> dict:
 
 def list_() -> list[dict]:
     off = _disabled()
-    return [_summary(p, off) for p in sorted(root().iterdir()) if p.is_dir() and (p / "SKILL.md").is_file()]
+    return [_summary(p, off) for p in sorted(root().iterdir()) if p.is_dir() and NAME.match(p.name) and (p / "SKILL.md").is_file()]
 
 
 def enabled() -> list[dict]:
