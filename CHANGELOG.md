@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.0 · 2026-10-12
+
+Projects (DEV_PLAN Phase 6, first part).
+
+- Projects: give a project a name, instructions and knowledge files; every chat in it receives the instructions and the files. The Projects page lists your projects; a project shows its chats, its instructions and its files.
+- New chat in this project starts a chat inside it; a project chat shows the project in the top bar, and the title menu's Move to project puts any chat in a project or takes it out. Deleting a project keeps its chats.
+- Fixed: a streaming reply in a new, short chat no longer shifts its text slightly as each paragraph finishes.
+- Engine: `project.list`, `project.get`, `project.create`, `project.update`, `project.delete`, `project.addFile`, `project.removeFile`, `conversation.move`; `chat.send` `projectId`. 47 commands.
+
 ## 0.5.1 · 2026-10-12
 
 Artifacts and outputs (DEV_PLAN Phase 5, last part).

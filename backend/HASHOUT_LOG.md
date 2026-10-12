@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.5.1
-Last updated: 2026-10-12 · v0.5.1: files.list, files.read, files.changed, comments on files, chat activity, sandboxed chat files
+Current build version: v0.6.0
+Last updated: 2026-10-12 · v0.6.0: projects (instructions, knowledge files, chats), conversation.move, chat.send projectId
 
 ---
 
@@ -33,6 +33,8 @@ backend/
     │   ├── artifacts.py           artifact rows and versions: publish, list, get, delete
     │   ├── cmd_artifact.py        artifact.list, artifact.get, artifact.delete
     │   ├── cmd_files.py           files.list, files.read: the chat folder for the files pane
+    │   ├── projects.py            projects, their knowledge files, the context a project chat receives
+    │   ├── cmd_project.py         project.list, get, create, update, delete, addFile, removeFile; conversation.move
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
     └── routers/
         ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
@@ -56,6 +58,7 @@ backend/
 - [app/engine/tools.py and the tool loop](#app-engine-tools)
 - [app/engine/artifacts.py and serving](#app-engine-artifacts)
 - [app/engine/cmd_files.py, comments and activity](#app-engine-cmd-files)
+- [app/engine/projects.py](#app-engine-projects)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -345,6 +348,17 @@ An artifact is a row per page and a row per version; a version is never changed,
 - logged: v0.5.0 · 2026-10-11
 
 `GET /api/artifacts/{id}/v/{n}` serves a version as its own HTML document with a Content-Security-Policy that carries a `sandbox` directive. The directive is the important part: the window's iframe is also sandboxed without `allow-same-origin`, but a page opened in a new tab (Pop out) has no iframe, and without the header it would run on the engine's own origin with access to `/api/commands`. With it, the page gets an opaque origin wherever it is opened. `connect-src 'none'` blocks fetch and WebSocket unless `artifactNetwork` is on (then https only); scripts, styles and fonts may come from cdnjs, jsdelivr, unpkg and Google Fonts, as claude.ai allows. `frame-ancestors 'self'` keeps other sites from framing it; `form-action 'none'` and `base-uri 'none'` close the remaining exits. `?download=1` sends it as an attachment named after the title and version.
+
+---
+
+## app/engine/projects.py {#app-engine-projects}
+
+### app/engine/projects.py · projects and their context
+- refers-to: app/engine/store.py :: SCHEMA (projects, project_files); app/engine/projects.py; app/engine/cmd_project.py; app/harness/prompt.py :: PROJECT; app/harness/request.py :: project_blocks, build; app/engine/chat.py :: _run (project)
+- kind: rationale
+- logged: v0.6.0 · 2026-10-12
+
+A project is a row with a name, a description (for the person, never sent) and instructions; its knowledge files are uploads (the same store chat attachments use), linked in `project_files`, at most 50. `conversations.project_id` existed since v0.1.0 and is now used. Schema 5. A chat's project is read at the start of each reply (`projects.context`), so edits to instructions or files, and moving a chat, take effect on the next reply. The instructions go in the system prompt after Format's own text, marked as the person's; the files go at the start of the first user turn as the same blocks an attachment would make (text fenced inline, images and PDFs as blocks, large ones once through the Files API). Placing them in the first turn rather than the system prompt keeps images and PDFs possible and lets the top-level cache breakpoint cover them, so they are paid for once per cache lifetime. Sub-agents do not receive the project, only their task. Deleting a project keeps its chats, which move out (`chatsMoved` in the result); `project.changed` carries chat and file counts so the window's tiles stay right.
 
 ---
 
