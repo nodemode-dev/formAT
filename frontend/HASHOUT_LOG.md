@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.10.2
-Last updated: 2026-10-12 · v0.10.2: Share in the artifact panel, Settings Other devices, phone drawer and first-open chat list
+Current build version: v0.10.3
+Last updated: 2026-10-12 · v0.10.3: the Browser pane, Plugins in Customize
 
 ---
 
@@ -614,6 +614,20 @@ One button opens or closes Format to other devices on the network; while open th
 - logged: v0.10.2 · 2026-10-12
 
 The chat list is fetched before the event socket opens, so a chat created in between (another device sending at that moment) would be missing until reload; on the socket's first open the list is read once more and only the missing chats are added. On a phone-width window (760 px or less) the sidebar is an overlay drawer, so it starts closed whatever the stored preference says and closes when a view or chat is chosen, as claude.ai's mobile layout does; the boot script decides it before first paint. A chat arriving from another device while the sidebar is visible still waits for the person's next touch or key before rows move (sidebar.ts renderList).
+
+### src/ui/browser-pane.ts · the Browser pane
+- refers-to: src/ui/browser-pane.ts :: BrowserPane, update, loadFrame, flushTyping; src/app.ts :: toggleBrowser, setSide ('browser'), browser.frame events, .ft-browser-toggle; src/styles/ft-shell.css :: .ft-br-*, .ft-browser-dot
+- kind: rationale
+- logged: v0.10.3 · 2026-10-12
+
+The pane shares the side track with artifacts and files. It shows the engine's latest frame in an image with a fixed 16:10 box, so a new frame never changes size; each frame is fetched as a blob, decoded off screen and only then swapped in, so there is no blank or half-drawn image between frames. The person uses the page directly: a click is sent as a fraction of the image (`click_at`), the wheel scrolls (at most four steps a second), printable keys are batched for 150 ms and typed, and Enter, Tab, arrows and the like are pressed. The address bar follows the page unless it has focus. The pane does not open by itself when Claude browses: the globe in the top bar shows a dot while the browser is open, and Claude's steps read "Opened a page in the browser", "Typed in the browser" in the tool group.
+
+### src/ui/customize-view.ts · Plugins
+- refers-to: src/ui/customize-view.ts :: wirePlugins, renderPlugins, openPlugin, paintPlugin; src/ui/icons-ft.ts :: plugin
+- kind: explainer
+- logged: v0.10.3 · 2026-10-12
+
+Plugins come first in Customize, as on claude.ai: a row per plugin with its part counts and an On switch, Add a plugin (a .zip), and a page per plugin with version, author, description and its skills and connectors as links to their own pages. Skills that came from a plugin show the plugin's name in their row.
 
 ---
 

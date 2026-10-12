@@ -1,5 +1,5 @@
 import { run } from '../engine-client/api';
-import type { AppState, ConnectorInfo, FileInfo, SkillSummary } from '../state/app-state';
+import type { AppState, ConnectorInfo, FileInfo, PluginSummary, SkillSummary } from '../state/app-state';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { renderMarkdown } from './markdown';
@@ -23,6 +23,15 @@ export class CustomizeView {
     this.root = el(`<section class="ft-page ft-customize" data-view="customize" hidden>
       <div class="ft-cz-main">
         <header class="ft-proj-head"><h1>Customize</h1></header>
+        <section class="ft-cz-section ft-pl-section">
+          <div class="ft-cz-section-head"><h2>${ui('plugin', 16)}<span>Plugins</span></h2>
+            <div class="ft-cz-actions"><button type="button" class="ft-btn ft-pl-upload">${ui('paperclip', 14)}<span>Add a plugin</span></button></div></div>
+          <p class="ft-set-note">A plugin bundles skills, commands and connectors for one kind of work, in the Claude plugin format (a folder with .claude-plugin/plugin.json). Add one as a .zip of its folder: its skills and commands appear under Skills and its MCP servers under Connectors, and they turn on and off together.</p>
+          <span class="ft-proj-msg ft-pl-msg" aria-live="polite"></span>
+          <div class="ft-cz-list ft-pl-list" role="list"></div>
+          <p class="ft-proj-none ft-pl-empty">No plugins yet.</p>
+          <input type="file" class="ft-pl-picker" accept=".zip" hidden>
+        </section>
         <section class="ft-cz-section">
           <div class="ft-cz-section-head"><h2>${ui('skills', 16)}<span>Skills</span></h2>
             <div class="ft-cz-actions"><button type="button" class="ft-btn ft-cz-upload">${ui('paperclip', 14)}<span>Add from a file</span></button><button type="button" class="ft-btn ft-cz-write">${ui('pencil', 14)}<span>Write a skill</span></button></div></div>
@@ -71,6 +80,18 @@ export class CustomizeView {
         <div class="ft-cn-tools" role="list"></div>
         <p class="ft-proj-none ft-cn-notools">No tools listed yet. Reconnect to list them.</p>
       </div>
+      <div class="ft-cz-detail ft-pl-detail" hidden>
+        <button type="button" class="ft-text-btn ft-pl-back">${ui('back', 14)}<span>Customize</span></button>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-pl-name"></h1><label class="ft-field ft-check"><input type="checkbox" class="ft-pl-on"><span>On</span></label><button type="button" class="ft-btn ft-pl-delete">Remove</button></div>
+        <p class="ft-cz-desc ft-pl-by"></p>
+        <p class="ft-cz-desc ft-pl-desc"></p>
+        <h2 class="ft-proj-sub">Skills and commands</h2>
+        <div class="ft-cz-files ft-pl-skills"></div>
+        <p class="ft-proj-none ft-pl-noskills">None.</p>
+        <h2 class="ft-proj-sub">Connectors</h2>
+        <div class="ft-cz-files ft-pl-conns"></div>
+        <p class="ft-proj-none ft-pl-noconns">None.</p>
+      </div>
     </section>`);
     this.main = q(this.root, '.ft-cz-main');
     this.list = q(this.root, '.ft-cz-list');
@@ -107,6 +128,123 @@ export class CustomizeView {
     this.cnDetail = q(this.root, '.ft-cn-detail');
     this.wireConnectors();
     state.on('connectors', () => this.renderConnectors());
+    this.plDetail = q(this.root, '.ft-pl-detail');
+    this.wirePlugins();
+    state.on('plugins', () => this.renderPlugins());
+  }
+
+  private plDetail: HTMLElement;
+  private plRows = new Map<string, HTMLElement>();
+  private plOpen: string | null = null;
+
+  private wirePlugins(): void {
+    const picker = q<HTMLInputElement>(this.root, '.ft-pl-picker');
+    const msg = q(this.root, '.ft-pl-msg');
+    q(this.root, '.ft-pl-upload').addEventListener('click', () => picker.click());
+    picker.addEventListener('change', async () => {
+      const f = picker.files?.[0];
+      picker.value = '';
+      if (!f) return;
+      setText(msg, `Adding ${f.name}`);
+      const form = new FormData();
+      form.append('file', f, f.name);
+      try {
+        const res = await fetch('/api/uploads', { method: 'POST', body: form });
+        const body = await res.json();
+        if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
+        const p = await run<PluginSummary>('plugin.add', { uploadId: (body.file as FileInfo).id });
+        setText(msg, `Added ${p.name}: ${p.skills.length} skill${p.skills.length === 1 ? '' : 's'}, ${p.connectors.length} connector${p.connectors.length === 1 ? '' : 's'}.`);
+      } catch (err) {
+        setText(msg, err instanceof Error ? err.message : String(err));
+      }
+    });
+    const list = q(this.root, '.ft-pl-list');
+    list.addEventListener('click', (e) => {
+      const t = e.target as HTMLElement;
+      const name = t.closest<HTMLElement>('[data-pl]')?.dataset.pl;
+      if (name && !t.closest('.ft-cz-toggle')) this.openPlugin(name);
+    });
+    list.addEventListener('change', (e) => {
+      const box = (e.target as HTMLElement).closest<HTMLInputElement>('.ft-cz-toggle input');
+      const name = box?.closest<HTMLElement>('[data-pl]')?.dataset.pl;
+      if (box && name) void run('plugin.enable', { name, enabled: box.checked }).catch((err) => setText(msg, err instanceof Error ? err.message : String(err)));
+    });
+    q(this.root, '.ft-pl-back').addEventListener('click', () => this.showList());
+    q<HTMLInputElement>(this.root, '.ft-pl-on').addEventListener('change', (e) => {
+      if (this.plOpen) void run('plugin.enable', { name: this.plOpen, enabled: (e.target as HTMLInputElement).checked }).catch(() => undefined);
+    });
+    q(this.root, '.ft-pl-delete').addEventListener('click', async (e) => {
+      const btn = e.currentTarget as HTMLButtonElement;
+      if (!this.plOpen) return;
+      if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Remove with its skills and connectors?'; return; }
+      await run('plugin.delete', { name: this.plOpen }).catch(() => undefined);
+    });
+    q(this.root, '.ft-pl-skills').addEventListener('click', (e) => {
+      const s = (e.target as HTMLElement).closest<HTMLElement>('[data-skill-link]')?.dataset.skillLink;
+      if (s) void this.open(s);
+    });
+    q(this.root, '.ft-pl-conns').addEventListener('click', (e) => {
+      const c = (e.target as HTMLElement).closest<HTMLElement>('[data-cn-link]')?.dataset.cnLink;
+      if (c) this.openConnector(c);
+    });
+  }
+
+  renderPlugins(): void {
+    const items = this.state.plugins;
+    const list = q(this.root, '.ft-pl-list');
+    const live = new Set(items.map((p) => p.name));
+    for (const [n, r] of this.plRows) if (!live.has(n)) { r.remove(); this.plRows.delete(n); }
+    items.forEach((p, i) => {
+      let row = this.plRows.get(p.name);
+      if (!row) {
+        row = el(`<div class="ft-cz-row" role="listitem" data-pl="${esc(p.name)}"><span class="ft-cz-icon">${ui('plugin', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cz-row-meta"></span><label class="ft-cz-toggle" title="On or off"><input type="checkbox" aria-label="Plugin on"></label></div>`);
+        this.plRows.set(p.name, row);
+      }
+      setText(q(row, '.ft-cz-row-name'), p.name);
+      setText(q(row, '.ft-cz-row-desc'), p.description);
+      setText(q(row, '.ft-cz-row-meta'), `${p.skills.length} skill${p.skills.length === 1 ? '' : 's'} · ${p.connectors.length} connector${p.connectors.length === 1 ? '' : 's'}`);
+      const box = q<HTMLInputElement>(row, '.ft-cz-toggle input');
+      if (box.checked !== p.enabled) box.checked = p.enabled;
+      row.classList.toggle('is-off', !p.enabled);
+      if (list.children[i] !== row) list.insertBefore(row, list.children[i] ?? null);
+    });
+    const empty = q(this.root, '.ft-pl-empty');
+    if (empty.hidden !== items.length > 0) empty.hidden = items.length > 0;
+    if (this.plOpen) {
+      if (!live.has(this.plOpen)) this.showList();
+      else this.paintPlugin();
+    }
+  }
+
+  private openPlugin(name: string): void {
+    this.plOpen = name;
+    const del = q<HTMLButtonElement>(this.root, '.ft-pl-delete');
+    if (del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Remove'; }
+    this.paintPlugin();
+    if (!this.main.hidden) this.main.hidden = true;
+    if (!this.detail.hidden) this.detail.hidden = true;
+    if (!this.cnDetail.hidden) this.cnDetail.hidden = true;
+    if (this.plDetail.hidden) this.plDetail.hidden = false;
+  }
+
+  private paintPlugin(): void {
+    const p = this.state.plugins.find((x) => x.name === this.plOpen);
+    if (!p) return;
+    setText(q(this.root, '.ft-pl-name'), p.name);
+    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.commands ? `${p.commands} command${p.commands === 1 ? '' : 's'} installed as skills` : ''].filter(Boolean).join(' · '));
+    setText(q(this.root, '.ft-pl-desc'), p.description);
+    const on = q<HTMLInputElement>(this.root, '.ft-pl-on');
+    if (on.checked !== p.enabled) on.checked = p.enabled;
+    const sk = p.skills.map((s) => `<button type="button" class="ft-chip ft-cz-file" data-skill-link="${esc(s)}">${ui('skills', 12)} ${esc(s)}</button>`).join('');
+    const sbox = q(this.root, '.ft-pl-skills');
+    if (sbox.dataset.v !== sk) { sbox.dataset.v = sk; sbox.innerHTML = sk; }
+    const cn = p.connectors.map((c) => `<button type="button" class="ft-chip ft-cz-file" data-cn-link="${esc(c.id)}">${ui('plug', 12)} ${esc(c.name)}</button>`).join('');
+    const cbox = q(this.root, '.ft-pl-conns');
+    if (cbox.dataset.v !== cn) { cbox.dataset.v = cn; cbox.innerHTML = cn; }
+    const ns = q(this.root, '.ft-pl-noskills');
+    if (ns.hidden !== p.skills.length > 0) ns.hidden = p.skills.length > 0;
+    const nc = q(this.root, '.ft-pl-noconns');
+    if (nc.hidden !== p.connectors.length > 0) nc.hidden = p.connectors.length > 0;
   }
 
   private cnDetail: HTMLElement;
@@ -219,6 +357,7 @@ export class CustomizeView {
     this.paintConnector();
     if (!this.main.hidden) this.main.hidden = true;
     if (!this.detail.hidden) this.detail.hidden = true;
+    if (!this.plDetail.hidden) this.plDetail.hidden = true;
     if (this.cnDetail.hidden) this.cnDetail.hidden = false;
   }
 
@@ -263,7 +402,7 @@ export class CustomizeView {
       }
       setText(q(row, '.ft-cz-row-name'), s.name);
       setText(q(row, '.ft-cz-row-desc'), s.description);
-      setText(q(row, '.ft-cz-row-meta'), `${s.files} file${s.files === 1 ? '' : 's'}`);
+      setText(q(row, '.ft-cz-row-meta'), `${s.plugin ? `${s.plugin} · ` : ''}${s.files} file${s.files === 1 ? '' : 's'}`);
       const box = q<HTMLInputElement>(row, '.ft-cz-toggle input');
       if (box.checked !== s.enabled) box.checked = s.enabled;
       row.classList.toggle('is-off', !s.enabled);
@@ -323,6 +462,7 @@ export class CustomizeView {
     if (del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Delete skill'; }
     if (!this.main.hidden) this.main.hidden = true;
     if (!this.cnDetail.hidden) this.cnDetail.hidden = true;
+    if (!this.plDetail.hidden) this.plDetail.hidden = true;
     if (this.detail.hidden) this.detail.hidden = false;
   }
 
@@ -330,8 +470,10 @@ export class CustomizeView {
     ++this.seq;
     this.current = null;
     this.cnOpen = null;
+    this.plOpen = null;
     if (!this.detail.hidden) this.detail.hidden = true;
     if (!this.cnDetail.hidden) this.cnDetail.hidden = true;
+    if (!this.plDetail.hidden) this.plDetail.hidden = true;
     if (this.main.hidden) this.main.hidden = false;
   }
 

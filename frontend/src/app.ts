@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type PluginSummary, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -13,6 +13,7 @@ import { Sidebar } from './ui/sidebar';
 import { TerminalDock } from './ui/terminal-dock';
 import { ArtifactPanel } from './ui/artifact-panel';
 import { FilesPane } from './ui/files-pane';
+import { BrowserPane, type BrowserStatus } from './ui/browser-pane';
 import { ProjectsView } from './ui/projects-view';
 import { CustomizeView } from './ui/customize-view';
 import { MemoryPanel } from './ui/memory-panel';
@@ -35,6 +36,7 @@ export class App {
   private panel: SidePanel;
   private artifact: ArtifactPanel;
   private filesPane: FilesPane;
+  private browserPane: BrowserPane;
   private projectsView: ProjectsView;
   private customizeView: CustomizeView;
   private memoryPanel: MemoryPanel;
@@ -58,6 +60,7 @@ export class App {
           <span class="ft-topbar-spacer"></span>
           <button type="button" class="ft-icon-btn ft-bg-toggle" aria-label="Background work" aria-expanded="false" title="Background: what is running now">${ui('activity')}<span class="ft-bg-badge" aria-hidden="true"></span></button>
           <button type="button" class="ft-icon-btn ft-term-toggle" aria-label="Toggle terminal" title="Terminal (${modKey}J)">${ui('terminal')}</button>
+          <button type="button" class="ft-icon-btn ft-browser-toggle" aria-label="Browser" title="Built-in browser">${ui('globe')}<span class="ft-browser-dot" aria-hidden="true"></span></button>
           <button type="button" class="ft-icon-btn ft-files-toggle" aria-label="Files" title="Files in this chat's folder">${ui('folder')}</button>
           <button type="button" class="ft-icon-btn ft-panel-toggle" aria-label="Outputs" title="Outputs (${modKey}.)">${ui('outputs')}</button>
         </header>
@@ -113,6 +116,10 @@ export class App {
     });
     this.artifact = new ArtifactPanel(() => this.closeArtifact(), (c) => this.composer.addComment(c));
     this.filesPane = new FilesPane({ close: () => this.closeSide(), comment: (c) => this.composer.addComment(c) });
+    this.browserPane = new BrowserPane(() => this.closeSide(), (s) => {
+      const want = s.open ? 'open' : 'closed';
+      if (document.documentElement.dataset.ftBrowser !== want) document.documentElement.dataset.ftBrowser = want;
+    });
     this.state.on('active', () => {
       this.composer.dropComments();
       if (this.filesPane.conversationId && this.filesPane.conversationId !== this.state.activeId) {
@@ -142,6 +149,7 @@ export class App {
       { label: 'Find in page', icon: 'search', hint: `${modKey}F`, run: () => this.find.open() },
       { label: 'Background work', icon: 'activity', run: () => this.background.toggle(q(this.shell, '.ft-bg-toggle')) },
       { label: 'Files in this chat', icon: 'folder', run: () => this.toggleFiles() },
+      { label: 'Browser', icon: 'globe', run: () => this.toggleBrowser() },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
       { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
       { label: 'Summarize earlier messages', icon: 'compress', run: () => this.compactNow() },
@@ -179,6 +187,7 @@ export class App {
     center.appendChild(this.settingsView.root);
     q(this.shell, '.ft-body').appendChild(this.artifact.root);
     q(this.shell, '.ft-body').appendChild(this.filesPane.root);
+    q(this.shell, '.ft-body').appendChild(this.browserPane.root);
     q(this.shell, '.ft-body').appendChild(panel.root);
     q(this.shell, '.ft-main').appendChild(this.dock.root);
     host.appendChild(this.shell);
@@ -186,6 +195,7 @@ export class App {
 
     q(this.shell, '.ft-panel-toggle').addEventListener('click', () => this.toggle('panel'));
     q(this.shell, '.ft-files-toggle').addEventListener('click', () => this.toggleFiles());
+    q(this.shell, '.ft-browser-toggle').addEventListener('click', () => this.toggleBrowser());
     q(this.shell, '.ft-term-toggle').addEventListener('click', () => this.toggle('term'));
     q(this.shell, '.ft-bg-toggle').addEventListener('click', (e) => this.background.toggle(e.currentTarget as HTMLElement));
     q(this.shell, '.ft-title-btn').addEventListener('click', (e) => this.titleMenu(e.currentTarget as HTMLElement));
@@ -220,6 +230,9 @@ export class App {
     const conns = await run<{ connectors: ConnectorInfo[] }>('connector.list').catch(() => ({ connectors: [] as ConnectorInfo[] }));
     this.state.connectors = conns.connectors;
     this.state.emit('connectors');
+    const plugs = await run<{ plugins: PluginSummary[] }>('plugin.list').catch(() => ({ plugins: [] as PluginSummary[] }));
+    this.state.plugins = plugs.plugins;
+    this.state.emit('plugins');
     void this.memoryPanel.refresh();
     list.conversations.forEach((c) => {
       this.state.conversations.set(c.id, c);
@@ -380,6 +393,11 @@ export class App {
     } else if (e.type === 'connectors.changed') {
       this.state.connectors = e.connectors as ConnectorInfo[];
       this.state.emit('connectors');
+    } else if (e.type === 'plugins.changed') {
+      this.state.plugins = e.plugins as PluginSummary[];
+      this.state.emit('plugins');
+    } else if (e.type === 'browser.frame') {
+      this.browserPane.update(e as unknown as BrowserStatus);
     } else if (e.type === 'memory.changed') {
       this.state.emit('memory');
     } else if (e.type === 'project.deleted') {
@@ -519,14 +537,23 @@ export class App {
     return document.documentElement.dataset.ftSide ?? null;
   }
 
-  private setSide(which: 'artifact' | 'files' | null): void {
+  private setSide(which: 'artifact' | 'files' | 'browser' | null): void {
     const html = document.documentElement;
     if ((html.dataset.ftSide ?? null) === which) return;
     if (which) html.dataset.ftSide = which;
     else delete html.dataset.ftSide;
     if (which !== 'artifact' && this.artifact.artifactId) this.artifact.reset();
     if (which !== 'files') this.filesPane.pause();
+    if (which !== 'browser') this.browserPane.hide();
     setAttr(q(this.shell, '.ft-files-toggle'), 'aria-pressed', String(which === 'files'));
+    setAttr(q(this.shell, '.ft-browser-toggle'), 'aria-pressed', String(which === 'browser'));
+  }
+
+  private toggleBrowser(): void {
+    if (this.side() === 'browser') { this.closeSide(); return; }
+    if (this.state.view !== 'chat') this.setView('chat');
+    this.setSide('browser');
+    void this.browserPane.show();
   }
 
   private closeSide(): void {

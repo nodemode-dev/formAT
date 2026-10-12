@@ -110,7 +110,10 @@ export class SettingsView {
           <label class="ft-field ft-check"><input type="checkbox" data-t="workspaceTools"><span>Workspace tools (bash, files)</span></label>
           <label class="ft-field ft-check"><input type="checkbox" data-t="webTools"><span>Web search and fetch</span></label>
         </div>
-        <label class="ft-field ft-check"><input type="checkbox" data-t="artifactNetwork"><span>Artifacts can load images and data from the internet</span></label>
+        <div class="ft-field-row">
+          <label class="ft-field ft-check"><input type="checkbox" data-t="artifactNetwork" data-off="1"><span>Artifacts can load images and data from the internet</span></label>
+          <label class="ft-field ft-check"><input type="checkbox" data-t="browserTools"><span>Claude can use the built-in browser</span></label>
+        </div>
         <div class="ft-field-row">
           <label class="ft-field ft-check"><input type="checkbox" data-t="sandbox"><span>Run Claude's commands in a sandbox</span></label>
           <label class="ft-field ft-check"><input type="checkbox" data-t="sandboxNetwork" data-off="1"><span>Sandboxed commands can use the network</span></label>

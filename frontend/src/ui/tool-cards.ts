@@ -143,7 +143,7 @@ export function connectorParts(name: string): { connector: string; tool: string 
 
 const ICON: Record<string, Parameters<typeof ui>[0]> = {
   bash: 'terminal', write: 'file', edit: 'pencil', read: 'file', glob: 'search', grep: 'search', web_search: 'globe', web_fetch: 'globe',
-  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills', memory: 'file', skill: 'skills', write_document: 'pencil',
+  ask_user: 'chat', task_list: 'check', spawn_agent: 'skills', memory: 'file', skill: 'skills', write_document: 'pencil', browser: 'globe',
 };
 const STATE_TEXT: Record<string, string> = {
   input: 'preparing', waiting: 'needs approval', asking: 'waiting for you', running: 'running', done: '', error: 'failed', denied: 'not run',
@@ -170,6 +170,16 @@ export function describe(name: string, input: Record<string, unknown>): { title:
     case 'web_search': return { title: 'Searched the web', sub: String(input.query ?? ''), short: 'searched the web' };
     case 'web_fetch': return { title: 'Read a page', sub: String(input.url ?? ''), short: `read ${host(input.url)}` };
     case 'ask_user': return { title: 'Asked you', sub: String(input.question ?? ''), short: 'asked you' };
+    case 'browser': {
+      const a = String(input.action ?? '');
+      const map: Record<string, [string, string]> = {
+        navigate: ['Opened a page in the browser', `opened ${host(input.url)}`], click: ['Clicked in the browser', 'clicked'], type: ['Typed in the browser', 'typed'],
+        select: ['Chose an option in the browser', 'chose an option'], press: ['Pressed a key in the browser', `pressed ${String(input.key ?? '')}`],
+        scroll: ['Scrolled the page', 'scrolled'], back: ['Went back', 'went back'], forward: ['Went forward', 'went forward'], reload: ['Reloaded the page', 'reloaded'],
+      };
+      const [title, short] = map[a] ?? ['Looked at the page', 'looked at the page'];
+      return { title, sub: a === 'navigate' ? String(input.url ?? '') : a === 'type' ? String(input.text ?? '') : input.ref ? `element ${String(input.ref)}` : '', short };
+    }
     case 'memory': {
       const path = String(input.path ?? input.old_path ?? '');
       return input.command === 'view' ? { title: 'Checked memory', sub: path, short: 'checked memory' }

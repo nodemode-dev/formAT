@@ -125,7 +125,18 @@ export interface Settings {
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
 
-type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors';
+type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors' | 'plugins';
+
+export interface PluginSummary {
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  enabled: boolean;
+  skills: string[];
+  connectors: Array<{ id: string; name: string }>;
+  commands: number;
+}
 
 export interface ConnectorInfo {
   id: string;
@@ -141,7 +152,7 @@ export interface ConnectorInfo {
   tools: Array<{ name: string; description: string; enabled: boolean }>;
 }
 
-export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number }
+export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number; plugin?: string }
 
 export interface ProjectSummary { id: string; name: string; description: string; instructions: string; created: number; updated: number; chats: number; files: number }
 
@@ -168,6 +179,7 @@ export class AppState {
   projects = new Map<string, ProjectSummary>();
   skills: SkillSummary[] = [];
   connectors: ConnectorInfo[] = [];
+  plugins: PluginSummary[] = [];
   draftProject: string | null = null;
   private subs = new Map<Topic, Set<() => void>>();
 
