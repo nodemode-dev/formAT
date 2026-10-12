@@ -1,6 +1,6 @@
 import type { AppState, ArtifactRef, ContentBlock, Message } from '../state/app-state';
 import type { Composer } from './composer';
-import { el, esc, q, setText } from './dom';
+import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { StreamRenderer } from './markdown';
 import { type Answer, type Approve, ArtifactCard, FileCard, type OpenArtifact, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
@@ -30,6 +30,7 @@ export interface ChatHooks {
   answer: Answer;
   openArtifact: OpenArtifact;
   openFile(path: string): void;
+  leaveProject(): void;
   chatId(): string;
 }
 
@@ -53,7 +54,7 @@ export class ChatView {
   constructor(private state: AppState, composer: Composer, private hooks: ChatHooks) {
     this.root = el(`<section class="ft-chat is-empty" aria-label="Conversation">
       <div class="ft-chat-scroll" tabindex="-1">
-        <div class="ft-greeting"><span class="ft-greeting-text">${esc(greeting())}</span></div>
+        <div class="ft-greeting"><span class="ft-greeting-project" aria-hidden="true">${ui('projects', 14)}<span>New chat in <b></b></span><button type="button" aria-label="Start outside the project" title="Start outside the project">${ui('close', 12)}</button></span><span class="ft-greeting-text">${esc(greeting())}</span></div>
         <div class="ft-thread" role="log" aria-live="polite"></div>
         <p class="ft-thread-note" hidden>No reply: add an Anthropic API key in Settings, then retry.</p>
       </div>
@@ -67,6 +68,7 @@ export class ChatView {
     this.toBottom = q(this.root, '.ft-to-bottom');
     q(this.root, '.ft-chat-dock').appendChild(composer.root);
     this.toBottom.addEventListener('click', () => this.scroller.scrollTo({ top: this.scroller.scrollHeight, behavior: 'smooth' }));
+    q(this.root, '.ft-greeting-project button').addEventListener('click', () => this.hooks.leaveProject());
     this.scroller.addEventListener('scroll', () => this.updateToBottom(), { passive: true });
     this.thread.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.ft-code-copy');
@@ -77,6 +79,13 @@ export class ChatView {
     state.on('messages', () => this.render());
     state.on('active', () => this.render());
     state.on('running', () => this.render());
+  }
+
+  setDraftProject(name: string | null): void {
+    const chip = q(this.root, '.ft-greeting-project');
+    setText(q(chip, 'b'), name ?? '');
+    chip.classList.toggle('is-on', !!name);
+    setAttr(chip, 'aria-hidden', name ? null : 'true');
   }
 
   private nearBottom(): boolean {

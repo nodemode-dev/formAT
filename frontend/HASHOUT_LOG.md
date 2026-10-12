@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.5.1
-Last updated: 2026-10-12 · v0.5.1: the files pane with previews, comments on a block, activity dots
+Current build version: v0.6.0
+Last updated: 2026-10-12 · v0.6.0: the Projects page, project chats and the crumb, Move to project; the streaming tail no longer shifts
 
 ---
 
@@ -37,7 +37,8 @@ frontend/
     │   ├── tool-cards.ts          tool steps and groups, questions, file and artifact cards
     │   ├── artifact-panel.ts      the artifact beside the chat: two frames, versions, code, links
     │   ├── files-pane.ts          the chat folder's files and their previews, comments on a block
-    │   ├── views.ts               Artifacts gallery; Projects, Scheduled, Customize, Settings pages
+    │   ├── projects-view.ts       the Projects page: tiles, one project with chats, instructions and files
+    │   ├── views.ts               Artifacts gallery; Scheduled, Customize, Settings pages
     │   └── boot-frame.ts          the engine-down fallback
     └── styles/
         ├── tokens.css ... light-mode.css   family sheets, vendored unchanged from formvis v1.66.1
@@ -62,6 +63,7 @@ frontend/
 - [src/ui/palette.ts](#src-ui-palette)
 - [src/ui/artifact-panel.ts and the gallery](#src-ui-artifact-panel)
 - [src/ui/files-pane.ts, comments and activity](#src-ui-files-pane)
+- [src/ui/projects-view.ts](#src-ui-projects-view)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -129,6 +131,13 @@ At 760 px and below the open sidebar becomes a drawer over the page (fixed, `--z
 - logged: v0.3.0 · 2026-10-11
 
 A streaming reply is split into blocks at blank lines outside code fences. Every finished block is rendered once with markdown-it into its own element and never touched again; only the tail element is re-rendered as text arrives, and when the reply finishes the tail element is kept and renamed to a block rather than replaced. The check counts removed `.ft-md-block`, `.ft-msg` and `.ft-thinking` nodes in the thread while a reply streams: 0. Raw HTML in Markdown is off (`html: false`); links open in a new tab with `noopener`. A list interrupted by a blank line becomes two lists (numbering continues because markdown-it keeps the start number).
+
+### src/ui/markdown.ts · the tail becomes the block
+- refers-to: src/ui/markdown.ts :: StreamRenderer.set
+- kind: warning-context
+- logged: v0.6.0 · 2026-10-12
+
+Until v0.6.0 a finished block was inserted as a new element before the tail, so the tail element moved down by the block's height each time; in a short chat that is not scrolled, the browser counted it as a layout shift (about 0.01 per reply, found by the v0.6.0 check, which watches the whole window rather than a scrolled thread). Now the tail element itself becomes the finished block (re-rendered only if its source differs from what it already shows) and a new empty tail is added after it: nothing already on screen moves, and new elements are not shifts.
 
 ### src/ui/markdown.ts · syntax colours
 - refers-to: src/ui/markdown.ts :: fence renderer; src/styles/ft-tokens.css :: --ft-syn-*
@@ -413,6 +422,19 @@ The frames carry `sandbox="allow-scripts allow-popups allow-modals allow-downloa
 - logged: v0.5.0 · 2026-10-11
 
 The Artifacts page lists every artifact, newest first, with its chat, version count and last change (time today, date before). It is loaded at start and refreshed on `artifact.changed`, `artifact.deleted`, a deleted chat and each visit, and replaced only when its markup changes. A row opens its chat and then the panel on the latest version; its menu also goes to the chat or deletes the artifact.
+
+---
+
+## src/ui/projects-view.ts {#src-ui-projects-view}
+
+### src/ui/projects-view.ts · the Projects page
+- refers-to: src/ui/projects-view.ts :: ProjectsView; src/app.ts :: setDraftProject, openProject, renderTitle (crumb), titleMenu (Move to project)
+- kind: rationale
+- logged: v0.6.0 · 2026-10-12
+
+One page with two modes, the list of project tiles and one project, so the sidebar's Projects entry keeps one view. A project shows its chats on the left and its instructions and knowledge files on the right, as claude.ai lays it out. Instructions save on a button, not as you type, because every save changes what the next reply in each chat receives; a "Not saved" note keeps unsaved text from being overwritten when the project refreshes. Files upload through `/api/uploads` and then `project.addFile`, the same uploads chats use, and can be dropped on the page. Delete asks once in place ("Delete? Its chats are kept") rather than in a dialog. Tiles and chat rows are keyed elements updated in place; only the files list is rebuilt when it changes, as in Outputs.
+
+New chat in this project sets a draft project: the empty chat shows "New chat in <project>" above the greeting (its space is always reserved, so showing it moves nothing), the top bar shows the project as a crumb, and the first message passes `projectId`. The draft clears on any other new chat, on opening a chat, and with the chip's close button. The crumb on a project chat opens the project; the title menu's Move to project puts a chat in a project or takes it out.
 
 ---
 

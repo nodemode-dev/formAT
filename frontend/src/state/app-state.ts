@@ -121,7 +121,14 @@ export interface Settings {
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
 
-type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models';
+type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects';
+
+export interface ProjectSummary { id: string; name: string; description: string; instructions: string; created: number; updated: number; chats: number; files: number }
+
+export interface ProjectDetail extends ProjectSummary {
+  fileList: Array<FileInfo & { added: number }>;
+  chatList: Array<{ id: string; title: string; pinned: boolean; updated: number }>;
+}
 
 export class AppState {
   conversations = new Map<string, Conversation>();
@@ -138,6 +145,8 @@ export class AppState {
   keys: Record<string, KeyStatus> = {};
   running = new Set<string>();
   waiting = new Map<string, Set<string>>();
+  projects = new Map<string, ProjectSummary>();
+  draftProject: string | null = null;
   private subs = new Map<Topic, Set<() => void>>();
 
   on(topic: Topic, fn: () => void): void {

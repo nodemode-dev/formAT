@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type ProjectSummary, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -13,6 +13,7 @@ import { Sidebar } from './ui/sidebar';
 import { TerminalDock } from './ui/terminal-dock';
 import { ArtifactPanel } from './ui/artifact-panel';
 import { FilesPane } from './ui/files-pane';
+import { ProjectsView } from './ui/projects-view';
 import { ArtifactsView, pageView, SettingsView, type InfoLike } from './ui/views';
 
 type Layout = 'sidebar' | 'panel' | 'term';
@@ -29,6 +30,7 @@ export class App {
   private panel: SidePanel;
   private artifact: ArtifactPanel;
   private filesPane: FilesPane;
+  private projectsView: ProjectsView;
   private gallery: ArtifactsView;
   private outputsSeq = 0;
   private settingsView: SettingsView;
@@ -41,6 +43,7 @@ export class App {
     this.shell = el(`<div class="ft-app">
       <div class="ft-main">
         <header class="ft-topbar">
+          <button type="button" class="ft-crumb" title="Open the project" hidden></button><span class="ft-crumb-sep" aria-hidden="true" hidden>/</span>
           <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span>${ui('chevronDown', 14)}</button>
           <span class="ft-topbar-spacer"></span>
           <button type="button" class="ft-icon-btn ft-term-toggle" aria-label="Toggle terminal" title="Terminal (${modKey}J)">${ui('terminal')}</button>
@@ -87,7 +90,13 @@ export class App {
       },
       openArtifact: (id, version) => this.openArtifact(id, version),
       openFile: (path) => this.openFiles(path),
+      leaveProject: () => this.setDraftProject(null),
       chatId: () => this.state.activeId ?? '',
+    });
+    this.projectsView = new ProjectsView(this.state, {
+      openChat: (id) => void this.openChat(id),
+      newChatIn: (pid) => { this.newChat(); this.setDraftProject(pid); },
+      showError: (m) => this.composer.showError(m),
     });
     this.artifact = new ArtifactPanel(() => this.closeArtifact());
     this.filesPane = new FilesPane({ close: () => this.closeSide(), comment: (c) => this.composer.addComment(c) });
@@ -115,6 +124,7 @@ export class App {
       { label: 'Toggle sidebar', icon: 'sidebar', hint: `${modKey}B`, run: () => this.toggle('sidebar') },
       { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
       { label: 'Artifacts', icon: 'artifacts', run: () => this.setView('artifacts') },
+      { label: 'Projects', icon: 'projects', run: () => this.setView('projects') },
       { label: 'Files in this chat', icon: 'folder', run: () => this.toggleFiles() },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
       { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
@@ -128,11 +138,13 @@ export class App {
     this.shell.insertBefore(this.sidebar.root, this.shell.firstChild);
     const center = q(this.shell, '.ft-center');
     center.appendChild(this.chat.root);
-    (['projects', 'scheduled', 'customize'] as const).forEach((v) => {
+    (['scheduled', 'customize'] as const).forEach((v) => {
       const p = pageView(v);
       this.pages.set(v, p);
       center.appendChild(p);
     });
+    this.pages.set('projects', this.projectsView.root);
+    center.appendChild(this.projectsView.root);
     this.pages.set('artifacts', this.gallery.root);
     center.appendChild(this.gallery.root);
     this.pages.set('settings', this.settingsView.root);
@@ -148,6 +160,11 @@ export class App {
     q(this.shell, '.ft-files-toggle').addEventListener('click', () => this.toggleFiles());
     q(this.shell, '.ft-term-toggle').addEventListener('click', () => this.toggle('term'));
     q(this.shell, '.ft-title-btn').addEventListener('click', (e) => this.titleMenu(e.currentTarget as HTMLElement));
+    q(this.shell, '.ft-crumb').addEventListener('click', () => {
+      const pid = this.state.activeId ? this.state.conversations.get(this.state.activeId)?.project_id : null;
+      if (pid) this.openProject(pid);
+    });
+    this.state.on('projects', () => this.renderTitle());
     document.addEventListener('keydown', (e) => this.keys(e));
     this.state.on('active', () => this.renderTitle());
     this.state.on('conversations', () => this.renderTitle());
@@ -165,6 +182,9 @@ export class App {
       run<Record<string, KeyStatus>>('keys.status'),
       fetch('/api/voice').then((r) => r.json()).catch(() => ({ engines: undefined })),
     ]);
+    const projects = await run<{ projects: ProjectSummary[] }>('project.list').catch(() => ({ projects: [] as ProjectSummary[] }));
+    projects.projects.forEach((p) => this.state.projects.set(p.id, p));
+    this.state.emit('projects');
     list.conversations.forEach((c) => {
       this.state.conversations.set(c.id, c);
       if (c.activity) this.state.running.add(c.id);
@@ -270,8 +290,16 @@ export class App {
         this.state.messages = [];
         this.setView('chat');
         this.state.emit('active');
+        this.setDraftProject(null);
       }
       this.state.emit('conversations');
+    } else if (e.type === 'project.changed') {
+      const p = e.project as ProjectSummary;
+      if (p?.id) { this.state.projects.set(p.id, p); this.state.emit('projects'); }
+    } else if (e.type === 'project.deleted') {
+      this.state.projects.delete(e.id as string);
+      if (this.state.draftProject === e.id) this.setDraftProject(null);
+      this.state.emit('projects');
     } else if (e.type === 'conversation.deleted') {
       this.state.conversations.delete(e.id as string);
       if (this.state.activeId === e.id) this.newChat();
@@ -440,10 +468,22 @@ export class App {
   }
 
   newChat(): void {
+    this.setDraftProject(null);
     this.state.activeId = null;
     this.state.messages = [];
     this.setView('chat');
     this.state.emit('active');
+  }
+
+  private setDraftProject(pid: string | null): void {
+    this.state.draftProject = pid && this.state.projects.has(pid) ? pid : null;
+    this.chat.setDraftProject(this.state.draftProject ? this.state.projects.get(this.state.draftProject)?.name ?? null : null);
+    this.renderTitle();
+  }
+
+  private openProject(pid: string): void {
+    this.setView('projects');
+    void this.projectsView.open(pid).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
   }
 
   async openChat(id: string): Promise<void> {
@@ -452,6 +492,8 @@ export class App {
     this.state.messages = conv.messages;
     const last = conv.messages[conv.messages.length - 1];
     this.setRunning(id, !!last && last.role === 'assistant' && last.meta?.status === 'streaming');
+    this.state.draftProject = null;
+    this.chat.setDraftProject(null);
     this.setView('chat');
     this.state.emit('active');
   }
@@ -462,7 +504,8 @@ export class App {
     const id = this.state.activeId;
     if (!id) this.claimNext = true;
     try {
-      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}) });
+      const project = !id && this.state.draftProject ? { projectId: this.state.draftProject } : {};
+      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project });
     } catch (err) {
       this.claimNext = false;
       this.composer.showError(err instanceof Error ? err.message : String(err));
@@ -474,6 +517,14 @@ export class App {
     const pageTitle: Record<View, string> = { chat: c?.title ?? 'New chat', projects: 'Projects', artifacts: 'Artifacts', scheduled: 'Scheduled', customize: 'Customize', settings: 'Settings' };
     setText(this.title, pageTitle[this.state.view]);
     document.title = this.state.view === 'chat' && c ? `${c.title} · Format` : 'Format';
+    const pid = this.state.view === 'chat' ? (c ? c.project_id : this.state.draftProject) : null;
+    const project = pid ? this.state.projects.get(pid) : undefined;
+    const crumb = q(this.shell, '.ft-crumb');
+    setText(crumb, project?.name ?? '');
+    const show = !!project;
+    if (crumb.hidden === show) crumb.hidden = !show;
+    const sep = q(this.shell, '.ft-crumb-sep');
+    if (sep.hidden === show) sep.hidden = !show;
   }
 
   private titleMenu(anchor: HTMLElement): void {
@@ -483,6 +534,18 @@ export class App {
     openMenu(anchor, [
       { label: c.pinned ? 'Unpin' : 'Pin', icon: 'pin', action: () => void run('conversation.pin', { id, pinned: !c.pinned }) },
       { label: 'Rename', icon: 'pencil', action: () => { if (this.layout('sidebar') === 'rail') this.toggle('sidebar', true); this.sidebar.rename(id); } },
+      {
+        label: 'Move to project', icon: 'projects', submenu: () => {
+          const all = [...this.state.projects.values()].sort((a, b) => a.name.localeCompare(b.name));
+          const move = (projectId: string | null) => void run('conversation.move', { id, ...(projectId ? { projectId } : {}) }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+          return [
+            ...(all.length ? all.map((p) => ({ label: p.name, checked: c.project_id === p.id, action: () => move(p.id) })) : [{ note: 'No projects yet' }]),
+            { divider: true },
+            ...(c.project_id ? [{ label: 'Take out of the project', action: () => move(null) }] : []),
+            { label: 'New project', icon: 'plus' as const, action: () => this.setView('projects') },
+          ];
+        },
+      },
       { divider: true },
       { label: 'Delete', icon: 'trash', action: () => void run('conversation.delete', { id }) },
     ], 'down');
