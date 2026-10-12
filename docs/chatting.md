@@ -18,7 +18,16 @@ Pick, drag, drop or paste files. Images and PDFs go to Claude as such; text and 
 
 ## Dictation
 
-In Chrome, Edge and Safari the browser's own speech recognition writes as you speak. In Firefox the microphone records and Format transcribes: locally after `./format install-voice`, or through OpenAI with an OpenAI key in Settings, API keys. If neither is set up, Format says which to add.
+Click the microphone, speak, click again. Settings, Account, Dictation engine chooses who turns speech into text:
+
+| Engine | Needs | Notes |
+| --- | --- | --- |
+| ElevenLabs Scribe v2 | an ElevenLabs key in Settings, API keys | the most accurate; audio goes to ElevenLabs |
+| Local Whisper large-v3-turbo | `./format install-voice` (downloads the model once, about 1.6 GB) | runs on your computer; nothing leaves it |
+| OpenAI | an OpenAI key | audio goes to OpenAI |
+| The browser | Chrome, Edge or Safari | the browser's own recognition, words appear as you speak |
+
+Automatic (the default) uses the first of Scribe v2, local Whisper and OpenAI that is set up, falling through to the next if one fails, and the browser's recognition when none is. The microphone's tooltip says which engine is recording.
 
 ## Editing, branches, retry
 

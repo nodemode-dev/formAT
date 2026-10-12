@@ -10,6 +10,7 @@ Open Settings from the sidebar (More, Settings), the account menu at the bottom 
 | How Claude should respond | your standing preferences, sent with every chat after Format's own instructions |
 | Send with | Enter, or Mod+Enter (then Enter makes a new line) |
 | Dictation language | the language code for dictation, for example en-US |
+| Dictation engine | Automatic, ElevenLabs Scribe v2, local Whisper large-v3-turbo, OpenAI or the browser (see [Chatting](chatting.md)) |
 
 ## Tools
 
@@ -38,7 +39,7 @@ Summarize long chats automatically, and at what share of the context window (50 
 
 ## API keys
 
-Anthropic (powers chat) and OpenAI (optional: dictation transcription in browsers without speech recognition). Keys are stored in Format's data folder with owner-only permissions and never shown again; Remove falls back to `backend/.env`.
+Anthropic (powers chat), OpenAI (optional: dictation) and ElevenLabs (optional: dictation with Scribe v2). Keys are stored in Format's data folder with owner-only permissions and never shown again; Remove falls back to `backend/.env`.
 
 ## Memory
 

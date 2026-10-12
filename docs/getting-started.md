@@ -21,7 +21,7 @@ Two optional parts install separately:
 
 | Command | Adds |
 | --- | --- |
-| `./format install-voice` | local speech to text for the microphone (faster-whisper; the model downloads on first use) |
+| `./format install-voice` | local speech to text for the microphone (faster-whisper with Whisper large-v3-turbo, about 1.6 GB, downloaded during the install) |
 | `./format install-browser` | the built-in browser (Playwright and Chromium) |
 
 ## Your API key

@@ -459,15 +459,15 @@ Tool calls waiting for approval, in one chat or all chats, with the tool name an
 
 ### get_account
 
-The person's profile: display name, response preferences (sent to Claude with every chat), send key and dictation language. Use when you need the person's name or how they like Claude to answer.
+The person's profile: display name, response preferences (sent to Claude with every chat), send key, dictation language and dictation engine. Use when you need the person's name or how they like Claude to answer.
 
 - read-only · command `account.get` · params: none
 
 ### update_account
 
-Changes any of the profile fields; the rest stay as they are. Use when the person asks to change their name, response preferences, send key or dictation language.
+Changes any of the profile fields; the rest stay as they are. voiceEngine picks dictation: auto (Format's best engine, else the browser), browser, scribe (ElevenLabs Scribe v2), local (Whisper large-v3-turbo) or openai. Use when the person asks to change their name, response preferences, send key or dictation language.
 
-- changes state · command `account.set` · params: `displayName?` string, `preferences?` string, `sendKey?` string, `voiceLanguage?` string
+- changes state · command `account.set` · params: `displayName?` string, `preferences?` string, `sendKey?` string, `voiceLanguage?` string, `voiceEngine?` string
 
 ### get_agent_access
 

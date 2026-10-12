@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.5 · 2026-10-12
+
+Dictation on stronger speech models.
+
+- Settings, Account has a Dictation engine: Automatic, ElevenLabs Scribe v2, local Whisper large-v3-turbo, OpenAI, or the browser's speech recognition. Automatic uses Scribe v2, then local Whisper, then OpenAI, whichever is set up, and falls through to the next if one fails; the browser only when Format has none. The microphone's tooltip names the engine.
+- Settings, API keys has an ElevenLabs key for Scribe v2.
+- Local dictation now uses Whisper large-v3-turbo, and `./format install-voice` downloads it during the install (about 1.6 GB) instead of on the first dictation. If your `backend/.env` still sets `FORMAT_WHISPER_MODEL=base` from an older example, change it to `large-v3-turbo` or remove the line.
+- Transcription no longer holds up the rest of Format while it runs.
+- Engine: `/api/voice/transcribe` takes `engine`; `/api/voice` lists the engines in order with their models; `account.set` `voiceEngine`; `keys.set` takes `elevenlabs`; `FORMAT_SCRIBE_MODEL`, `FORMAT_ELEVENLABS_URL`.
+
 ## 0.10.4 · 2026-10-12
 
 Phase 10: the parity grade and the docs.
