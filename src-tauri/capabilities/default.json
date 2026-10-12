@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "The window talks HTTP to its engine; the shell owns the windows, the engine sidecar, downloads, external links and updates. Nothing in the page calls into the shell.",
+  "windows": ["splash", "main"],
+  "permissions": ["core:default"]
+}

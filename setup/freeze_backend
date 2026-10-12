@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+py="$(ft_venv_python)"
+"$py" -c "import PyInstaller" 2>/dev/null || ft_die "PyInstaller missing, run ./format install-desktop"
+triple="$(ft_target_triple)" || ft_die "rustc not found; install Rust or set FORMAT_TARGET"
+[ -f "$FORMAT_ROOT/frontend/dist/index.html" ] || "$FORMAT_ROOT/setup/build_frontend"
+cd "$FORMAT_ROOT/backend"
+optional=()
+ft_has playwright && optional+=(--collect-all playwright)
+ft_has faster_whisper && optional+=(--collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all tokenizers)
+ft_has ptyprocess && optional+=(--collect-submodules ptyprocess)
+rm -rf build/pyinstaller dist-engine
+"$py" -m PyInstaller --noconfirm --clean --onefile --name format-engine \
+  --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller --paths "$FORMAT_ROOT/backend" \
+  --add-data "$FORMAT_ROOT/frontend/dist:frontend_dist" \
+  --collect-submodules app --collect-submodules uvicorn --collect-submodules websockets --collect-submodules anthropic \
+  --collect-submodules mcp.server --collect-submodules mcp.client --collect-submodules mcp.shared --hidden-import mcp.types --exclude-module mcp.cli --collect-data certifi --collect-data docx --collect-data pptx --collect-all reportlab --collect-submodules openpyxl \
+  --hidden-import segno --hidden-import multipart --hidden-import python_multipart \
+  "${optional[@]}" \
+  --exclude-module tkinter \
+  "$FORMAT_ROOT/backend/format_engine.py"
+FORMAT_DATA_DIR="$(mktemp -d)" "dist-engine/format-engine" --selfcheck || ft_die "the frozen engine failed its selfcheck; nothing was copied to src-tauri/binaries"
+mkdir -p "$FORMAT_ROOT/src-tauri/binaries"
+out="$FORMAT_ROOT/src-tauri/binaries/format-engine-${triple}"
+cp "dist-engine/format-engine" "$out"
+ft_say "sidecar ready: $out ($(du -h "$out" | cut -f1))"

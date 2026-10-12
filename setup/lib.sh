@@ -28,3 +28,9 @@ ft_venv_python() {
   [ -x "$FORMAT_ROOT/backend/venv/bin/python" ] || ft_die "engine venv missing, run ./format install"
   echo "$FORMAT_ROOT/backend/venv/bin/python"
 }
+ft_target_triple() {
+  if [ -n "${FORMAT_TARGET:-}" ]; then echo "$FORMAT_TARGET"; return 0; fi
+  command -v rustc >/dev/null 2>&1 || return 1
+  rustc -vV | awk '/^host:/ {print $2}'
+}
+ft_has() { "$(ft_venv_python)" -c "import importlib.util, sys; sys.exit(0 if importlib.util.find_spec(sys.argv[1]) else 1)" "$1" 2>/dev/null; }

@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -e
+source "$(dirname "$0")/lib.sh"
+"$FORMAT_ROOT/setup/build_frontend"
+"$FORMAT_ROOT/setup/freeze_backend"
+cd "$FORMAT_ROOT"
+[ -f src-tauri/icons/icon.icns ] || frontend/node_modules/.bin/tauri icon assets/format_icon.png -o src-tauri/icons
+frontend/node_modules/.bin/tauri build "$@"
+ft_say "bundles are in src-tauri/target/release/bundle"

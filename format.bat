@@ -7,13 +7,19 @@ if not "%~1"=="" shift
 if /i "%CMD%"=="boot" goto boot
 if /i "%CMD%"=="dev" goto boot
 if /i "%CMD%"=="install" ( call setup\install_all.bat & goto :eof )
+if /i "%CMD%"=="install-desktop" ( call setup\install_desktop.bat & goto :eof )
+if /i "%CMD%"=="freeze" ( call setup\freeze_backend.bat & goto :eof )
+if /i "%CMD%"=="desktop" (
+  if /i "%~1"=="build" ( call setup\desktop_build.bat ) else ( call setup\desktop_dev.bat )
+  goto :eof
+)
 if /i "%CMD%"=="backend" ( call backend\boot_backend.bat & goto :eof )
 if /i "%CMD%"=="frontend" ( call frontend\boot_frontend.bat & goto :eof )
 if /i "%CMD%"=="cli" goto cli
 if /i "%CMD%"=="mcp" goto mcp
 if /i "%CMD%"=="native" goto native
 if /i "%CMD%"=="agents" goto agents
-echo usage: .\format.bat [boot^|install^|backend^|frontend^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync^|install [--user]]]
+echo usage: .\format.bat [boot^|install^|install-desktop^|freeze^|desktop dev^|desktop build^|backend^|frontend^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync^|install [--user]]]
 echo Always run it as .\format.bat from this folder: plain "format" elsewhere is Windows' disk formatter.
 exit /b 2
 :boot
