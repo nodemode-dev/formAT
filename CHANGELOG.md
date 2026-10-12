@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.10.2 · 2026-10-12
+
+Closing the parity gaps, third part: share links and other devices.
+
+- Share: the artifact panel's Share button makes a read-only link to the latest version, with Copy link, Open link and Stop sharing. A stopped link answers "no longer shared".
+- Other devices (Settings): open Format to your network, scan the code with your phone (or open the link on another computer) and carry on there. Paired devices see the same chats live, both ways; unpaired ones get a "not paired" page. Forget paired devices unpairs them all; closing stops listening. Format listens on the network only while this is on.
+- On a phone-width window the sidebar starts closed and closes when you pick a chat.
+- Engine: `devices.status`, `devices.start`, `devices.stop`, `devices.forget`, `artifact.share`, `artifact.unshare`, `artifact.shares`; schema 8 (shares). New dependency segno for the pairing code (run the installer again). 84 commands.
+
 ## 0.10.1 · 2026-10-12
 
 Closing the parity gaps, second part: documents, spreadsheets and slides.

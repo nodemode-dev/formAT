@@ -145,6 +145,24 @@ Publishes an HTML page as an artifact of a chat, or a new version of one, the wa
 
 - changes state · command `artifact.publish` · params: `conversationId` string, `title?` string, `html` string, `artifactId?` string
 
+### share_artifact
+
+Makes a read-only link to an artifact (the latest version, or one pinned version). Anyone who can reach this computer's network listener can open it; start it with devices.start to share beyond this computer. Returns the link. Use when the person wants a read-only link to a page, document, sheet or deck for someone else.
+
+- changes state · command `artifact.share` · params: `id` string, `version?` integer
+
+### list_artifact_links
+
+The artifact's share links, if any. Use to see whether an artifact is shared and its links.
+
+- read-only · command `artifact.shares` · params: `id` string
+
+### unshare_artifact
+
+Revokes every link to the artifact at once; opening an old link shows that it is no longer shared. Use when the person wants a shared link to stop working.
+
+- changes state · command `artifact.unshare` · params: `id` string
+
 ### write_document
 
 Creates or revises a document, spreadsheet or slide deck in a chat, the way Claude's write_document tool does; each write is a new version shown live beside the chat. Returns the artifact with its id and version. Use to create or revise a document, spreadsheet or slide deck in a chat; pass section to change one part.
@@ -462,6 +480,30 @@ Whether outside agents (coding agents over MCP) may use Format (outsideAgents: a
 Version, ports, data folder, which provider keys are set and how many commands the engine has. Use first when you need the version, the data folder or whether an Anthropic key is set.
 
 - read-only · command `app.info` · params: none
+
+### forget_devices
+
+Changes the pairing code, so every paired device has to pair again. Use when the person wants every paired device to pair again.
+
+- changes state · command `devices.forget` · params: none
+
+### open_to_devices
+
+Starts Format's network listener (port 8492) so a paired phone or computer on the same network can use Format, and shared links can be opened. Only paired devices reach chats; shared artifact links are read-only. Returns the pairing link and QR code. Use when the person wants to continue on their phone or another computer, or to share links beyond this computer.
+
+- changes state · command `devices.start` · params: none
+
+### get_devices_status
+
+Whether Format is reachable from other devices on this network (a phone or another computer), its addresses, and, when on, the pairing link and its QR code as SVG. Use to see whether Format is open to the person's other devices and to get the pairing link.
+
+- read-only · command `devices.status` · params: none
+
+### close_to_devices
+
+Stops the network listener; paired devices and shared links stop working until it starts again. Use when the person wants Format reachable from this computer only.
+
+- changes state · command `devices.stop` · params: none
 
 ### clear_key
 
