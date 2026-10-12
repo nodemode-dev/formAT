@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.6.1
-Last updated: 2026-10-12 · v0.6.1: the memory tool (general and per project), skills and the skill tool
+Current build version: v0.6.2
+Last updated: 2026-10-12 · v0.6.2: connectors (the API's MCP connector, and MCP servers run by the engine)
 
 ---
 
@@ -39,6 +39,8 @@ backend/
     │   ├── cmd_memory.py          memory.list, read, write, delete
     │   ├── skills.py              skills in data/skills: parse, install, on and off, the skill tool
     │   ├── cmd_skill.py           skill.list, get, add, create, enable, delete
+    │   ├── connectors.py          MCP servers: API route or engine route, sessions, tool calls
+    │   ├── cmd_connector.py       connector.list, add, update, connect, delete
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
     └── routers/
         ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
@@ -64,6 +66,7 @@ backend/
 - [app/engine/cmd_files.py, comments and activity](#app-engine-cmd-files)
 - [app/engine/projects.py](#app-engine-projects)
 - [app/engine/memory.py and app/engine/skills.py](#app-engine-memory-skills)
+- [app/engine/connectors.py](#app-engine-connectors)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -382,6 +385,24 @@ Anthropic's memory tool (`memory_20250818`, read on platform.claude.com 2026-10-
 - logged: v0.6.1 · 2026-10-12
 
 A skill is a folder in `data/skills` with a SKILL.md whose frontmatter has `name` (lowercase, digits, hyphens, up to 64) and `description`, the format Claude Code and claude.ai use. Every skill that is on is listed by name and description in the system prompt (progressive disclosure: the body loads only when needed) and a `skill` tool returns the SKILL.md with its file list, or one file inside the folder, confined to it. A .zip upload installs the shallowest folder holding a SKILL.md (the folder name is the fallback name); a lone SKILL.md or a written skill installs through a staging folder. The list takes only valid names, since `skills.changed` is published while the staging folder exists. On and off is a list in the `meta` table. Skills run on the person's computer through Format's own tools; the Skills API with code execution containers is not used.
+
+---
+
+## app/engine/connectors.py {#app-engine-connectors}
+
+### app/engine/connectors.py · two routes for MCP servers
+- refers-to: app/engine/connectors.py :: route, request_parts, call, _Manager; app/harness/request.py :: build (mcp_servers, betas); app/engine/tools.py :: definitions, run (mcp__); app/engine/chat.py :: tool_view (mcp_tool_use, mcp_tool_result)
+- kind: rationale
+- logged: v0.6.2 · 2026-10-12
+
+Anthropic's MCP connector (read on platform.claude.com 2026-10-12: beta `mcp-client-2025-11-20`, `mcp_servers` entries of type url with name and optional `authorization_token`, one `mcp_toolset` per server in `tools` with per-tool `configs`, results as `mcp_tool_use` and `mcp_tool_result` blocks, tool calls only, https and public servers only, local stdio not supported; `mcp-client-2025-04-04` deprecated; a newer `mcp-client-2026-09-15` adds tool-list pinning and is not used yet) reaches only public https servers, and Anthropic's servers make the calls, so there is no approval step. So a connector takes one of two routes. A public https URL goes to the API: the toolset's configs carry the tools the person turned off, and any request whose history holds MCP blocks keeps the beta. Everything else (a URL on this computer or a private network, and every command) is run by the engine with the MCP Python SDK (`mcp` 2.3.0, `Client` over Streamable HTTP with an `httpx2` client for the token, or over stdio), and its tools are offered to Claude as ordinary client tools named `mcp__<connector>__<tool>` (64 characters at most), which go through the same approval as bash: Ask holds them, Always allow adds the name to `toolAllow`, Plan refuses them. The engine also lists a public server's tools for the window when it can reach it; when it cannot (a proxy, as in the build workspace), the connector still works through the API.
+
+### app/engine/connectors.py · sessions
+- refers-to: app/engine/connectors.py :: _Manager, connect, call
+- kind: warning-context
+- logged: v0.6.2 · 2026-10-12
+
+The engine's tools run in worker threads, and the MCP SDK is async. One background thread runs an event loop for all connectors; each connector keeps one session (and, for a command, one server process) open across calls, so a stateful server stays consistent (checked with a counter that went 1 then 2 across two chats). A session is replaced when the URL, command, token or environment changes, dropped when the connector is turned off or removed, and dropped and marked error when a call fails; the next call or Reconnect opens a new one. Calls time out after 120 s, connecting after 30 s. Text results are joined; images and other content are named, not sent; results are cut at 30,000 characters.
 
 ---
 

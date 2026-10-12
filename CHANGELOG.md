@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.6.2 · 2026-10-12
+
+Connectors (DEV_PLAN Phase 6, last part).
+
+- Connectors: add MCP servers on the Customize page by URL (with a token if needed) or by command. A public https server reaches Claude through Anthropic's MCP connector; a server on your computer or network, or one started by a command, is run by Format and its tools ask before running in Ask mode, with Always allow.
+- Each connector's page lists its tools to turn on or off, with Reconnect and Remove; the + menu's Connectors turns connectors on and off.
+- Connector calls show as steps in the reply ("Used weather, testlocal connector") and are counted in Outputs.
+- Engine: `connector.list`, `connector.add`, `connector.update`, `connector.connect`, `connector.delete`; the MCP Python SDK is a new dependency (run the installer again). 62 commands.
+
 ## 0.6.1 · 2026-10-12
 
 Memory and skills (DEV_PLAN Phase 6, second part).
