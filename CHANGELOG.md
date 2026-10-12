@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.11.1 · 2026-10-12
+
+One command builds the desktop app.
+
+- `./build_app` in the Format folder builds the desktop app start to finish on macOS and Linux: it checks Python, Node and the Xcode command line tools, installs Rust with rustup if needed, installs the engine, the window and the desktop packages, freezes the engine and builds the app. On macOS it also makes the `.dmg` and installs Format.app in Applications, ready to open. `--open`, `--no-install`, `--install` (Linux) and `--clean`; everything is logged to `build_app.log`. `./format desktop build` runs the same thing.
+- Fixed: the macOS build stopping with `can't find crate for phf_macros`. Builds now always use rustup's stable Rust, even with Homebrew's `rust` installed, ignore Rust wrapper and flag overrides from the environment, clean old build output when the compiler changes, and retry once after a Rust compile error.
+- Setup messages no longer point at commands in another folder.
+
 ## 0.11.0 · 2026-10-12
 
 The desktop app.

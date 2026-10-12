@@ -1,6 +1,6 @@
 # Format
 
-A.T, the Agentic Terminal: a chat and agent workspace on the Claude API with claude.ai's layout and flow, in the form family's Studio Dark design. Vanilla TypeScript and Vite frontend, Python and FastAPI engine, a Rust crate on wgpu where needed, and a Tauri 2 desktop shell (from v0.11.0) in `src-tauri/` that runs the engine frozen by PyInstaller (`backend/format_engine.py`, `setup/freeze_backend`) as a sidecar; see `.docs/wiki/Desktop.md`.
+A.T, the Agentic Terminal: a chat and agent workspace on the Claude API with claude.ai's layout and flow, in the form family's Studio Dark design. Vanilla TypeScript and Vite frontend, Python and FastAPI engine, a Rust crate on wgpu where needed, and a Tauri 2 desktop shell (from v0.11.0) in `src-tauri/` that runs the engine frozen by PyInstaller (`backend/format_engine.py`, `setup/freeze_backend`) as a sidecar, built end to end by the root `./build_app`; see `.docs/wiki/Desktop.md`.
 
 ## Repo layout notes
 
