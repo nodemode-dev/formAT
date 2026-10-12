@@ -269,6 +269,9 @@
 }
 
 .ft-dock-tab.is-on { background: var(--bg-hover); color: var(--text-primary); }
+.ft-dock-tab.is-agent .ft-dock-tab-title { color: var(--accent-ink); }
+.ft-dock-restart:disabled { opacity: 0.45; cursor: default; }
+.ft-dock-restart:disabled:hover { background: transparent; color: var(--text-secondary); }
 .ft-dock-tab-x { display: inline-grid; place-items: center; width: 16px; height: 16px; border-radius: var(--radius-sm); }
 .ft-dock-tab-x:hover { background: var(--bg-hover); }
 

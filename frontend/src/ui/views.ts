@@ -1,12 +1,8 @@
 import { run } from '../engine-client/api';
-import type { AppState, ArtifactSummary, KeyStatus, View } from '../state/app-state';
+import type { AppState, ArtifactSummary, KeyStatus } from '../state/app-state';
 import { el, esc, modKey, q, setText } from './dom';
-import { ui, type UiIcon } from './icons-ft';
+import { ui } from './icons-ft';
 import { openMenu } from './menu';
-
-const PAGES: Record<Exclude<View, 'chat' | 'settings' | 'artifacts' | 'projects' | 'customize'>, [string, UiIcon, string]> = {
-  scheduled: ['Scheduled', 'clock', 'Tasks that run on a schedule, with their history. They arrive in v0.7.0.'],
-};
 
 function when(ts: number): string {
   const d = new Date(ts * 1000);
@@ -68,14 +64,6 @@ export class ArtifactsView {
     if (this.list.hidden === any) this.list.hidden = !any;
     if (this.empty.hidden !== any) this.empty.hidden = any;
   }
-}
-
-export function pageView(view: Exclude<View, 'chat' | 'settings' | 'artifacts' | 'projects' | 'customize'>): HTMLElement {
-  const [title, ic, body] = PAGES[view];
-  return el(`<section class="ft-page" data-view="${view}" hidden>
-    <header class="ft-page-head"><h1>${esc(title)}</h1></header>
-    <div class="ft-page-empty">${ui(ic, 28)}<p>${esc(body)}</p></div>
-  </section>`);
 }
 
 export interface InfoLike {

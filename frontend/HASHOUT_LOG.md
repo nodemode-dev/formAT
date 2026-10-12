@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.7.0
-Last updated: 2026-10-12 · v0.7.0: outside-agent consent sheet, Settings Outside agents, terminal Restart
+Current build version: v0.7.1
+Last updated: 2026-10-12 · v0.7.1: the Scheduled page, Background, the Claude terminal tab, steadier sidebar and artifact header
 
 ---
 
@@ -40,7 +40,9 @@ frontend/
     │   ├── projects-view.ts       the Projects page: tiles, one project with chats, instructions and files
     │   ├── customize-view.ts      Customize: skills (list, on and off, add, write, one skill), connectors (add, tools, reconnect)
     │   ├── memory-panel.ts        Settings, Memory: the setting, the scope, the memory files and their editor
-    │   ├── views.ts               Artifacts gallery; Scheduled and Settings pages
+    │   ├── scheduled-view.ts      the Scheduled page: tasks, the form, one task with its runs
+    │   ├── background-panel.ts    Background: the top-bar badge's popover of running and waiting work
+    │   ├── views.ts               Artifacts gallery and Settings pages
     │   └── boot-frame.ts          the engine-down fallback
     └── styles/
         ├── tokens.css ... light-mode.css   family sheets, vendored unchanged from formvis v1.66.1
@@ -67,6 +69,7 @@ frontend/
 - [src/ui/files-pane.ts, comments and activity](#src-ui-files-pane)
 - [src/ui/projects-view.ts](#src-ui-projects-view)
 - [src/ui/customize-view.ts and src/ui/memory-panel.ts](#src-ui-customize)
+- [src/ui/scheduled-view.ts and src/ui/background-panel.ts](#src-ui-scheduled)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -307,6 +310,13 @@ The sheet is built once on first open into `#overlay-root` and toggled with `hid
 
 Rows and group heads (Pinned, Today, Yesterday, Previous 7 days, Older) are cached by id and moved into order with `insertBefore` only where the order differs; a title change is a `setText`. A new chat inserts one row; nothing else is touched.
 
+### src/ui/sidebar.ts · rows from background work wait for input
+- refers-to: src/ui/sidebar.ts :: renderList (quiet, moves, deferred), the capture listeners for pointerdown and keydown
+- kind: rationale
+- logged: v0.7.1 · 2026-10-12
+
+A chat started in the background (a scheduled run, an outside agent, the CLI) would insert a row at the top of Today and push every row below it down while the person is reading: a layout shift with no input behind it (measured at 0.0025 in verify_071 before this). When the list would insert or reorder rows, more than 450 ms after the last click or key press, for a chat that is not the one just opened, and the list is visible, the order change is held and applied on the next pointerdown or keydown, inside the input's grace window. Titles, activity dots and removals still apply at once, and a chat the person just started (the active one) is inserted immediately. Meanwhile the Background badge counts the new work, and a scheduled run also shows on its task's page.
+
 ### src/ui/sidebar.ts · rail
 - refers-to: src/styles/ft-sidebar.css :: data-ft-sidebar="rail"
 - kind: explainer
@@ -509,6 +519,38 @@ In a Markdown preview, hovering a top-level block offers Comment for that block;
 - logged: v0.5.1 · 2026-10-12
 
 A chat row shows a dot while its reply runs (pulsing accent) and a steady warning dot while an approval or question waits. Running comes from `message.added` and `message.completed`; waiting from `message.tool` statuses `waiting` and `asking`, kept per chat as a set of tool ids so parallel waits clear correctly. At start `conversation.list`'s `activity` seeds both (a waiting chat whose ids are unknown gets the placeholder `*`, cleared by its next status). The dot sits where the row's More button appears and hides on hover and on the active row, so it never shifts the title.
+
+---
+
+## src/ui/scheduled-view.ts and src/ui/background-panel.ts {#src-ui-scheduled}
+
+### src/ui/scheduled-view.ts · the Scheduled page
+- refers-to: src/ui/scheduled-view.ts :: ScheduledView (renderList, open, renderHistory, save, syncFields)
+- kind: explainer
+- logged: v0.7.1 · 2026-10-12
+
+The page replaces the v0.2 placeholder. The list is keyed rows (name, cadence in words, next run and the last run's status in one left-aligned text block, so a status change never moves anything, and a checkbox to pause); New task opens one form shared with Edit, whose time, day and date fields show for the cadences that use them. A task's page has Run now, Edit, Pause or Resume, Delete (asks once in place), the prompt, and its runs as keyed rows that open their chat. `schedule.changed` and `schedule.deleted` patch the list; a finished reply in a run's chat refreshes the open task, which also polls every 4 s while a run is running or waiting. The page uses its own `ft-sch-` classes, not the Projects page's: a shared `.ft-proj-list` made the Projects check find two lists (the same lesson as `.ft-saved` in v0.6.0).
+
+### src/ui/background-panel.ts · Background
+- refers-to: src/ui/background-panel.ts :: BackgroundPanel; src/app.ts :: paintBadge
+- kind: explainer
+- logged: v0.7.1 · 2026-10-12
+
+The top-bar button carries a badge with the number of chats working or waiting, painted from the window's own running and waiting sets (the same ones behind the activity dots), amber when anything waits. The popover lists them from `background.list` (title, Working or Waiting for you, the scheduled task, elapsed time), keyed by chat, with Stop; a row opens its chat. The badge sits absolutely inside the fixed-size button and is hidden by `:empty`, so it never changes the top bar's layout.
+
+### src/ui/terminal-dock.ts · the Claude tab
+- refers-to: src/ui/terminal-dock.ts :: ensure, adopt, mount, select
+- kind: explainer
+- logged: v0.7.1 · 2026-10-12
+
+The engine's read-only agent terminal is adopted as a tab when `terminal.opened` arrives with kind agent, or from `terminal.list` when the dock opens, without taking focus or the active tab; its xterm has stdin off and the cursor hidden, and Restart is disabled while it is selected. Opening the dock still makes a shell if none exists. New terminal (+) moved to the right-hand group beside Restart and Hide: tabs are appended to the left-hand list, and with + after them each new tab pushed it sideways, a small shift (0.0001) whenever a tab arrived without a click.
+
+### src/styles/ft-shell.css · artifact header
+- refers-to: src/styles/ft-shell.css :: .ft-art-title, .ft-art-spacer
+- kind: warning-context
+- logged: v0.7.1 · 2026-10-12
+
+The title now takes the free space (`flex: 1 1 0`) and the spacer is a fixed gap, so when the version picker appears with a second version it takes room from the title and the Preview and Code tabs stay put. Before, the picker pushed the tabs right (0.0006, the intermittent shift noted in v0.7.0's verify_050).
 
 ---
 

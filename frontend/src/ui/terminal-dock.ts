@@ -13,6 +13,7 @@ interface Tab {
   host: HTMLElement;
   tab: HTMLElement;
   socket: WebSocket | null;
+  agent: boolean;
 }
 
 function token(name: string, fallback: string): string {
@@ -31,8 +32,8 @@ export class TerminalDock {
     this.root = el(`<section class="ft-dock" aria-label="Terminal">
       <div class="ft-dock-head">
         <div class="ft-dock-tabs" role="tablist"></div>
-        <button type="button" class="ft-icon-btn ft-dock-new" aria-label="New terminal" title="New terminal">${ui('plus', 16)}</button>
         <span class="ft-dock-spacer"></span>
+        <button type="button" class="ft-icon-btn ft-dock-new" aria-label="New terminal" title="New terminal">${ui('plus', 16)}</button>
         <button type="button" class="ft-text-btn ft-dock-restart" aria-label="Restart terminal" title="Restart this terminal's shell">${ui('retry', 16)}<span>Restart</span></button>
         <button type="button" class="ft-text-btn ft-dock-close" aria-label="Hide terminal" title="Hide terminal (${modKey}J); the shells keep running">${ui('hide', 16)}<span>Hide</span></button>
       </div>
@@ -48,9 +49,16 @@ export class TerminalDock {
   }
 
   async ensure(): Promise<void> {
-    if (this.tabs.size === 0) await this.open();
+    const listed = await run<{ terminals: Array<{ id: string; title: string; kind?: string }> }>('terminal.list').catch(() => ({ terminals: [] }));
+    for (const t of listed.terminals) if (t.kind === 'agent') this.adopt(t);
+    if (![...this.tabs.values()].some((t) => !t.agent)) await this.open();
     else this.fitActive();
     this.focus();
+  }
+
+  adopt(info: { id: string; title: string }): void {
+    if (this.tabs.has(info.id)) return;
+    this.mount(info, true, this.active === null);
   }
 
   focus(): void {
@@ -69,14 +77,18 @@ export class TerminalDock {
 
   async open(): Promise<void> {
     const info = await run<{ id: string; title: string }>('terminal.open', { cols: 100, rows: 24 });
+    this.mount(info, false, true);
+  }
+
+  private mount(info: { id: string; title: string }, agent: boolean, show: boolean): void {
     const term = new Terminal({
-      fontFamily: token('--font-mono', 'monospace'), fontSize: 13, lineHeight: 1.25, cursorBlink: true,
+      fontFamily: token('--font-mono', 'monospace'), fontSize: 13, lineHeight: 1.25, cursorBlink: !agent, disableStdin: agent,
       scrollback: 5000, allowProposedApi: false, theme: this.theme(), overviewRuler: { width: 0 },
     });
     const fit = new FitAddon();
     term.loadAddon(fit);
     const host = el(`<div class="ft-term" data-id="${esc(info.id)}" hidden></div>`);
-    const tab = el(`<button type="button" class="ft-dock-tab" role="tab" data-id="${esc(info.id)}"><span class="ft-dock-tab-title"></span><span class="ft-dock-tab-x" aria-label="Close terminal">${ui('close', 12)}</span></button>`);
+    const tab = el(`<button type="button" class="ft-dock-tab${agent ? ' is-agent' : ''}" role="tab" data-id="${esc(info.id)}" title="${agent ? "Claude's commands in this chat, read only" : ''}"><span class="ft-dock-tab-title"></span><span class="ft-dock-tab-x" aria-label="Close terminal">${ui('close', 12)}</span></button>`);
     setText(q(tab, '.ft-dock-tab-title'), info.title);
     tab.addEventListener('click', (e) => {
       if ((e.target as HTMLElement).closest('.ft-dock-tab-x')) void this.close(info.id);
@@ -84,10 +96,11 @@ export class TerminalDock {
     });
     this.stage.appendChild(host);
     this.tabsEl.appendChild(tab);
-    const t: Tab = { id: info.id, title: info.title, term, fit, host, tab, socket: null };
+    const t: Tab = { id: info.id, title: info.title, term, fit, host, tab, socket: null, agent };
     this.tabs.set(info.id, t);
     term.open(host);
-    this.select(info.id);
+    if (agent) term.write('\x1b[?25l');
+    if (show) this.select(info.id, !agent);
     this.connect(t);
   }
 
@@ -121,7 +134,7 @@ export class TerminalDock {
     if (`${t.term.cols}x${t.term.rows}` !== before) this.sendSize(t);
   }
 
-  private select(id: string): void {
+  private select(id: string, focus = true): void {
     this.active = id;
     for (const [tid, t] of this.tabs) {
       const on = tid === id;
@@ -129,13 +142,16 @@ export class TerminalDock {
       t.tab.classList.toggle('is-on', on);
       t.tab.setAttribute('aria-selected', String(on));
     }
+    const agent = !!this.tabs.get(id)?.agent;
+    const restart = q<HTMLButtonElement>(this.root, '.ft-dock-restart');
+    if (restart.disabled !== agent) restart.disabled = agent;
     this.fitActive();
-    this.focus();
+    if (focus) this.focus();
   }
 
   async restart(): Promise<void> {
     const t = this.active ? this.tabs.get(this.active) : null;
-    if (!t) return;
+    if (!t || t.agent) return;
     await run('terminal.restart', { id: t.id }).catch(() => undefined);
     this.sendSize(t);
     t.term.focus();

@@ -39,6 +39,8 @@ export class Sidebar {
   private list: HTMLElement;
   private rows = new Map<string, HTMLElement>();
   private heads = new Map<string, HTMLElement>();
+  private lastInput = 0;
+  private deferred = false;
   private keyLine: HTMLElement;
   private moreOpen = false;
 
@@ -99,6 +101,12 @@ export class Sidebar {
       hooks.openChat(row.dataset.id as string);
     });
     state.on('conversations', () => this.renderList());
+    const input = () => {
+      this.lastInput = performance.now();
+      if (this.deferred) { this.deferred = false; this.renderList(); }
+    };
+    document.addEventListener('pointerdown', input, true);
+    document.addEventListener('keydown', input, true);
     state.on('active', () => this.markActive());
     state.on('view', () => this.markView());
     state.on('running', () => this.markActivity());
@@ -164,6 +172,9 @@ export class Sidebar {
 
   private renderList(): void {
     const ordered = this.state.sortedConversations();
+    const active = this.state.activeId;
+    const activeNew = !!active && !this.rows.has(active) && this.state.conversations.has(active);
+    const stale = [...this.rows.keys()].some((id) => !this.state.conversations.has(id));
     const wanted: HTMLElement[] = [];
     let last = '';
     for (const c of ordered) {
@@ -174,6 +185,14 @@ export class Sidebar {
       }
       wanted.push(this.row(c));
     }
+    const quiet = performance.now() - this.lastInput > 450;
+    const moves = wanted.some((node, i) => this.list.children[i] !== node);
+    if (moves && quiet && !activeNew && !stale && this.list.childElementCount > 0 && this.list.offsetParent !== null) {
+      this.deferred = true;
+      this.markActive();
+      return;
+    }
+    this.deferred = false;
     for (const [id, r] of this.rows) if (!this.state.conversations.has(id)) { r.remove(); this.rows.delete(id); }
     for (const [name, h] of this.heads) if (!wanted.includes(h)) h.remove();
     wanted.forEach((node, i) => {

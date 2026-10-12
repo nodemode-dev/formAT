@@ -16,7 +16,9 @@ import { FilesPane } from './ui/files-pane';
 import { ProjectsView } from './ui/projects-view';
 import { CustomizeView } from './ui/customize-view';
 import { MemoryPanel } from './ui/memory-panel';
-import { ArtifactsView, pageView, SettingsView, type InfoLike } from './ui/views';
+import { ArtifactsView, SettingsView, type InfoLike } from './ui/views';
+import { ScheduledView, type ScheduleSummary } from './ui/scheduled-view';
+import { BackgroundPanel } from './ui/background-panel';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -36,6 +38,8 @@ export class App {
   private customizeView: CustomizeView;
   private memoryPanel: MemoryPanel;
   private gallery: ArtifactsView;
+  private scheduledView: ScheduledView;
+  private background: BackgroundPanel;
   private outputsSeq = 0;
   private settingsView: SettingsView;
   private pages = new Map<View, HTMLElement>();
@@ -50,6 +54,7 @@ export class App {
           <button type="button" class="ft-crumb" title="Open the project" hidden></button><span class="ft-crumb-sep" aria-hidden="true" hidden>/</span>
           <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span>${ui('chevronDown', 14)}</button>
           <span class="ft-topbar-spacer"></span>
+          <button type="button" class="ft-icon-btn ft-bg-toggle" aria-label="Background work" aria-expanded="false" title="Background: what is running now">${ui('activity')}<span class="ft-bg-badge" aria-hidden="true"></span></button>
           <button type="button" class="ft-icon-btn ft-term-toggle" aria-label="Toggle terminal" title="Terminal (${modKey}J)">${ui('terminal')}</button>
           <button type="button" class="ft-icon-btn ft-files-toggle" aria-label="Files" title="Files in this chat's folder">${ui('folder')}</button>
           <button type="button" class="ft-icon-btn ft-panel-toggle" aria-label="Outputs" title="Outputs (${modKey}.)">${ui('outputs')}</button>
@@ -131,6 +136,8 @@ export class App {
       { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
       { label: 'Artifacts', icon: 'artifacts', run: () => this.setView('artifacts') },
       { label: 'Projects', icon: 'projects', run: () => this.setView('projects') },
+      { label: 'Scheduled', icon: 'clock', run: () => this.setView('scheduled') },
+      { label: 'Background work', icon: 'activity', run: () => this.background.toggle(q(this.shell, '.ft-bg-toggle')) },
       { label: 'Files in this chat', icon: 'folder', run: () => this.toggleFiles() },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
       { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
@@ -144,11 +151,12 @@ export class App {
     this.shell.insertBefore(this.sidebar.root, this.shell.firstChild);
     const center = q(this.shell, '.ft-center');
     center.appendChild(this.chat.root);
-    (['scheduled'] as const).forEach((v) => {
-      const p = pageView(v);
-      this.pages.set(v, p);
-      center.appendChild(p);
-    });
+    this.scheduledView = new ScheduledView(this.state, { openChat: (id) => void this.openChat(id) });
+    this.pages.set('scheduled', this.scheduledView.root);
+    center.appendChild(this.scheduledView.root);
+    this.background = new BackgroundPanel(this.state, { openChat: (id) => void this.openChat(id) });
+    (document.getElementById('overlay-root') as HTMLElement).appendChild(this.background.root);
+    this.state.on('running', () => this.paintBadge());
     this.pages.set('customize', this.customizeView.root);
     center.appendChild(this.customizeView.root);
     this.settingsView.root.appendChild(this.memoryPanel.root);
@@ -168,6 +176,7 @@ export class App {
     q(this.shell, '.ft-panel-toggle').addEventListener('click', () => this.toggle('panel'));
     q(this.shell, '.ft-files-toggle').addEventListener('click', () => this.toggleFiles());
     q(this.shell, '.ft-term-toggle').addEventListener('click', () => this.toggle('term'));
+    q(this.shell, '.ft-bg-toggle').addEventListener('click', (e) => this.background.toggle(e.currentTarget as HTMLElement));
     q(this.shell, '.ft-title-btn').addEventListener('click', (e) => this.titleMenu(e.currentTarget as HTMLElement));
     q(this.shell, '.ft-crumb').addEventListener('click', () => {
       const pid = this.state.activeId ? this.state.conversations.get(this.state.activeId)?.project_id : null;
@@ -301,6 +310,13 @@ export class App {
     run('chat.compact', { conversationId: this.state.activeId }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
   }
 
+  private paintBadge(): void {
+    const n = new Set([...this.state.running, ...this.state.waiting.keys()]).size;
+    const btn = q(this.shell, '.ft-bg-toggle');
+    setText(q(btn, '.ft-bg-badge'), n ? String(n) : '');
+    setAttr(btn, 'data-state', this.state.waiting.size ? 'waiting' : n ? 'running' : null);
+  }
+
   private setRunning(conversationId: string, on: boolean): void {
     if (this.state.running.has(conversationId) === on) return;
     if (on) this.state.running.add(conversationId);
@@ -390,6 +406,7 @@ export class App {
     } else if (e.type === 'message.completed') {
       const m = e.message as Message;
       const more = !!m.meta?.compactNext;
+      this.scheduledView.conversationChanged(m.conversation_id);
       this.setWaiting(m.conversation_id, null, false);
       if (!more) this.setRunning(m.conversation_id, false);
       if (m.conversation_id === this.state.activeId) {
@@ -411,6 +428,13 @@ export class App {
         this.state.messages = e.messages as Message[];
         this.state.emit('messages');
       }
+    } else if (e.type === 'schedule.changed') {
+      this.scheduledView.changed(e.schedule as ScheduleSummary);
+    } else if (e.type === 'schedule.deleted') {
+      this.scheduledView.deleted(e.id as string);
+    } else if (e.type === 'terminal.opened') {
+      const t = e.terminal as { id: string; title: string; kind?: string };
+      if (t.kind === 'agent') this.dock.adopt(t);
     } else if (e.type === 'agents.consent') {
       this.consent(String(e.client ?? 'An agent'), String(e.channel ?? ''));
     } else if (e.type === 'settings.changed') {
@@ -512,6 +536,7 @@ export class App {
     closeMenus();
     if (view !== 'chat' && this.side()) this.closeSide();
     if (view === 'artifacts') void this.gallery.refresh();
+    if (view === 'scheduled') this.scheduledView.shown();
     if (view === 'customize') {
       void run<{ skills: SkillSummary[] }>('skill.list').then((s) => {
         if (JSON.stringify(s.skills) === JSON.stringify(this.state.skills)) return;
