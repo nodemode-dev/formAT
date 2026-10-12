@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.8.0
-Last updated: 2026-10-12 · v0.8.0: Native renderer in About, the files pane's back slot, the artifact header rule scoped
+Current build version: v0.9.0
+Last updated: 2026-10-12 · v0.9.0: no window changes (agent kits are engine and repo files); last window entries v0.8.0
 
 ---
 

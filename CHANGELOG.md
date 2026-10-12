@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.9.0 · 2026-10-12
+
+Agent kits (DEV_PLAN Phase 9).
+
+- Format's MCP tools are named for agents: `send_message`, `wait_for_reply`, `publish_artifact`, `list_conversations` and so on, each described by what it does and when to use it, ending with its engine command id. Errors name the tool to call next. The v0.7 names (`chat_send` and the rest) still answer.
+- Two skills ship in the repo: `format-driving`, for an agent using a running Format (ask Claude in Format, draft and save artifacts, terminals, schedules), and `format-harness`, the orchestrator for changing and releasing Format with twelve specialists. Both pass the skill validator with no failures or warnings and carry evaluations and trigger tests.
+- `./format agents sync` regenerates the tool and command references from the engine and mirrors the skills to `.agents/skills` for Codex; `./format agents install --user` also registers Format with Codex and Claude Code for every folder.
+- Codex: the repo now has `.codex/config.toml`, read once you trust the project. AGENTS.md covers the skills and the MCP server.
+- In a fresh Claude Code session in this repo, "draft a reply in Format and save it as an artifact" (with the message to reply to) loaded format-driving and called send_message, wait_for_reply and publish_artifact in that order on the first try.
+
 ## 0.8.0 · 2026-10-12
 
 The native renderer (DEV_PLAN Phase 8).
