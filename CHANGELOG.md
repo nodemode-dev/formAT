@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.10.1 · 2026-10-12
+
+Closing the parity gaps, second part: documents, spreadsheets and slides.
+
+- The + menu has Create: Document, Spreadsheet or Slides for the next message. Claude answers with that artifact beside the chat.
+- Documents are written section by section (an outline first, then each section) and update in place as you watch. Hover a section and Comment on it; the comment goes to Claude with your next message, which revises that section.
+- Slides show one at a time with arrows, keyboard and Present (fullscreen). Spreadsheets show as a grid.
+- Export from the panel: documents to Word, PDF or Markdown; spreadsheets to Excel or CSV; slides to PowerPoint or PDF.
+- Engine: Claude's `write_document` tool; `artifact.write`, `artifact.export`; `chat.send` `output`. New dependencies python-pptx, python-docx, openpyxl, reportlab (run the installer again). 77 commands.
+
 ## 0.10.0 · 2026-10-12
 
 Closing the parity gaps, first part.
