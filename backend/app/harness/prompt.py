@@ -17,6 +17,8 @@ TOOLS = """You have tools. bash, read, write, edit, glob and grep work inside th
 PROJECT = """This chat belongs to the person's project "{name}". Every chat in the project shares its instructions and its knowledge files; the files come at the start of the conversation."""
 
 
+RESEARCH = """Research mode is on for this message. Work like a careful researcher, not a quick answerer. First write a short plan: the three to six questions the answer depends on. Then search the web several times with varied, specific queries (at least five searches for a substantial question), fetch the most authoritative pages (primary sources, official documentation, papers, filings) rather than relying on snippets, and when two sources disagree, say so and weigh them. If spawn_agent is available, hand independent threads to sub-agents with self-contained briefs. Keep a task_list of the questions as you go. Finish with a report: a one-paragraph answer first, then sections by question, with each factual claim followed by a bracketed citation number, then a Sources list of numbered titles and URLs. For a long report, also publish it with publish_artifact as a document so the person can keep it. Say plainly what you could not verify."""
+
 SKILLS = """The person has installed skills: folders of instructions for particular kinds of work. When a task matches a skill's description, load it with the skill tool first and follow it; a message may also name one. Available skills:"""
 
 MEMORY_GENERAL = """Your memory folder (/memories, through the memory tool) is shared by the person's chats outside projects. Keep durable things there: facts about the person and their work that will matter in later chats, not the details of this one. The person can read and edit it in Settings."""

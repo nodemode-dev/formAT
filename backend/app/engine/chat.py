@@ -39,7 +39,11 @@ def start(conversation_id: str) -> dict:
         RUNS[conversation_id] = cancel
     settings = current()
     model = find_model(settings["model"])
-    placeholder = insert(conversation_id, "assistant", [], {"model": model["id"], "status": "streaming"})
+    path = messages_of(conversation_id)
+    research = bool(path and path[-1]["role"] == "user" and (path[-1].get("meta") or {}).get("research"))
+    if research:
+        settings = settings | {"research": True, "webTools": True, "effort": "high"}
+    placeholder = insert(conversation_id, "assistant", [], {"model": model["id"], "status": "streaming"} | ({"research": True} if research else {}))
     events.publish("message.added", message=placeholder)
     threading.Thread(target=_run, args=(conversation_id, placeholder["id"], model, settings, cancel), name=f"chat-{conversation_id[:8]}", daemon=True).start()
     return placeholder
@@ -48,7 +52,7 @@ def start(conversation_id: str) -> dict:
 def _run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: threading.Event) -> None:
     provider = providers.get("anthropic")
     blocks: list[dict] = []
-    meta: dict = {"model": model["id"], "status": "streaming", "effort": settings.get("effort")}
+    meta: dict = {"model": model["id"], "status": "streaming", "effort": settings.get("effort")} | ({"research": True} if settings.get("research") else {})
     pending: dict[int, str] = {}
     last = time.monotonic()
 

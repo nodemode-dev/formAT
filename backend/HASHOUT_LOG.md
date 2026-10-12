@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.9.0
-Last updated: 2026-10-12 · v0.9.0: agent kits (verb_noun MCP tools with when-sentences, ./format agents, the format-harness and format-driving skills, Codex config)
+Current build version: v0.10.0
+Last updated: 2026-10-12 · v0.10.0: Research mode, sandboxed code (sandbox.status)
 
 ---
 
@@ -77,6 +77,7 @@ backend/
 - [app/mcp_server.py and outside agents](#app-mcp-server)
 - [app/engine/schedules.py and the Claude terminal](#app-engine-schedules)
 - [native/format-render and app/engine/native.py](#native)
+- [Gap closures: research, sandbox and the rest](#gaps)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -541,6 +542,24 @@ Open question 4 set the rule: a Rust engine where it is needed, scaffolded to th
 - logged: v0.8.0 · 2026-10-12
 
 The engine runs the crate's binary (`target/release/format-render`, else debug) as a subprocess with JSON on stdout, so Python needs no bindings and a crash in a GPU driver cannot take the engine down. `native.status` reports built, enabled and, when on, the adapter (probed once and cached). `terminal.snapshot` writes the session's scrollback to a temporary file, renders it at the session's size into `data/snapshots/<id>-<ms>.png`, and returns the path and `/api/native/snapshots/<name>`, which serves only names of that exact shape. With FORMAT_NATIVE unset nothing runs: the window and every other command behave as before, `terminal.snapshot` answers 409 with how to turn it on, and Settings, About says built, off. `./format native build|info|window` builds the crate, prints its adapter, or opens the demo window.
+
+---
+
+## Gap closures: research, sandbox and the rest {#gaps}
+
+### app/harness/prompt.py, app/engine/chat.py · Research mode
+- refers-to: app/harness/prompt.py :: RESEARCH; app/harness/request.py :: build; app/engine/chat.py :: start, _run; app/engine/cmd_chat.py :: send (research)
+- kind: rationale
+- logged: v0.10.0 · 2026-10-12
+
+Research is a property of one user message (`meta.research`), set by `chat.send research`, so the toggle in the window can stay on across messages and agents can ask for it per call. When the reply starts, `chat.start` reads it from the path's last user message and runs that reply with web tools forced on and effort raised to high (lowered by `_effort` to what the model supports), and the harness appends the RESEARCH instruction block: plan the questions, search several times, fetch primary sources, use sub-agents for independent threads, finish with a cited report and a Sources list, publish long reports. The reply's meta records `research` so the window can label it. It is a mode of the normal tool loop rather than a separate agent, which keeps approvals, cards, compaction and stop working unchanged.
+
+### app/engine/sandbox.py · sandboxed code
+- refers-to: app/engine/sandbox.py :: kind, status, wrap, status_command; app/engine/tools.py :: _bash, definitions; app/engine/cmd_settings.py :: sandbox, sandboxNetwork
+- kind: rationale
+- logged: v0.10.0 · 2026-10-12
+
+Claude's bash runs inside an OS sandbox when one is available and setting `sandbox` is on (default on). Linux uses bubblewrap: the whole filesystem read-only, a fresh /tmp, the person's home folder and Format's data folder replaced by empty tmpfs mounts (so keys, other chats and personal files are not readable), only the chat's own folder bound writable and used as HOME, separate pid, ipc and uts namespaces, killed with the parent, and no network unless `sandboxNetwork` is on. macOS uses sandbox-exec with a profile that denies writes outside the chat folder and temp, denies reads of the home and data folders, and denies network likewise (written from Apple's profile language, not run here). Windows has no equivalent and runs commands unsandboxed, which `sandbox.status` and Settings say. The bash tool's description tells Claude about the sandbox so it reports a failed install instead of retrying it. Verified on Linux: writes inside the folder work, the repo is read-only, the home and data folders are empty, the network fails without the setting and works with it.
 
 ---
 

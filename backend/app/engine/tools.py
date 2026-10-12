@@ -90,6 +90,11 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
     out: list[dict] = []
     if settings.get("workspaceTools", True):
         out.extend(d for d in DEFINITIONS if not (agent and d["name"] in AGENT_EXCLUDED) and not (d["name"] == "spawn_agent" and int(settings.get("agentLimit", 4)) <= 0))
+        from app.engine import sandbox
+        sb = sandbox.status(settings)
+        if sb["on"]:
+            note = " Commands run in a sandbox: only this folder is writable, the person's home folder is hidden, and " + ("the network is reachable." if sb["network"] else "there is no network (installs from the internet fail; say so instead of retrying).")
+            out = [d | {"description": d["description"] + note} if d["name"] == "bash" else d for d in out]
     if settings.get("webTools", True):
         if (caps.get("web_search") or {}).get("supported", True):
             out.append(dict(WEB_SEARCH))
@@ -351,6 +356,11 @@ def _bash(root: Path, args: dict, on_output, cancel: threading.Event) -> tuple[s
     timeout = max(1, min(BASH_TIMEOUT_MAX, int(args.get("timeout") or BASH_TIMEOUT)))
     shell = os.environ.get("SHELL") or shutil.which("bash") or "/bin/sh"
     argv = ["cmd.exe", "/c", command] if os.name == "nt" else [shell, "-lc", command]
+    from app.engine import sandbox
+    from app.engine.cmd_settings import current
+    s = current()
+    if sandbox.status(s)["on"]:
+        argv = sandbox.wrap(argv, root, bool(s.get("sandboxNetwork")))
     env = dict(os.environ, FORMAT_WORKSPACE=str(root))
     proc = subprocess.Popen(argv, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, env=env,
                             start_new_session=os.name != "nt")

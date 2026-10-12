@@ -142,6 +142,8 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
         "messages": messages,
         "cache_control": {"type": "ephemeral"},
     }
+    if settings.get("research"):
+        req["system"].append({"type": "text", "text": prompt.RESEARCH})
     if tools:
         req["tools"] = tools
     if effort:

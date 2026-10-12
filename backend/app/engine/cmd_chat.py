@@ -10,9 +10,11 @@ from app.engine.commands import CommandError, command
           "attachments": {"type": "array", "items": {"type": "string"}, "description": "file ids from POST /api/uploads"},
           "comments": {"type": "array", "items": {"type": "object"}, "description": "comments on files in the chat's folder: {path, quote, note}, up to 20"},
           "projectId": {"type": "string", "description": "with no conversationId: start the new chat inside this project"},
-          "title": {"type": "string", "description": "with no conversationId: the new chat's title (default: the first line of text)"}},
+          "title": {"type": "string", "description": "with no conversationId: the new chat's title (default: the first line of text)"},
+          "research": {"type": "boolean", "description": "Research mode for this message: Claude plans, searches and reads many sources, and writes a cited report (web tools on, high effort)"}},
          description="Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
-def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None, title: str | None = None) -> dict:
+def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None, title: str | None = None,
+         research: bool | None = None) -> dict:
     notes = _comments(comments)
     if projectId and store.row("SELECT id FROM projects WHERE id = ?", (projectId,)) is None:
         raise CommandError(f"No project {projectId}; project.list gives the ids", 404)
@@ -42,7 +44,7 @@ def send(text: str, conversationId: str | None = None, attachments: list | None 
     if chat.running(conversationId):
         raise CommandError("A reply is still running in this chat; chat.stop it or wait", 409)
     content = [{"type": "text", "text": text}] if text.strip() else []
-    meta = {"attachments": [f["id"] for f in files], "files": files} | ({"comments": notes} if notes else {})
+    meta = {"attachments": [f["id"] for f in files], "files": files} | ({"comments": notes} if notes else {}) | ({"research": True} if research else {})
     user = insert(conversationId, "user", content, meta)
     events.publish("message.added", message=user)
     reply = chat.start(conversationId)
