@@ -16,7 +16,8 @@ usage: ./format [command] [options]
   serve               serve the built frontend from the engine on 127.0.0.1:8490
   cli <command> ...   run any engine command from the terminal (./format cli list)
   mcp                 Format as an MCP server over stdio, for coding agents (needs the engine running)
-  doctor              check the toolchain, installs and ports
+  native [build|info|window]  the optional wgpu renderer: build it, show its GPU, or open its demo window
+  doctor             check the toolchain, installs and ports
   clean [--all]       remove build output (--all also venv and node_modules)
   help                this text
 EOF
@@ -39,6 +40,15 @@ case "$cmd" in
     cd backend
     [ -x venv/bin/python ] || { printf '[format] run ./format install first\n' >&2; exit 1; }
     exec venv/bin/python -m app.mcp_stdio "$@" ;;
+  native)
+    command -v cargo >/dev/null || { printf '[format] the native renderer needs Rust (rustup.rs)\n' >&2; exit 1; }
+    cd native/format-render
+    case "${1:-build}" in
+      build) exec cargo build --release ;;
+      info) cargo build --release -q && exec target/release/format-render info ;;
+      window) shift; exec cargo run --release -q --features window --example window -- "$@" ;;
+      *) printf 'usage: ./format native [build|info|window]\n' >&2; exit 2 ;;
+    esac ;;
   doctor) exec setup/doctor "$@" ;;
   clean) exec setup/clean "$@" ;;
   help|-h|--help) usage ;;

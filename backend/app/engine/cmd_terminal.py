@@ -50,6 +50,14 @@ def read(id: str, chars: int | None = None) -> dict:
     return {"id": id, "alive": session.alive, "text": text[-n:]}
 
 
+@command("terminal.snapshot", "Picture of a terminal", {"id": ID},
+         description="Draws the terminal's current screen, colours included, as a PNG with the native wgpu renderer and returns its path and URL. Needs the native renderer (native.status); useful when a program's screen layout matters more than its text.")
+def snapshot(id: str) -> dict:
+    from app.engine import native
+    session = _session(id)
+    return {"id": id, "cols": session.cols, "rows": session.rows} | native.snapshot(session.scrollback(), session.cols, session.rows, id)
+
+
 @command("terminal.resize", "Resize a terminal", {"id": ID, "cols": {"type": "integer", "required": True}, "rows": {"type": "integer", "required": True}})
 def resize(id: str, cols: int, rows: int) -> dict:
     _session(id)

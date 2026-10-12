@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.7.1
-Last updated: 2026-10-12 · v0.7.1: scheduled tasks and the scheduler, background.list, Claude's bash in a read-only terminal, chat.send title
+Current build version: v0.8.0
+Last updated: 2026-10-12 · v0.8.0: the native wgpu terminal grid (format-render), native.status, terminal.snapshot, ./format native
 
 ---
 
@@ -43,6 +43,7 @@ backend/
     │   ├── cmd_connector.py       connector.list, add, update, connect, delete
     │   ├── agents.py              outside-agent consent (ask, allowed, blocked), agents.status
     │   ├── schedules.py           scheduled tasks, the scheduler thread, run history, background.list
+    │   ├── native.py              the optional wgpu renderer: native.status, terminal snapshots through its binary
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, restart, close
     ├── mcp_server.py              Format as an MCP server: a tool per command, resources, prompts
     ├── mcp_stdio.py               ./format mcp: the same server over stdio, proxied to the running engine
@@ -74,6 +75,7 @@ backend/
 - [app/engine/connectors.py](#app-engine-connectors)
 - [app/mcp_server.py and outside agents](#app-mcp-server)
 - [app/engine/schedules.py and the Claude terminal](#app-engine-schedules)
+- [native/format-render and app/engine/native.py](#native)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -506,6 +508,24 @@ A run's status is read, not stored: waiting when `tools.pending` has an item for
 - logged: v0.7.1 · 2026-10-12
 
 Every bash command Claude runs is mirrored into one read-only terminal session of kind `agent`, titled Claude: the command after an orange prompt, its output as it streams, and the exit line. It has no PTY (`proc` is None), so write, resize and restart are refused or skipped for it, and it rides the same scrollback, socket and events as a shell, which is why the dock can show it without new plumbing. One tab for all chats, not one per chat, keeps the dock from filling with a tab for every chat that ever ran a command; a bold line with the chat's title and folder marks each switch between chats. Two chats running commands at the same moment interleave their output in that tab; the cards in each chat stay separate. Newlines become CRLF so xterm returns to the first column.
+
+---
+
+## native/format-render and app/engine/native.py {#native}
+
+### native/format-render · what the native renderer is for
+- refers-to: native/format-render/src/lib.rs :: native_start, native_force, Gpu; src/budget.rs; src/grid.rs; src/grid.wgsl; src/bin/format-render.rs; examples/window.rs
+- kind: rationale
+- logged: v0.8.0 · 2026-10-12
+
+Open question 4 set the rule: a Rust engine where it is needed, scaffolded to the family standard and used on measured need. The measurement came first: in the window under 4x CPU, the DOM terminal (xterm 6) printed 200,000 lines in 4.2 s with a median frame of 16.7 ms, a 95th percentile of 67 ms and two long tasks (203 ms in all), so the browser terminal does not need replacing and stays the only terminal in the window. The crate therefore does the planned first job, the terminal glyph grid, where the browser cannot: drawing a terminal's real screen (colours, inverse, dim, 256 and true colour, box drawing, the cursor) as an image for agents and checks, and in a native window for the desktop shell to come. The grid is one full-screen triangle: the fragment shader finds its cell, reads glyph slot and packed colours from an Rgba32Uint cell texture, and the coverage from an R8 glyph atlas rasterized with fontdue from the bundled JetBrains Mono (OFL, licence beside it); textures and textureLoad only, no storage buffers, so the OpenGL backend (Mesa llvmpipe here) runs it like Metal, Vulkan and Direct3D 12 do. vt100 parses the PTY's bytes into the screen. Limits start from the WebGL2 defaults raised to the adapter's resolution limits. `native_start` returns nothing unless FORMAT_NATIVE is 1, true, on or yes; `native_force` is for the CLI's own probes. Pins: wgpu 30.0.1, pollster 1.0.1, fontdue 0.9.4, vt100 0.16.2, png 0.18.1, winit 0.30 behind the window feature.
+
+### app/engine/native.py · the engine side
+- refers-to: app/engine/native.py :: enabled, binary, info, snapshot, status; app/engine/cmd_terminal.py :: snapshot; app/routers/files.py :: native_snapshot; format, format.bat :: native
+- kind: rationale
+- logged: v0.8.0 · 2026-10-12
+
+The engine runs the crate's binary (`target/release/format-render`, else debug) as a subprocess with JSON on stdout, so Python needs no bindings and a crash in a GPU driver cannot take the engine down. `native.status` reports built, enabled and, when on, the adapter (probed once and cached). `terminal.snapshot` writes the session's scrollback to a temporary file, renders it at the session's size into `data/snapshots/<id>-<ms>.png`, and returns the path and `/api/native/snapshots/<name>`, which serves only names of that exact shape. With FORMAT_NATIVE unset nothing runs: the window and every other command behave as before, `terminal.snapshot` answers 409 with how to turn it on, and Settings, About says built, off. `./format native build|info|window` builds the crate, prints its adapter, or opens the demo window.
 
 ---
 

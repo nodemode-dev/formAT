@@ -90,6 +90,15 @@ def artifact_page(aid: str, number: int, download: bool = False) -> Response:
     return Response(v["content"], media_type="text/html; charset=utf-8", headers=headers)
 
 
+@router.get("/native/snapshots/{name}")
+def native_snapshot(name: str) -> FileResponse:
+    from app.engine import native
+    path = native.snapshots_dir() / name
+    if not native.NAME.match(name) or not path.is_file():
+        raise HTTPException(404, "No such snapshot")
+    return FileResponse(path, media_type="image/png")
+
+
 @router.get("/voice")
 def voice_status() -> dict:
     return {"engines": voice.engines()}
