@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 · 2026-10-12
+
+Format for coding agents (DEV_PLAN Phase 7, first part).
+
+- Format is an MCP server: while it runs, Claude Code, Codex, Cursor and other agents on this computer reach it at `http://127.0.0.1:8490/mcp`, or start `./format mcp` over stdio. Every engine command is a tool with read-only, destructive and idempotent hints; chats (as Markdown) and artifact pages are resources; three prompts cover asking Claude, publishing a page and summarizing a chat. This repo ships `.mcp.json` for Claude Code and `.cursor/mcp.json` for Cursor; the README has the Codex lines.
+- The first time an agent calls, the window asks whether to let outside agents use Format; Settings, Outside agents changes it (Ask me, Allowed, Blocked) and lists the agents seen.
+- Agents can publish artifacts into a chat; an open Artifacts page shows them as they arrive.
+- The terminal dock has Restart: a fresh shell in the same tab and folder.
+- Engine: `agents.status`, `artifact.publish`, `terminal.restart`; setting `outsideAgents`. 65 commands.
+
 ## 0.6.2 · 2026-10-12
 
 Connectors (DEV_PLAN Phase 6, last part).
