@@ -23,6 +23,10 @@ Format · Copyright 2026 nodemode-ai · Licensed under the Apache License, Versi
 | highlight.js (`lib/common`) | BSD-3-Clause | syntax colours in code blocks |
 | KaTeX (with its fonts) | MIT | math in replies |
 | faster-whisper (optional, `./format install-voice`) | MIT | local dictation |
+| Playwright for Python with Chromium (optional, `./format install-browser`) | Apache-2.0, BSD-3-Clause | the built-in browser |
+| python-docx, python-pptx, openpyxl | MIT | Word, PowerPoint and Excel export |
+| ReportLab | BSD-3-Clause | PDF export |
+| segno | BSD-3-Clause | the pairing QR code |
 | FastAPI, Starlette, Pydantic | MIT | engine |
 | Uvicorn, httpx | BSD-3-Clause | engine |
 | wgpu, pollster, bytemuck, sysinfo | MIT or Apache-2.0 | native crate |

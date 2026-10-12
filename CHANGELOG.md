@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.10.3 · 2026-10-12
+
+Closing the parity gaps, fourth part: plugins and the built-in browser.
+
+- Plugins: Customize now starts with Plugins. Add a Claude plugin as a .zip of its folder; its skills and commands appear under Skills (named after the plugin) and its MCP servers under Connectors. Turn a plugin on or off as a whole, open it to see its parts, or remove it with everything it added.
+- Built-in browser: the globe in the top bar opens a Browser pane beside the chat. Type a URL, click and type on the page, scroll, go back. Claude can use the same browser (it asks first in Ask mode) when a task needs clicking through a site or filling a form, and you watch it happen in the pane. Sign-ins made there stay in Format. Install it with `./format install-browser`; Settings, Tools can turn Claude's use of it off.
+- Engine: `plugin.list`, `plugin.get`, `plugin.add`, `plugin.enable`, `plugin.delete`, `browser.status`, `browser.open`, `browser.act`, `browser.close`; Claude's `browser` tool; setting `browserTools`. 93 commands.
+
 ## 0.10.2 · 2026-10-12
 
 Closing the parity gaps, third part: share links and other devices.

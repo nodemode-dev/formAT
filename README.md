@@ -60,6 +60,7 @@ On Windows run `.\format.bat` from this folder, never a bare `format`: outside t
 | `./format` or `./format boot` | engine and window together |
 | `./format install` | engine venv and frontend packages |
 | `./format install-voice` | optional local speech to text for dictation |
+| `./format install-browser` | optional built-in browser that Claude can use and you can watch |
 | `./format cli chat.send text="..."` then `chat.wait conversationId=...` | chat from the terminal or an agent |
 | `./format backend`, `./format frontend` | one side only |
 | `./format build`, `./format serve` | build the window, serve it from the engine |

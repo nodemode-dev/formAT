@@ -481,6 +481,30 @@ Version, ports, data folder, which provider keys are set and how many commands t
 
 - read-only · command `app.info` · params: none
 
+### act_in_browser
+
+One action in the built-in browser, the same actions Claude's browser tool has plus click_at and keys for the Browser pane; returns the page snapshot. Use to click, type, scroll or go back in Format's built-in browser, with a ref from the latest snapshot.
+
+- changes state · command `browser.act` · params: `action` string, `url?` string, `ref?` integer, `text?` string, `submit?` boolean, `key?` string, `direction?` string, `x?` number, `y?` number
+
+### close_browser
+
+Closes the built-in browser; its sign-ins stay for next time. Use when the built-in browser is no longer needed.
+
+- changes state · command `browser.close` · params: none
+
+### open_in_browser
+
+Opens a URL in Format's built-in browser (starting it if needed) and returns a text snapshot of the page with numbered interactive elements. Use to open a page in Format's built-in browser, which the person watches in its Browser pane; returns the page as text with numbered elements.
+
+- changes state · command `browser.open` · params: `url` string
+
+### get_browser_status
+
+Whether the built-in browser is installed and open, and its current page (url, title) and frame number. Use to see whether Format's built-in browser is installed and open, and which page it shows.
+
+- read-only · command `browser.status` · params: none
+
 ### forget_devices
 
 Changes the pairing code, so every paired device has to pair again. Use when the person wants every paired device to pair again.
@@ -529,6 +553,36 @@ Models from the Anthropic models endpoint with the effort levels each supports (
 
 - read-only · command `models.list` · params: none
 
+### add_plugin
+
+Installs a Claude plugin (a folder with .claude-plugin/plugin.json): its skills/ and commands/ become skills and its .mcp.json servers become connectors. Adding a plugin with the same name replaces it. Use to install a Claude plugin from an uploaded .zip or a folder on this computer.
+
+- changes state · command `plugin.add` · params: `uploadId?` string, `path?` string
+
+### delete_plugin
+
+Removes a plugin with the skills and connectors it added. Not undoable. Use only when the person asks to remove a plugin.
+
+- changes state · command `plugin.delete` · params: `name` string
+
+### enable_plugin
+
+Turns all of a plugin's skills and connectors on or off together. Use to turn a plugin's skills and connectors on or off together.
+
+- changes state · command `plugin.enable` · params: `name` string, `enabled` boolean
+
+### get_plugin
+
+One plugin: its description, version, author and the skills and connectors it added. Use to see one plugin's description, version and parts.
+
+- read-only · command `plugin.get` · params: `name` string
+
+### list_plugins
+
+The plugins installed in Format: each bundles skills, commands (installed as skills) and MCP servers (installed as connectors), with whether it is on. Use to see which plugins are installed in Format and what skills and connectors each added.
+
+- read-only · command `plugin.list` · params: none
+
 ### get_sandbox_status
 
 Whether Claude's bash commands run sandboxed on this computer (bubblewrap on Linux, sandbox-exec on macOS), whether the sandbox is on (setting sandbox) and whether it allows the network (setting sandboxNetwork). Use when a command Claude ran in Format failed on files outside its folder or on the network, to see whether the sandbox caused it.
@@ -543,7 +597,7 @@ The chat settings: model, effort, thinking, permission mode, autoCompact and com
 
 ### set_setting
 
-Sets one chat setting: model takes a model id from models.list, effort one of low, medium, high, xhigh, max, permissionMode ask, auto or plan, thinking (show Claude's thinking) true or false, autoCompact (summarize long chats) true or false, compactAt the share of the context window that triggers it, 0.05 to 0.95, webTools (web search and fetch) and workspaceTools (bash and files in the chat's folder) true or false, toolAllow and toolDeny lists of bash, write, edit, agentModel the sub-agents' model id (empty for the chat's model), agentLimit the most sub-agents in one reply, 0 to 10, artifactNetwork (let artifact pages load images and data from the internet) true or false, memory (Claude keeps notes across chats with the memory tool) true or false, outsideAgents (coding agents using Format over MCP) ask, allowed or blocked, sandbox (Claude's bash runs sandboxed: only the chat's folder writable, the home folder hidden) true or false, sandboxNetwork (let sandboxed commands reach the network) true or false. Use when the person asks for another model, effort, permission mode or tool setting; it applies to all chats.
+Sets one chat setting: model takes a model id from models.list, effort one of low, medium, high, xhigh, max, permissionMode ask, auto or plan, thinking (show Claude's thinking) true or false, autoCompact (summarize long chats) true or false, compactAt the share of the context window that triggers it, 0.05 to 0.95, webTools (web search and fetch) and workspaceTools (bash and files in the chat's folder) true or false, toolAllow and toolDeny lists of bash, write, edit, agentModel the sub-agents' model id (empty for the chat's model), agentLimit the most sub-agents in one reply, 0 to 10, artifactNetwork (let artifact pages load images and data from the internet) true or false, memory (Claude keeps notes across chats with the memory tool) true or false, outsideAgents (coding agents using Format over MCP) ask, allowed or blocked, sandbox (Claude's bash runs sandboxed: only the chat's folder writable, the home folder hidden) true or false, sandboxNetwork (let sandboxed commands reach the network) true or false, browserTools (Claude can use the built-in browser) true or false. Use when the person asks for another model, effort, permission mode or tool setting; it applies to all chats.
 
 - changes state · command `settings.set` · params: `key` string, `value` any
 
