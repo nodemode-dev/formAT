@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.5.1 · 2026-10-12
+
+Artifacts and outputs (DEV_PLAN Phase 5, last part).
+
+- Files pane: the folder button in the top bar lists every file in the chat's folder and previews images, PDFs, video, audio, Markdown, code and HTML beside the chat. A file card's name, a file in Outputs and a comment card open it too. A file Claude changes while it is open updates in place.
+- Comments: hover a block in a Markdown preview, or select text in Markdown or code, and comment on it. Comments join your next message as chips, show above it as cards, and reach Claude with the passage quoted.
+- Chats show a dot in the sidebar while a reply runs, and a steady one while an approval or question waits for you.
+- Files served from a chat's folder are sandboxed, so an HTML or SVG file opened in a tab cannot run scripts on Format's origin.
+- Engine: `files.list`, `files.read`, the `files.changed` event, `chat.send` `comments`, `conversation.list` `activity`. 39 commands.
+
 ## 0.5.0 · 2026-10-11
 
 Artifacts (DEV_PLAN Phase 5, first part).

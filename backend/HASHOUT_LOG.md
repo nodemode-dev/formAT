@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.5.0
-Last updated: 2026-10-11 · v0.5.0: artifacts, publish_artifact, the sandboxed artifact page, artifactNetwork
+Current build version: v0.5.1
+Last updated: 2026-10-12 · v0.5.1: files.list, files.read, files.changed, comments on files, chat activity, sandboxed chat files
 
 ---
 
@@ -32,6 +32,7 @@ backend/
     │   ├── cmd_settings.py        models.list (fixture until v0.3.0), settings.get, settings.set
     │   ├── artifacts.py           artifact rows and versions: publish, list, get, delete
     │   ├── cmd_artifact.py        artifact.list, artifact.get, artifact.delete
+    │   ├── cmd_files.py           files.list, files.read: the chat folder for the files pane
     │   └── cmd_terminal.py        terminal.open, list, write, read, resize, close
     └── routers/
         ├── __init__.py            router list, startup binds the loop for events and terminals, shutdown closes PTYs
@@ -54,6 +55,7 @@ backend/
 - [app/engine/cmd_message.py](#app-engine-cmd-message)
 - [app/engine/tools.py and the tool loop](#app-engine-tools)
 - [app/engine/artifacts.py and serving](#app-engine-artifacts)
+- [app/engine/cmd_files.py, comments and activity](#app-engine-cmd-files)
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
@@ -343,6 +345,31 @@ An artifact is a row per page and a row per version; a version is never changed,
 - logged: v0.5.0 · 2026-10-11
 
 `GET /api/artifacts/{id}/v/{n}` serves a version as its own HTML document with a Content-Security-Policy that carries a `sandbox` directive. The directive is the important part: the window's iframe is also sandboxed without `allow-same-origin`, but a page opened in a new tab (Pop out) has no iframe, and without the header it would run on the engine's own origin with access to `/api/commands`. With it, the page gets an opaque origin wherever it is opened. `connect-src 'none'` blocks fetch and WebSocket unless `artifactNetwork` is on (then https only); scripts, styles and fonts may come from cdnjs, jsdelivr, unpkg and Google Fonts, as claude.ai allows. `frame-ancestors 'self'` keeps other sites from framing it; `form-action 'none'` and `base-uri 'none'` close the remaining exits. `?download=1` sends it as an attachment named after the title and version.
+
+---
+
+## app/engine/cmd_files.py, comments and activity {#app-engine-cmd-files}
+
+### app/engine/cmd_files.py · the chat folder as files
+- refers-to: app/engine/cmd_files.py :: list_, read, kind; app/engine/chat.py :: _call_tool (files.changed); app/routers/files.py :: chat_file
+- kind: rationale
+- logged: v0.5.1 · 2026-10-12
+
+`files.list` walks the chat's own folder (the one the tools work in), skipping `tools.SKIP_DIRS` and dot folders, up to 2000 files, and classes each by name into a preview kind; `.svg` counts as an image because an `<img>` never runs its scripts. `files.read` reads text kinds only, cut at 1 MB. Paths go through `tools.output_path`, the same confinement the tools use (a symlink out of the folder resolves outside and is refused). There is no watcher: `files.changed` is published after every bash, write and edit call, which are the only ways the engine changes the folder; a change from the person's own terminal shows on the next listing. Every file served from `/api/chats/{id}/files/` carries `nosniff`, `no-referrer` and, except PDFs, `sandbox; default-src 'none'` with images, media and inline styles allowed: an HTML or SVG file opened inline in a tab would otherwise run on the engine's origin. PDFs are left without it because the browser's PDF viewer does not run in a sandboxed document.
+
+### app/engine/cmd_chat.py · comments on files
+- refers-to: app/engine/cmd_chat.py :: send, _comments, edit; app/harness/content.py :: comment_blocks; app/harness/request.py :: api_messages
+- kind: rationale
+- logged: v0.5.1 · 2026-10-12
+
+A comment is `{path, quote, note}` on a file of the chat; up to 20 go with one message in `meta.comments`, and a message may be comments alone. They stay structured in the store (the window draws them as cards) and become one text block only when the request is built, placed after attachments and before the typed text, quoting the passage line by line so Claude can find it. A new chat cannot carry comments, since it has no files yet. `chat.edit` keeps them with the attachments.
+
+### app/engine/cmd_conversation.py · activity
+- refers-to: app/engine/cmd_conversation.py :: list_
+- kind: explainer
+- logged: v0.5.1 · 2026-10-12
+
+`conversation.list` adds `activity` to each chat: `waiting` when `tools.pending` has an approval or question for it, `running` while `chat.running`, otherwise null. It is computed at listing time from in-memory state, so it is lost with the engine like the runs themselves; the window keeps it current from events after that.
 
 ---
 
