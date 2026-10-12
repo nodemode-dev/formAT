@@ -117,14 +117,29 @@ def api_messages(history: list[dict], model: dict, accepts, provider=None) -> li
     return out
 
 
-def build(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None, tools: list[dict] | None = None, chat_folder: str | None = None) -> dict:
+def project_blocks(project: dict | None, model: dict, accepts, provider=None) -> list[dict]:
+    if not project or not project.get("files"):
+        return []
+    blocks: list[dict] = [{"type": "text", "text": f"Knowledge files of the project \"{project['name']}\", shared by every chat in it:"}]
+    for fid in project["files"]:
+        blocks.extend(content.blocks_for(fid, model, accepts, provider))
+    return blocks
+
+
+def build(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None, tools: list[dict] | None = None, chat_folder: str | None = None,
+          project: dict | None = None) -> dict:
     effort = _effort(model, settings.get("effort", "medium"))
     max_tokens = _max_tokens(model, effort)
+    messages = api_messages(history, model, accepts, provider)
+    knowledge = project_blocks(project, model, accepts, provider)
+    first = next((m for m in messages if m["role"] == "user" and not any(b.get("type") == "tool_result" for b in m["content"])), None)
+    if knowledge and first is not None:
+        first["content"] = knowledge + first["content"]
     req: dict = {
         "model": model["id"],
         "max_tokens": max_tokens,
-        "system": prompt.system_prompt(account, bool(tools), chat_folder),
-        "messages": api_messages(history, model, accepts, provider),
+        "system": prompt.system_prompt(account, bool(tools), chat_folder, project),
+        "messages": messages,
         "cache_control": {"type": "ephemeral"},
     }
     if tools:
@@ -139,8 +154,9 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     return req
 
 
-def build_compaction(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None, tools: list[dict] | None = None, chat_folder: str | None = None) -> dict:
-    req = build(history, model, settings, account, accepts, provider, tools, chat_folder)
+def build_compaction(history: list[dict], model: dict, settings: dict, account: dict, accepts, provider=None, tools: list[dict] | None = None, chat_folder: str | None = None,
+                     project: dict | None = None) -> dict:
+    req = build(history, model, settings, account, accepts, provider, tools, chat_folder, project)
     req["max_tokens"] = int(min(COMPACT_MAX_TOKENS, model.get("max_tokens") or COMPACT_MAX_TOKENS))
     if req.get("thinking", {}).get("type") == "enabled":
         req["thinking"]["budget_tokens"] = max(1024, min(req["thinking"]["budget_tokens"], req["max_tokens"] // 2))

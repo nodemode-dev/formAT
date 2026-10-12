@@ -4,7 +4,7 @@ import threading
 import time
 
 from app import providers
-from app.engine import events, tools
+from app.engine import events, projects, tools
 from app.engine.cmd_account import account
 from app.engine.cmd_message import insert, messages_of, update
 from app.engine.cmd_settings import current, find_model
@@ -62,14 +62,17 @@ def _run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: th
     raw = model.get("raw") or {"id": model["id"]}
     toolset = tools.definitions(settings, raw)
     folder = str(tools.workspace(conversation_id))
+    project = projects.context(conversation_id)
     meta["tools"] = {}
+    if project:
+        meta["project"] = {"id": project["id"], "name": project["name"], "files": len(project["files"])}
     try:
         base_history = [m for m in messages_of(conversation_id) if m["id"] != mid]
         rounds = 0
         while True:
             rounds += 1
             history = base_history + ([{"role": "assistant", "content": blocks, "meta": {}}] if blocks else [])
-            req = harness.build(history, raw, settings, account(), provider.accepts, provider, toolset, folder)
+            req = harness.build(history, raw, settings, account(), provider.accepts, provider, toolset, folder, project)
             if rounds == 1:
                 meta["request"] = {k: req[k] for k in ("model", "max_tokens") if k in req} | {"effort": (req.get("output_config") or {}).get("effort"), "thinking": req.get("thinking"), "tools": [t["name"] for t in toolset]}
             base = len(blocks)
@@ -401,7 +404,7 @@ def _compact(conversation_id: str, model: dict, settings: dict, provider, cancel
     blocks: list[dict] = []
     try:
         raw = model.get("raw") or {"id": model["id"]}
-        req = harness.build_compaction(history, raw, settings, account(), provider.accepts, provider, tools.definitions(settings, raw), str(tools.workspace(conversation_id)))
+        req = harness.build_compaction(history, raw, settings, account(), provider.accepts, provider, tools.definitions(settings, raw), str(tools.workspace(conversation_id)), projects.context(conversation_id))
         res = provider.compact(req)
         found = [b for b in res["content"] if b.get("type") == "compaction" and b.get("signature")]
         iterations = (res.get("usage") or {}).get("iterations") or []
