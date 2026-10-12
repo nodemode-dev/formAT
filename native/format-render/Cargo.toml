@@ -1,16 +1,30 @@
 [package]
 name = "format-render"
-version = "0.1.0"
+version = "0.8.0"
 edition = "2021"
 license = "Apache-2.0"
-description = "Format's native engine crate on wgpu (Metal, Vulkan, Direct3D 12), used where the engine measures a need"
+description = "Format's native engine crate on wgpu (Metal, Vulkan, Direct3D 12, OpenGL): the terminal glyph grid, opt-in through native_start"
 publish = false
 
 [dependencies]
-wgpu = "30"
-pollster = "1"
+wgpu = "=30.0.1"
+pollster = "=1.0.1"
 bytemuck = { version = "1", features = ["derive"] }
 sysinfo = { version = "0.39", default-features = false, features = ["system"] }
+fontdue = "=0.9.4"
+vt100 = "=0.16.2"
+png = "=0.18.1"
+winit = { version = "0.30", optional = true }
+
+[features]
+window = ["dep:winit"]
+
+[[example]]
+name = "window"
+required-features = ["window"]
 
 [profile.dev]
+debug = 0
+
+[profile.release]
 debug = 0
