@@ -647,7 +647,9 @@ export class App {
     if (!id) this.claimNext = true;
     try {
       const project = !id && this.state.draftProject ? { projectId: this.state.draftProject } : {};
-      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project, ...(this.composer.researchOn ? { research: true } : {}), ...(this.composer.outputKind ? { output: this.composer.outputKind } : {}) });
+      const off = id ? [] : this.composer.takeDraftConnectorsOff();
+      await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project, ...(off.length ? { connectorsOff: off } : {}),
+        ...(this.composer.researchOn ? { research: true } : {}), ...(this.composer.outputKind ? { output: this.composer.outputKind } : {}) });
       if (this.composer.outputKind) this.composer.setOutput(null);
     } catch (err) {
       this.claimNext = false;

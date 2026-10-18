@@ -9,6 +9,7 @@ export interface MenuItem {
   chip?: string;
   chipTone?: 'warn' | 'plain';
   checked?: boolean;
+  toggle?: boolean;
   value?: string;
   disabled?: boolean;
   divider?: boolean;
@@ -83,12 +84,13 @@ export function openMenu(anchor: HTMLElement, items: MenuItem[], placement: Plac
       menu.appendChild(el(`<div class="ft-menu-note">${esc(item.note)}</div>`));
       return;
     }
-    const row = el<HTMLButtonElement>(`<button type="button" class="ft-menu-item" role="menuitem"${item.disabled ? ' disabled' : ''}>
+    const row = el<HTMLButtonElement>(`<button type="button" class="ft-menu-item" ${item.toggle === undefined ? 'role="menuitem"' : `role="menuitemcheckbox" aria-checked="${item.toggle}"`}${item.disabled ? ' disabled' : ''}>
       ${item.icon ? `<span class="ft-menu-icon">${ui(item.icon, 16)}</span>` : ''}
       <span class="ft-menu-text"><span class="ft-menu-label">${esc(item.label)}${item.chip ? `<span class="ft-chip${item.chipTone === 'warn' ? ' is-warn' : ''}">${esc(item.chip)}</span>` : ''}</span>${item.desc ? `<span class="ft-menu-desc">${esc(item.desc)}</span>` : ''}</span>
       ${item.value ? `<span class="ft-menu-value">${esc(item.value)}</span>` : ''}
       ${item.hint ? `<span class="ft-menu-hint">${esc(item.hint)}</span>` : ''}
       ${item.checked ? `<span class="ft-menu-check">${ui('check', 16)}</span>` : ''}
+      ${item.toggle !== undefined ? '<span class="ft-menu-switch" aria-hidden="true"></span>' : ''}
       ${item.submenu ? `<span class="ft-menu-sub">${ui('chevronRight', 14)}</span>` : ''}
     </button>`);
     if (item.submenu) {
@@ -102,6 +104,11 @@ export function openMenu(anchor: HTMLElement, items: MenuItem[], placement: Plac
     } else {
       row.addEventListener('pointerenter', () => closeMenus(depth + 1));
       row.addEventListener('click', () => {
+        if (item.toggle !== undefined) {
+          row.setAttribute('aria-checked', String(row.getAttribute('aria-checked') !== 'true'));
+          item.action?.();
+          return;
+        }
         closeMenus();
         item.action?.();
       });

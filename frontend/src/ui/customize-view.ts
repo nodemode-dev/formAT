@@ -7,6 +7,17 @@ import { openMenu } from './menu';
 
 export interface CustomizeHooks { tryInChat(skill: string): void }
 
+export async function signIn(id: string): Promise<void> {
+  const tab = window.open('', '_blank');
+  try {
+    const r = await run<{ url: string }>('connector.signin', { id });
+    if (tab) { tab.opener = null; tab.location.href = r.url; } else window.open(r.url, '_blank', 'noopener');
+  } catch (err) {
+    tab?.close();
+    throw err;
+  }
+}
+
 interface SkillDetail extends SkillSummary { skillMd: string; fileList: string[] }
 
 export class CustomizeView {
@@ -65,8 +76,12 @@ export class CustomizeView {
             <label class="ft-field"><span>Name</span><input class="ft-input" data-c="name" maxlength="40" placeholder="lowercase, for example docs or github"></label>
             <div class="ft-cn-kind" role="radiogroup" aria-label="Kind"><label class="ft-field ft-check"><input type="radio" name="ft-cn-kind" value="url" checked><span>By URL</span></label><label class="ft-field ft-check"><input type="radio" name="ft-cn-kind" value="command"><span>By command (a local server)</span></label></div>
             <label class="ft-field ft-cn-url"><span>Server URL</span><input class="ft-input" data-c="url" placeholder="https://example.com/mcp" spellcheck="false"></label>
+            <fieldset class="ft-cn-set ft-cn-auth"><legend>Authentication</legend><div class="ft-cn-kind" role="radiogroup" aria-label="Authentication"><label class="ft-field ft-check"><input type="radio" name="ft-cn-auth" value="needed" checked><span>Sign in when needed</span></label><label class="ft-field ft-check"><input type="radio" name="ft-cn-auth" value="now"><span>Sign in now</span></label><label class="ft-field ft-check"><input type="radio" name="ft-cn-auth" value="none"><span>No sign-in</span></label></div><p class="ft-set-note ft-cn-auth-note"></p></fieldset>
+            <fieldset class="ft-cn-set ft-cn-client"><legend>OAuth client</legend><div class="ft-cn-kind" role="radiogroup" aria-label="OAuth client"><label class="ft-field ft-check"><input type="radio" name="ft-cn-client" value="register" checked><span>Register automatically</span></label><label class="ft-field ft-check"><input type="radio" name="ft-cn-client" value="own"><span>Use your own OAuth client</span></label></div>
+              <div class="ft-cn-own" hidden><label class="ft-field"><span>Client ID</span><input class="ft-input" data-c="clientId" autocomplete="off" spellcheck="false"></label><label class="ft-field"><span>Client secret (only if the server requires one)</span><input class="ft-input" data-c="clientSecret" type="password" autocomplete="off"></label></div></fieldset>
             <label class="ft-field ft-cn-token"><span>Access token (optional)</span><input class="ft-input" data-c="token" type="password" autocomplete="off" placeholder="Sent as a Bearer token, if the server needs one"></label>
             <label class="ft-field ft-cn-headers"><span>Request headers (optional, one per line)</span><textarea class="ft-input" data-c="headers" rows="2" spellcheck="false" placeholder="X-Api-Key: your-key"></textarea></label>
+            <details class="ft-cn-adv"><summary>Advanced</summary><label class="ft-field"><span>Transport</span><select class="ft-input" data-c="transport"><option value="">Automatic: SSE for a URL ending in /sse, otherwise Streamable HTTP</option><option value="http">Streamable HTTP</option><option value="sse">SSE (older servers)</option></select></label></details>
             <label class="ft-field ft-cn-cmd" hidden><span>Command</span><input class="ft-input" data-c="command" placeholder="npx -y @modelcontextprotocol/server-filesystem ~/notes" spellcheck="false"></label>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-cn-add">Add and connect</button><button type="button" class="ft-btn ft-cn-cancel">Cancel</button></div>
           </div>
@@ -288,28 +303,48 @@ export class CustomizeView {
   private wireConnectors(): void {
     const form = q(this.root, '.ft-cn-form');
     const kind = () => (form.querySelector<HTMLInputElement>('input[name=ft-cn-kind]:checked')?.value ?? 'url');
+    const auth = () => (form.querySelector<HTMLInputElement>('input[name=ft-cn-auth]:checked')?.value ?? 'needed');
+    const client = () => (form.querySelector<HTMLInputElement>('input[name=ft-cn-client]:checked')?.value ?? 'register');
+    const notes: Record<string, string> = {
+      needed: 'Format connects without credentials and asks you to sign in when the server asks for it.',
+      now: 'You sign in through the server\'s own page before Claude uses the connector.',
+      none: 'Anyone with the URL can use it. For an API key, add it as a request header or the access token.',
+    };
     const syncKind = () => {
       const url = kind() === 'url';
-      for (const [sel, hide] of [['.ft-cn-url', !url], ['.ft-cn-token', !url], ['.ft-cn-headers', !url], ['.ft-cn-cmd', url]] as const) {
+      const signs = url && auth() !== 'none';
+      for (const [sel, hide] of [['.ft-cn-url', !url], ['.ft-cn-auth', !url], ['.ft-cn-client', !signs], ['.ft-cn-own', !signs || client() !== 'own'], ['.ft-cn-token', !url || signs],
+        ['.ft-cn-headers', !url], ['.ft-cn-adv', !url], ['.ft-cn-cmd', url]] as const) {
         const node = q(form, sel);
         if (node.hidden !== hide) node.hidden = hide;
       }
+      setText(q(form, '.ft-cn-auth-note'), notes[auth()] ?? '');
     };
-    form.addEventListener('change', (e) => { if ((e.target as HTMLInputElement).name === 'ft-cn-kind') syncKind(); });
+    syncKind();
+    form.addEventListener('change', (e) => { if (['ft-cn-kind', 'ft-cn-auth', 'ft-cn-client'].includes((e.target as HTMLInputElement).name)) syncKind(); });
     q(this.root, '.ft-cn-addopen').addEventListener('click', () => { form.hidden = false; q<HTMLInputElement>(form, '[data-c=name]').focus(); });
     q(this.root, '.ft-cn-cancel').addEventListener('click', () => { form.hidden = true; });
     q(this.root, '.ft-cn-add').addEventListener('click', async () => {
       const get = (k: string) => q<HTMLInputElement>(form, `[data-c=${k}]`).value.trim();
       const headers = Object.fromEntries(get('headers').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const i = l.indexOf(':'); return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : [l, '']; }));
-      const params = kind() === 'url' ? { name: get('name').toLowerCase(), url: get('url'), token: get('token'), ...(Object.keys(headers).length ? { headers } : {}) } : { name: get('name').toLowerCase(), command: get('command') };
+      const signs = auth() !== 'none';
+      const params = kind() === 'url' ? { name: get('name').toLowerCase(), url: get('url'), auth: auth(), ...(signs ? {} : { token: get('token') }), ...(Object.keys(headers).length ? { headers } : {}),
+        ...(signs ? { oauthClient: client(), ...(client() === 'own' ? { clientId: get('clientId'), clientSecret: get('clientSecret') } : {}) } : {}), ...(get('transport') ? { transport: get('transport') } : {}) }
+        : { name: get('name').toLowerCase(), command: get('command') };
       const msg = q(this.root, '.ft-cn-msg');
       try {
         const c = await run<{ id: string; name: string }>('connector.add', params);
         form.hidden = true;
         form.querySelectorAll<HTMLInputElement>('[data-c]').forEach((x) => { x.value = ''; });
+        if (kind() === 'url' && auth() === 'now') {
+          setText(msg, `Sign in to ${c.name} on the page that opened, then come back here.`);
+          await signIn(c.id);
+          return;
+        }
         setText(msg, `Connecting ${c.name}`);
         const done = await run<{ status: string; error: string; tools: unknown[] }>('connector.connect', { id: c.id });
-        setText(msg, done.status === 'connected' ? `${c.name} is connected with ${done.tools.length} tools.` : `${c.name} was added but did not connect: ${done.error}`);
+        setText(msg, done.status === 'connected' ? `${c.name} is connected with ${done.tools.length} tools.` : done.status === 'needs_auth' ? `${c.name} asks you to sign in: select Sign in on its row.`
+          : `${c.name} was added but did not connect: ${done.error}`);
       } catch (err) {
         setText(msg, err instanceof Error ? err.message : String(err));
       }
@@ -319,13 +354,19 @@ export class CustomizeView {
       const t = e.target as HTMLElement;
       const id = t.closest<HTMLElement>('[data-cn]')?.dataset.cn;
       if (!id) return;
-      if (t.closest('.ft-cn-rowconnect')) { void this.powerConnector(id, true); return; }
+      if (t.closest('.ft-cn-rowconnect')) {
+        const c = this.state.connectors.find((x) => x.id === id);
+        if (c?.enabled && c.status === 'needs_auth') this.startSignIn(id);
+        else void this.powerConnector(id, true);
+        return;
+      }
       this.openConnector(id);
     });
     q(this.root, '.ft-cn-back').addEventListener('click', () => this.showList());
     q(this.root, '.ft-cn-power').addEventListener('click', () => {
       const c = this.state.connectors.find((x) => x.id === this.cnOpen);
-      if (c) void this.powerConnector(c.id, !c.enabled);
+      if (c?.enabled && c.status === 'needs_auth') this.startSignIn(c.id);
+      else if (c) void this.powerConnector(c.id, !c.enabled);
     });
     q(this.root, '.ft-cn-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
       { label: 'Reconnect', desc: 'Connect again and list its tools', icon: 'retry', action: () => { if (this.cnOpen) void run('connector.connect', { id: this.cnOpen }).catch(() => undefined); } },
@@ -351,8 +392,19 @@ export class CustomizeView {
     }
   }
 
+  private startSignIn(id: string): void {
+    const msg = q(this.root, '.ft-cn-msg');
+    signIn(id).then(() => setText(msg, 'Sign in on the page that opened; the connector connects when you come back.'))
+      .catch((err) => setText(msg, err instanceof Error ? err.message : String(err)));
+  }
+
+  private lost(c: ConnectorInfo): boolean {
+    return c.error.startsWith('The server no longer');
+  }
+
   private chipText(c: ConnectorInfo): string {
     if (!c.enabled) return 'Disconnected';
+    if (c.status === 'needs_auth') return this.lost(c) ? 'Needs reconnecting' : 'Sign-in needed';
     if (c.status === 'connected') return 'Connected';
     if (c.status === 'connecting') return 'Connecting';
     if (c.status === 'error') return c.route === 'api' ? 'Connected through Anthropic' : 'Needs reconnecting';
@@ -361,6 +413,7 @@ export class CustomizeView {
 
   private stateText(c: ConnectorInfo): string {
     if (!c.enabled) return 'Disconnected';
+    if (c.status === 'needs_auth') return this.lost(c) ? 'Sign in again to use its tools' : 'Sign in to use its tools';
     if (c.status === 'connected') return `${c.tools.filter((t) => t.enabled).length} of ${c.tools.length} tools on`;
     if (c.status === 'connecting') return 'Connecting';
     if (c.status === 'error') return c.route === 'api' ? 'Sent through Anthropic; tools not listed here' : 'Not connected';
@@ -388,8 +441,10 @@ export class CustomizeView {
       setText(chip, this.chipText(c));
       if (chip.dataset.s !== (c.enabled ? c.status : 'off')) chip.dataset.s = c.enabled ? c.status : 'off';
       const conn = q<HTMLButtonElement>(row, '.ft-cn-rowconnect');
-      if (conn.hidden === !c.enabled) conn.hidden = c.enabled;
-      if (chip.hidden === !c.enabled) chip.hidden = !c.enabled;
+      const asks = c.enabled && c.status === 'needs_auth';
+      setText(conn, asks ? (this.lost(c) ? 'Reconnect' : 'Sign in') : 'Connect');
+      if (conn.hidden !== (c.enabled && !asks)) conn.hidden = c.enabled && !asks;
+      if (chip.hidden !== (!c.enabled || asks)) chip.hidden = !c.enabled || asks;
       row.classList.toggle('is-off', !c.enabled);
       row.classList.toggle('is-error', c.status === 'error' && c.route === 'local');
       if (list.children[i] !== row) list.insertBefore(row, list.children[i] ?? null);
@@ -418,15 +473,16 @@ export class CustomizeView {
     const c = this.state.connectors.find((x) => x.id === this.cnOpen);
     if (!c) return;
     setText(q(this.root, '.ft-cn-name'), c.name);
-    setText(q(this.root, '.ft-cn-where'), `${c.kind === 'url' ? c.url : c.command}${c.hasToken ? ' · with a token' : ''} · ${c.route === 'api' ? 'through Anthropic\'s MCP connector' : 'run by Format\'s engine'}`);
+    const how = c.auth && c.auth !== 'none' ? ` · ${c.signedIn ? 'signed in' : 'sign-in'} with ${c.oauthClient === 'own' ? 'your OAuth client' : 'a client Format registered'}` : c.hasToken ? ' · with a token' : '';
+    setText(q(this.root, '.ft-cn-where'), `${c.kind === 'url' ? c.url : c.command}${how}${c.transport === 'sse' ? ' · SSE' : ''} · ${c.route === 'api' ? 'through Anthropic\'s MCP connector' : 'run by Format\'s engine'}`);
     const st = q(this.root, '.ft-cn-state');
-    setText(st, c.status !== 'error' ? this.stateText(c) : c.route === 'api'
+    setText(st, c.status === 'needs_auth' && c.error && !this.lost(c) && c.error !== 'Sign in to use it' ? `Sign-in could not start: ${c.error}` : c.status !== 'error' ? this.stateText(c) : c.route === 'api'
       ? `Its tools could not be listed from this computer (${c.error}); Claude still reaches the server through Anthropic.` : `Last connection failed: ${c.error}`);
     st.classList.toggle('is-error', c.status === 'error');
     const chip = q(this.cnDetail, '.ft-cn-chip');
     setText(chip, this.chipText(c));
     if (chip.dataset.s !== (c.enabled ? c.status : 'off')) chip.dataset.s = c.enabled ? c.status : 'off';
-    setText(q(this.root, '.ft-cn-power'), c.enabled ? 'Disconnect' : 'Connect');
+    setText(q(this.root, '.ft-cn-power'), !c.enabled ? 'Connect' : c.status === 'needs_auth' ? (this.lost(c) ? 'Reconnect' : 'Sign in') : 'Disconnect');
     const perm = (t: { enabled: boolean; permission?: string }): string => t.permission ?? (t.enabled ? c.defaultPermission ?? 'ask' : 'block');
     const box = q(this.root, '.ft-cn-tools');
     const key = JSON.stringify(c.tools.map((t) => t.name));

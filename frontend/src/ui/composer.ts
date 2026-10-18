@@ -1,5 +1,6 @@
 import { run } from '../engine-client/api';
-import type { AppState, FileComment, FileInfo, Settings } from '../state/app-state';
+import type { AppState, ConnectorInfo, FileComment, FileInfo, Settings } from '../state/app-state';
+import { signIn } from './customize-view';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { closeMenus, openMenu, type MenuItem } from './menu';
@@ -45,6 +46,7 @@ export class Composer {
   private files: Pending[] = [];
   private research = false;
   private output: 'doc' | 'sheet' | 'deck' | null = null;
+  private draftOff = new Set<string>();
   private picker: HTMLInputElement;
   private queueRow: HTMLElement;
   private queued: Array<{ text: string; files: FileInfo[]; comments: FileComment[] }> = [];
@@ -74,6 +76,27 @@ export class Composer {
 
   get researchOn(): boolean {
     return this.research;
+  }
+
+  takeDraftConnectorsOff(): string[] {
+    const off = [...this.draftOff];
+    this.draftOff.clear();
+    return off;
+  }
+
+  private connectorsOff(): Set<string> {
+    const chat = this.state.activeId;
+    return chat ? new Set(this.state.conversations.get(chat)?.connectors_off ?? []) : this.draftOff;
+  }
+
+  private toggleConnector(c: ConnectorInfo, on: boolean): void {
+    const chat = this.state.activeId;
+    if (!chat) {
+      if (on) this.draftOff.delete(c.id);
+      else this.draftOff.add(c.id);
+      return;
+    }
+    run('conversation.setConnector', { id: chat, connector: c.id, on }).catch((err) => this.flash(err instanceof Error ? err.message : String(err)));
   }
 
   setResearch(on: boolean): void {
@@ -460,9 +483,15 @@ export class Composer {
         label: 'Connectors', icon: 'plug', submenu: () => {
           const all = this.state.connectors;
           if (!all.length) return empty('connectors');
-          return [...all.map((c) => ({ label: c.name, desc: c.status === 'error' && c.route === 'local' ? 'Not connected' : c.route === 'api' ? 'Through Anthropic' : `${c.tools.filter((t) => t.enabled).length} tools`,
-            checked: c.enabled, action: () => void run('connector.update', { id: c.id, enabled: !c.enabled }) })),
-          { divider: true }, { label: 'Manage connectors', icon: 'customize' as const, action: () => this.hooks.openCustomize() }];
+          const off = this.connectorsOff();
+          const row = (c: ConnectorInfo): MenuItem => {
+            if (!c.enabled) return { label: c.name, desc: 'Disconnected: connect it in Customize', action: () => this.hooks.openCustomize() };
+            if (c.status === 'needs_auth') return { label: c.name, desc: 'Sign in to use it', chip: 'Sign in', chipTone: 'warn', action: () => void signIn(c.id).catch((err) => this.flash(err instanceof Error ? err.message : String(err))) };
+            return { label: c.name, desc: c.status === 'error' && c.route === 'local' ? 'Not connected' : c.route === 'api' ? 'Through Anthropic' : `${c.tools.filter((t) => t.enabled).length} tool${c.tools.filter((t) => t.enabled).length === 1 ? '' : 's'}`,
+              toggle: !off.has(c.id), action: () => this.toggleConnector(c, this.connectorsOff().has(c.id)) };
+          };
+          return [{ note: this.state.activeId ? 'On or off for this chat' : 'On or off for the chat you start' }, ...all.map(row),
+            { divider: true }, { label: 'Manage connectors', icon: 'customize' as const, action: () => this.hooks.openCustomize() }];
         },
       },
       {

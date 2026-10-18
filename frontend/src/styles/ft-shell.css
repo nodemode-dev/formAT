@@ -410,6 +410,16 @@
 .ft-cn-kind { display: flex; flex-wrap: wrap; gap: var(--space-4); }
 .ft-cn-kind .ft-check { min-height: 0; align-self: center; }
 .ft-cn-kind input { accent-color: var(--accent-color); }
+.ft-cn-set { display: grid; gap: var(--space-2); min-width: 0; margin: 0; padding: 0; border: 0; }
+.ft-cn-set legend { padding: 0; margin-bottom: var(--space-2); font: 500 var(--fs-12) var(--font-ui); color: var(--text-secondary); }
+.ft-cn-set .ft-set-note { margin: 0; }
+.ft-cn-set .ft-cn-kind { display: grid; gap: var(--space-2); }
+.ft-cn-set .ft-cn-kind .ft-check { align-self: start; }
+.ft-cn-own { display: grid; gap: var(--space-3); }
+.ft-cn-adv { min-width: 0; }
+.ft-cn-adv summary { cursor: pointer; font-size: var(--fs-12); color: var(--text-secondary); }
+.ft-cn-adv[open] summary { margin-bottom: var(--space-2); }
+.ft-cn-adv select { max-width: 100%; }
 .ft-cn-badge { padding: 1px 8px; border: 1px solid var(--line-2); border-radius: 999px; font: var(--fs-11) var(--font-ui); color: var(--text-secondary); white-space: nowrap; }
 .ft-cn-badge[data-s="connected"] { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
 .ft-cn-badge[data-s="error"] { border-color: color-mix(in srgb, var(--warn) 45%, transparent); }
@@ -427,7 +437,7 @@
 .ft-cn-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 var(--space-2); border: 1px solid var(--line-2); border-radius: 999px; font: var(--fs-11) var(--font-ui); color: var(--text-secondary); white-space: nowrap; }
 .ft-cn-chip[hidden] { display: none; }
 .ft-cn-chip[data-s="connected"] { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
-.ft-cn-chip[data-s="error"] { border-color: color-mix(in srgb, var(--warn) 45%, transparent); color: var(--warn); }
+.ft-cn-chip[data-s="error"], .ft-cn-chip[data-s="needs_auth"] { border-color: color-mix(in srgb, var(--warn) 45%, transparent); color: var(--warn); }
 .ft-cn-rowstate { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 0; }
 .ft-cn-rowconnect[hidden] { display: none; }
 .ft-cn-delete[hidden] { display: none; }

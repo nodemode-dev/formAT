@@ -4,6 +4,7 @@ export interface Conversation {
   project_id: string | null;
   pinned: boolean;
   allow_all?: boolean;
+  connectors_off?: string[];
   model: string | null;
   created: number;
   updated: number;
@@ -156,6 +157,10 @@ export interface ConnectorInfo {
   error: string;
   headerNames?: string[];
   defaultPermission?: ToolPermission;
+  auth?: 'none' | 'needed' | 'now';
+  transport?: 'http' | 'sse';
+  oauthClient?: '' | 'register' | 'own';
+  signedIn?: boolean;
   tools: Array<{ name: string; description: string; enabled: boolean; permission?: ToolPermission }>;
 }
 
