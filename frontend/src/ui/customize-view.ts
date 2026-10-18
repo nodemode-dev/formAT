@@ -92,7 +92,7 @@ export class CustomizeView {
             <p class="ft-set-note">Skills the marketplaces you added offer, each added on its own without its plugin. Add marketplaces under Plugins; Anthropic's own skills are in the anthropics/skills marketplace.</p>
             <div class="ft-set-actions ft-sk-anthropic" hidden><button type="button" class="ft-btn ft-sk-addofficial">${ui('plus', 14)}<span>Add Anthropic's skills marketplace</span></button></div>
             <div class="ft-cz-list ft-sk-offers" role="list"></div>
-            <p class="ft-proj-none ft-sk-nooffers">No skills to discover yet.</p>
+            <p class="ft-proj-none ft-sk-nooffers" hidden>No skills to discover yet.</p>
           </div>
           <input type="file" class="ft-cz-picker" accept=".zip,.md" hidden>
         </section>
@@ -229,6 +229,8 @@ export class CustomizeView {
     state.on('connectors', () => { this.renderConnectors(); if (this.plOpen) this.paintPlugin(); if (this.directory.length) this.renderDirectory(); });
     this.plDetail = q(this.root, '.ft-pl-detail');
     this.wirePlugins();
+    this.root.querySelectorAll<HTMLElement>('.ft-proj-msg').forEach((m) => new MutationObserver(() => { const t = m.textContent ?? ''; if (m.title !== t) m.title = t; })
+      .observe(m, { childList: true, characterData: true, subtree: true }));
     state.on('plugins', () => { this.renderPlugins(); this.renderMarkets(); });
     state.on('marketplaces', () => { this.renderMarkets(); if (!q(this.root, '.ft-sk-discover').hidden) void this.refreshSkillOffers(); });
   }
@@ -278,7 +280,7 @@ export class CustomizeView {
         this.setPluginView('discover');
       } catch (err) { say(err); }
     });
-    this.root.querySelectorAll<HTMLElement>('.ft-pl-view').forEach((b) => b.addEventListener('click', () => this.setPluginView(b.dataset.plv ?? 'yours')));
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-view[data-plv]').forEach((b) => b.addEventListener('click', () => this.setPluginView(b.dataset.plv ?? 'yours')));
     q(this.root, '.ft-pl-offers').addEventListener('click', async (e) => {
       const t = e.target as HTMLElement;
       const row = t.closest<HTMLElement>('[data-offer]');
@@ -480,11 +482,17 @@ export class CustomizeView {
     const disc = q(this.root, '.ft-sk-discover');
     if (yours.hidden !== (view !== 'yours')) yours.hidden = view !== 'yours';
     if (disc.hidden !== (view !== 'discover')) disc.hidden = view !== 'discover';
-    if (view === 'discover') void this.refreshSkillOffers();
+    if (view === 'discover') {
+      this.renderSkillOffers();
+      void this.refreshSkillOffers();
+    }
   }
+
+  private skillOffersLoaded = false;
 
   private async refreshSkillOffers(): Promise<void> {
     try { this.skillOffers = (await run<{ skills: CustomizeView['skillOffers'] }>('skill.discover')).skills; } catch { return; }
+    this.skillOffersLoaded = true;
     this.renderSkillOffers();
   }
 
@@ -512,14 +520,15 @@ export class CustomizeView {
       if (box.children[i] !== row) box.insertBefore(row, box.children[i] ?? null);
     });
     const none = q(this.root, '.ft-sk-nooffers');
-    if (none.hidden !== this.skillOffers.length > 0) none.hidden = this.skillOffers.length > 0;
+    const hideNone = !this.skillOffersLoaded || this.skillOffers.length > 0;
+    if (none.hidden !== hideNone) none.hidden = hideNone;
     const official = q(this.root, '.ft-sk-anthropic');
     const hasOfficial = this.state.marketplaces.some((m) => /^(anthropics\/|https:\/\/github\.com\/anthropics\/)/.test(m.source));
     if (official.hidden !== hasOfficial) official.hidden = hasOfficial;
   }
 
   private setPluginView(view: string): void {
-    this.root.querySelectorAll<HTMLElement>('.ft-pl-view').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.plv === view)));
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-view[data-plv]').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.plv === view)));
     const yours = q(this.root, '.ft-pl-yours');
     const disc = q(this.root, '.ft-pl-discover');
     if (yours.hidden !== (view !== 'yours')) yours.hidden = view !== 'yours';
@@ -647,7 +656,7 @@ export class CustomizeView {
     const ckey = servers.map((s) => s.name).join('\n');
     if (cbox.dataset.v !== ckey) {
       cbox.dataset.v = ckey;
-      cbox.innerHTML = servers.map((s) => `<div class="ft-cz-row ft-pl-srv" role="listitem" data-srv="${esc(s.name)}"><span class="ft-cz-icon">${ui('plug', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name">${esc(s.name)}</span><span class="ft-cz-row-desc"></span></button><span class="ft-cn-chip"></span><button type="button" class="ft-btn ft-pl-srvadd">Add</button><button type="button" class="ft-btn ft-pl-srvconnect">Connect</button></div>`).join('');
+      cbox.innerHTML = servers.map((s) => `<div class="ft-cz-row ft-pl-srv" role="listitem" data-srv="${esc(s.name)}"><span class="ft-cz-icon">${ui('plug', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name">${esc(s.name)}</span><span class="ft-cz-row-desc"></span></button><span class="ft-pl-srvstate"><button type="button" class="ft-btn ft-pl-srvadd">Add</button><button type="button" class="ft-btn ft-pl-srvconnect">Connect</button><span class="ft-cn-chip"></span></span></div>`).join('');
     }
     servers.forEach((s0) => {
       const row = cbox.querySelector<HTMLElement>(`[data-srv="${CSS.escape(s0.name)}"]`);

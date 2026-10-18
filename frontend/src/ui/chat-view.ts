@@ -112,6 +112,10 @@ export class ChatView {
     state.on('running', () => this.render());
   }
 
+  prepareOpen(): void {
+    if (this.root.classList.contains('is-empty')) this.root.classList.remove('is-empty');
+  }
+
   setDraftProject(name: string | null): void {
     const chip = q(this.root, '.ft-greeting-project');
     setText(q(chip, 'b'), name ?? '');

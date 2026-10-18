@@ -636,7 +636,17 @@ export class App {
   }
 
   async openChat(id: string): Promise<void> {
-    const conv = await run<Conversation & { messages: Message[] }>('conversation.get', { id });
+    if (this.state.view === 'chat' && this.state.activeId !== id) {
+      this.chat.prepareOpen();
+      this.renderTitle(id);
+    }
+    let conv: Conversation & { messages: Message[] };
+    try {
+      conv = await run<Conversation & { messages: Message[] }>('conversation.get', { id });
+    } catch (err) {
+      this.state.emit('active');
+      throw err;
+    }
     this.state.activeId = id;
     this.state.messages = conv.messages;
     const last = conv.messages[conv.messages.length - 1];
@@ -664,8 +674,9 @@ export class App {
     }
   }
 
-  private renderTitle(): void {
-    const c = this.state.activeId ? this.state.conversations.get(this.state.activeId) : null;
+  private renderTitle(opening?: string): void {
+    const id = opening ?? this.state.activeId;
+    const c = id ? this.state.conversations.get(id) : null;
     const pageTitle: Record<View, string> = { chat: c?.title ?? 'New chat', projects: 'Projects', artifacts: 'Artifacts', scheduled: 'Scheduled', customize: 'Customize', settings: 'Settings' };
     setText(this.title, pageTitle[this.state.view]);
     document.title = this.state.view === 'chat' && c ? `${c.title} · Format` : 'Format';
