@@ -98,7 +98,8 @@ export class App {
         run('chat.branch', { conversationId: this.state.activeId, messageId: id }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
       },
       approve: (toolUseId, decision) => {
-        run('tool.approve', { toolUseId, decision }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+        (decision === 'all' ? run('settings.set', { key: 'permissionMode', value: 'auto' }) : run('tool.approve', { toolUseId, decision }))
+          .catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
       },
       answer: (toolUseId, answer) => {
         run('tool.answer', { toolUseId, answer }).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));

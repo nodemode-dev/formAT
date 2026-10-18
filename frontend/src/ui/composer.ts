@@ -2,7 +2,7 @@ import { run } from '../engine-client/api';
 import type { AppState, FileComment, FileInfo, Settings } from '../state/app-state';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
-import { openMenu, type MenuItem } from './menu';
+import { closeMenus, openMenu, type MenuItem } from './menu';
 import { Dictation } from './dictation';
 
 export interface ComposerHooks {
@@ -26,7 +26,7 @@ interface Pending {
 const EFFORT_LABEL: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra', max: 'Max' };
 const MODES: Array<[string, string, string]> = [
   ['ask', 'Ask', 'Asks before each tool runs'],
-  ['auto', 'Auto', 'Runs tools you have allowed without asking'],
+  ['auto', 'Allow all', 'Runs every tool without asking, and allows anything already waiting'],
   ['plan', 'Plan', 'Plans first, changes nothing until you approve'],
 ];
 
@@ -36,6 +36,7 @@ export class Composer {
   private sendBtn: HTMLButtonElement;
   private modelBtn: HTMLButtonElement;
   private modeBtn: HTMLButtonElement;
+  private slash: HTMLElement | null = null;
   private notice: HTMLElement;
   private attachRow: HTMLElement;
   private files: Pending[] = [];
@@ -141,8 +142,22 @@ export class Composer {
       e.preventDefault();
       this.addFiles(files);
     });
-    this.input.addEventListener('input', () => this.autosize());
+    this.input.addEventListener('input', () => {
+      this.autosize();
+      if (this.input.value === '/') this.slashMenu();
+      else if (this.slash?.isConnected && !/^\/[a-z0-9-]*$/i.test(this.input.value)) closeMenus();
+    });
     this.input.addEventListener('keydown', (e) => {
+      if (this.slash?.isConnected && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Tab')) {
+        e.preventDefault();
+        this.slash.querySelector<HTMLButtonElement>('.ft-menu-item')?.focus();
+        return;
+      }
+      if (e.key === 'Enter' && !e.isComposing && this.slash?.isConnected && /^\/[a-z0-9-]*$/i.test(this.input.value)) {
+        const typed = this.input.value.slice(1).toLowerCase();
+        const hit = this.state.skills.find((s) => s.enabled && s.name.startsWith(typed));
+        if (hit) { e.preventDefault(); closeMenus(); this.pickSlash(hit.name); return; }
+      }
       if (e.key !== 'Enter' || e.isComposing) return;
       const modWanted = this.state.account.sendKey === 'modEnter';
       const mod = e.metaKey || e.ctrlKey;
@@ -226,6 +241,19 @@ export class Composer {
     this.sendBtn.disabled = !stopMode && (!(typed || this.files.some((f) => f.file || f.comment)) || uploading);
   }
 
+  private slashMenu(): void {
+    const on = this.state.skills.filter((s) => s.enabled);
+    if (!on.length) return;
+    this.slash = openMenu(this.input, on.map((s) => ({ label: `/${s.name}`, desc: s.description.slice(0, 90), icon: 'skills' as const, action: () => this.pickSlash(s.name) })), 'up', 0, 'Skills');
+  }
+
+  private pickSlash(name: string): void {
+    this.input.value = `/${name} ${this.input.value.replace(/^\/[a-z0-9-]*\s?/i, '')}`;
+    this.input.setSelectionRange(this.input.value.length, this.input.value.length);
+    this.autosize();
+    this.input.focus();
+  }
+
   private useSkill(name: string): void {
     const lead = `Use the ${name} skill. `;
     if (!this.input.value.startsWith(lead)) this.input.value = lead + this.input.value;
@@ -286,7 +314,7 @@ export class Composer {
     this.queueRow.innerHTML = this.queued.map((m, i) => `<div class="ft-queue-row" data-q="${i}"><span class="ft-queue-text">${esc(m.text || (m.files.length ? `${m.files.length} file(s)` : `${m.comments.length} comment(s)`))}</span>${i === 0 ? '<button type="button" class="ft-text-btn ft-queue-now">Send now</button>' : ''}<button type="button" class="ft-icon-btn ft-queue-x" aria-label="Remove from queue">${ui('close', 14)}</button></div>`).join('');
   }
 
-  private addFiles(files: File[]): void {
+  addFiles(files: File[]): void {
     for (const f of files) {
       const p: Pending = { key: `f${++this.seq}`, name: f.name };
       this.files.push(p);
@@ -440,6 +468,7 @@ export class Composer {
     setText(q(this.modelBtn, '.ft-model-effort'), EFFORT_LABEL[s.effort] ?? s.effort);
     const mode = MODES.find(([id]) => id === s.permissionMode);
     setText(this.modeBtn, mode ? mode[1] : s.permissionMode);
+    if (this.modeBtn.dataset.mode !== s.permissionMode) this.modeBtn.dataset.mode = s.permissionMode;
     if (this.notice.classList.contains('is-alert')) return;
     const via = this.state.route();
     setText(this.notice, via === 'api' ? `${name} through the Anthropic API can make mistakes.` : via === 'claude-code' ? `${name} through Claude Code can make mistakes.` : 'Add an Anthropic API key in Settings, or install Claude Code, to start chatting.');

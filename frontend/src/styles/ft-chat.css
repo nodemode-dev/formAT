@@ -56,7 +56,7 @@
 }
 
 .ft-msg.is-user {
-  justify-self: start;
+  justify-self: end;
   max-width: 85%;
   padding: var(--space-3) var(--space-4);
   border-radius: var(--radius-xl);
@@ -284,7 +284,7 @@
 .ft-term .xterm .xterm-scrollable-element > .scrollbar { display: none !important; }
 .ft-term .xterm-viewport { background-color: transparent !important; }
 
-.ft-msg.is-user { display: grid; gap: var(--space-2); justify-items: start; padding: 0; background: none; max-width: 85%; }
+.ft-msg.is-user { display: grid; gap: var(--space-2); justify-items: end; padding: 0; background: none; max-width: 85%; }
 .ft-msg-bubble { padding: var(--space-3) var(--space-4); border-radius: var(--radius-xl); background: var(--ft-bubble); }
 .ft-msg-bubble[hidden] { display: none; }
 .ft-msg-files { display: flex; flex-wrap: wrap; gap: var(--space-2); }
@@ -384,11 +384,14 @@
 @keyframes ft-caret { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ft-msg.is-streaming .ft-md-tail > :last-child::after { animation: none; } }
 
-.ft-thinking { border: 1px solid var(--line-1); border-radius: var(--radius-lg); background: var(--surface-1); }
+.ft-thinking { border: 0; background: none; }
 .ft-thinking[hidden] { display: none; }
-.ft-thinking summary { display: flex; align-items: center; gap: var(--space-2); height: 32px; padding: 0 var(--space-3); color: var(--text-secondary); font-size: var(--fs-12); cursor: pointer; list-style: none; }
+.ft-thinking summary { display: flex; align-items: center; gap: var(--space-2); width: fit-content; height: 28px; padding: 0; color: var(--text-muted); font-size: var(--fs-13); cursor: pointer; list-style: none; }
+.ft-thinking summary:hover { color: var(--text-secondary); }
 .ft-thinking summary::-webkit-details-marker { display: none; }
-.ft-thinking-body { padding: 0 var(--space-3) var(--space-3); max-height: 320px; overflow-y: auto; font-size: var(--fs-13); line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap; }
+.ft-thinking summary::after { content: ''; width: 6px; height: 6px; border-right: 1.5px solid currentColor; border-bottom: 1.5px solid currentColor; transform: rotate(-45deg); margin-left: 2px; }
+.ft-thinking[open] summary::after { transform: rotate(45deg); }
+.ft-thinking-body { margin-top: var(--space-1); padding: 0 0 0 var(--space-3); border-left: 1px solid var(--border-soft); max-height: 320px; overflow-y: auto; font-size: var(--fs-13); line-height: 1.6; color: var(--text-secondary); white-space: pre-wrap; }
 .ft-block-note { font-size: var(--fs-12); color: var(--text-muted); }
 
 .ft-msg-status { font-size: var(--fs-12); color: var(--text-muted); }
@@ -474,3 +477,20 @@
 .ft-sheet dt { color: var(--text-secondary); }
 .ft-sheet dd { margin: 0; font: var(--fs-12) var(--font-mono); color: var(--text-primary); }
 .ft-consent .ft-set-note { margin: 0 0 var(--space-4); }
+
+.ft-tool-input.is-diff { padding: var(--space-2) 0; white-space: pre; overflow-x: auto; }
+.ft-diff-del, .ft-diff-add { display: block; padding: 0 var(--space-3) 0 var(--space-2); }
+.ft-diff-del { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--text-primary); }
+.ft-diff-add { background: color-mix(in srgb, var(--ok-soft) 14%, transparent); color: var(--text-primary); }
+.ft-diff-mark { display: inline-block; width: 2ch; color: var(--text-muted); user-select: none; }
+.ft-diff-del .ft-diff-mark { color: var(--danger-text); }
+.ft-diff-add .ft-diff-mark { color: var(--ok-soft); }
+.ft-diff-gap { display: block; height: var(--space-2); }
+
+.ft-drop { position: absolute; inset: 0; z-index: var(--z-temp); display: grid; place-items: center; padding: var(--space-6); background: color-mix(in srgb, var(--surface-0) 72%, transparent); pointer-events: none; }
+.ft-drop[hidden] { display: none; }
+.ft-drop-card { display: grid; justify-items: center; gap: var(--space-2); width: min(420px, 100%); padding: var(--space-6); border: 1.5px dashed var(--accent-line); border-radius: var(--radius-xl); background: var(--ft-menu-bg); box-shadow: var(--shadow-lg); color: var(--accent-ink); text-align: center; }
+.ft-drop-card b { color: var(--text-primary); font: 500 var(--fs-14) var(--font-ui); }
+.ft-drop-card span { color: var(--text-muted); font-size: var(--fs-12); }
+
+.ft-mode[data-mode="auto"] { color: var(--warn); }

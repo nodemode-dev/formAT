@@ -47,6 +47,9 @@ export class ChatView {
   private thread: HTMLElement;
   private note: HTMLElement;
   private toBottom: HTMLButtonElement;
+  private dropZone: HTMLElement;
+  private pinned = true;
+  private autoTop = -1;
   private nodes = new Map<string, HTMLElement>();
   private assistants = new Map<string, AssistantView>();
   private shownFor: string | null = null;
@@ -61,15 +64,43 @@ export class ChatView {
       <div class="ft-chat-dock">
         <button type="button" class="ft-to-bottom" aria-label="Scroll to the latest message" hidden>${ui('arrowDown', 16)}</button>
       </div>
+      <div class="ft-drop" hidden aria-hidden="true"><div class="ft-drop-card">${ui('paperclip', 22)}<b>Drop files to add them to the chat</b><span>Images, PDFs, documents, code and zips</span></div></div>
     </section>`);
     this.scroller = q(this.root, '.ft-chat-scroll');
     this.thread = q(this.root, '.ft-thread');
     this.note = q(this.root, '.ft-thread-note');
     this.toBottom = q(this.root, '.ft-to-bottom');
     q(this.root, '.ft-chat-dock').appendChild(composer.root);
-    this.toBottom.addEventListener('click', () => this.scroller.scrollTo({ top: this.scroller.scrollHeight, behavior: 'smooth' }));
+    this.dropZone = q(this.root, '.ft-drop');
+    this.toBottom.addEventListener('click', () => { this.pinned = true; this.scroller.scrollTo({ top: this.scroller.scrollHeight, behavior: 'smooth' }); });
     q(this.root, '.ft-greeting-project button').addEventListener('click', () => this.hooks.leaveProject());
-    this.scroller.addEventListener('scroll', () => this.updateToBottom(), { passive: true });
+    this.scroller.addEventListener('scroll', () => {
+      if (Math.abs(this.scroller.scrollTop - this.autoTop) > 1) this.pinned = this.nearBottom();
+      this.updateToBottom();
+    }, { passive: true });
+    const unpin = (): void => { this.pinned = false; };
+    this.scroller.addEventListener('wheel', (e) => { if (e.deltaY < 0) unpin(); }, { passive: true });
+    this.scroller.addEventListener('touchmove', unpin, { passive: true });
+    this.scroller.addEventListener('keydown', (e) => { if (e.key === 'ArrowUp' || e.key === 'PageUp' || e.key === 'Home') unpin(); });
+    const follow = new ResizeObserver(() => this.follow());
+    follow.observe(this.thread);
+    follow.observe(this.scroller);
+    const files = (e: DragEvent): boolean => !!e.dataTransfer && [...e.dataTransfer.types].includes('Files');
+    let depth = 0;
+    const showDrop = (on: boolean): void => { if (this.dropZone.hidden === on) this.dropZone.hidden = !on; };
+    this.root.addEventListener('dragenter', (e) => { if (!files(e)) return; e.preventDefault(); depth += 1; showDrop(true); });
+    this.root.addEventListener('dragover', (e) => { if (!files(e)) return; e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'; });
+    this.root.addEventListener('dragleave', (e) => { if (!files(e)) return; depth = Math.max(0, depth - 1); if (!depth) showDrop(false); });
+    this.root.addEventListener('drop', (e) => {
+      depth = 0;
+      showDrop(false);
+      if (e.defaultPrevented || !files(e)) return;
+      e.preventDefault();
+      composer.addFiles([...(e.dataTransfer?.files ?? [])]);
+      composer.focus();
+    });
+    window.addEventListener('dragover', (e) => { if (files(e)) e.preventDefault(); });
+    window.addEventListener('drop', (e) => { if (files(e)) e.preventDefault(); });
     this.thread.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.ft-code-copy');
       if (!btn) return;
@@ -90,6 +121,13 @@ export class ChatView {
 
   private nearBottom(): boolean {
     return this.scroller.scrollHeight - this.scroller.scrollTop - this.scroller.clientHeight < 48;
+  }
+
+  private follow(): void {
+    if (!this.pinned) return;
+    const top = this.scroller.scrollHeight - this.scroller.clientHeight;
+    if (Math.abs(this.scroller.scrollTop - top) > 1) this.scroller.scrollTop = top;
+    this.autoTop = this.scroller.scrollTop;
   }
 
   private updateToBottom(): void {
@@ -270,9 +308,8 @@ export class ChatView {
     const block = m.content[index];
     if (kind === 'thinking') block.thinking = (block.thinking ?? '') + text;
     else block.text = (block.text ?? '') + text;
-    const stick = this.nearBottom();
     this.ensurePart(view, index, block.type).set(kind === 'thinking' ? block.thinking ?? '' : block.text ?? '', false);
-    if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+    this.follow();
   }
 
   private nested(view: AssistantView, parent: string, index: number, block: ContentBlock): void {
@@ -304,17 +341,15 @@ export class ChatView {
     const m = this.state.messages.find((x) => x.id === id);
     if (!view || !m) return;
     if (parent) {
-      const stick = this.nearBottom();
       this.nested(view, parent, index, block);
-      if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+      this.follow();
       return;
     }
     while (m.content.length <= index) m.content.push({ type: 'text', text: '' });
     const known = m.content[index];
     m.content[index] = TOOL_TYPES.has(block.type) || RESULT_TYPES.has(block.type) ? { ...block } : known && known.type === block.type ? known : { type: block.type, text: '', thinking: '' };
-    const stick = this.nearBottom();
     this.ensurePart(view, index, block.type, block);
-    if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+    this.follow();
   }
 
   toolStatus(id: string, toolUseId: string, status: string): void {
@@ -326,9 +361,8 @@ export class ChatView {
   }
 
   toolOutput(id: string, toolUseId: string, text: string): void {
-    const stick = this.nearBottom();
     this.assistants.get(id)?.cards.get(toolUseId)?.card.appendOutput(text);
-    if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+    this.follow();
   }
 
   private paintCompaction(n: HTMLElement, m: Message): void {
@@ -362,8 +396,8 @@ export class ChatView {
 
   private render(): void {
     const switching = this.shownFor !== this.state.activeId;
-    const stick = switching || this.nearBottom();
     if (switching) {
+      this.pinned = true;
       this.nodes.forEach((n) => n.remove());
       this.nodes.clear();
       this.assistants.clear();
@@ -373,6 +407,7 @@ export class ChatView {
     const live = new Set(msgs.map((m) => m.id));
     for (const [id, n] of this.nodes) if (!live.has(id)) { n.remove(); this.nodes.delete(id); this.assistants.delete(id); }
     msgs.forEach((m, i) => {
+      if (m.role === 'user' && !this.nodes.has(m.id)) this.pinned = true;
       const n = this.node(m);
       if (this.thread.children[i] !== n) this.thread.insertBefore(n, this.thread.children[i] ?? null);
     });
@@ -398,7 +433,7 @@ export class ChatView {
     const last = msgs[msgs.length - 1];
     const showNote = !!last && last.role === 'user' && !this.state.route();
     if (this.note.hidden === showNote) this.note.hidden = !showNote;
-    if (stick) this.scroller.scrollTop = this.scroller.scrollHeight;
+    this.follow();
     this.updateToBottom();
   }
 }

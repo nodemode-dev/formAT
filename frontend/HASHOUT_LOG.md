@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.12.0
-Last updated: 2026-10-12 · v0.12.0: the route (API key or Claude Code) in the composer, sidebar and model menu
+Current build version: v0.13.0
+Last updated: 2026-10-18 · v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -30,7 +30,7 @@ frontend/
     │   ├── menu.ts                popover menus and submenus in the overlay root
     │   ├── sidebar.ts             sidebar and mini rail, nav, keyed recents, rename in place
     │   ├── composer.ts            the box, attachments, + menu, model and effort, permission mode
-    │   ├── chat-view.ts           greeting, thread, note, scroll-to-bottom; composer docked
+    │   ├── chat-view.ts           greeting, thread, note, pinned follow and scroll-to-bottom, file drop zone; composer docked
     │   ├── side-panel.ts          Outputs and Used in this session
     │   ├── terminal-dock.ts       xterm tabs attached to engine PTYs
     │   ├── palette.ts             command palette
@@ -71,6 +71,7 @@ frontend/
 - [src/ui/customize-view.ts and src/ui/memory-panel.ts](#src-ui-customize)
 - [src/ui/scheduled-view.ts and src/ui/background-panel.ts](#src-ui-scheduled)
 - [Gap closures in the window](#src-gaps)
+- [Chat feel: drop, skills, Allow all, follow, sides](#src-chat-feel)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 
@@ -661,6 +662,61 @@ When `app.info` says the engine runs in the desktop app, a capture-phase click l
 - logged: v0.10.3 · 2026-10-12
 
 Plugins come first in Customize, as on claude.ai: a row per plugin with its part counts and an On switch, Add a plugin (a .zip), and a page per plugin with version, author, description and its skills and connectors as links to their own pages. Skills that came from a plugin show the plugin's name in their row.
+
+---
+
+## Chat feel: drop, skills, Allow all, follow, sides {#src-chat-feel}
+
+The owner's v0.12.0 screenshot (the desktop app on the Claude Code route, an approval card waiting on every edit) asked for six things: file drag and drop, skills that activate, a chat that reads like claude.ai, a switch to stop approving each request, a reply that is followed to the bottom, and the person's messages and Claude's on their own sides.
+
+### src/ui/chat-view.ts · follow, pinned
+- refers-to: src/ui/chat-view.ts :: pinned, autoTop, follow, the scroll, wheel, touchmove and keydown listeners, the ResizeObserver, render (switching, new user message), applyDelta, applyBlock, toolOutput
+- kind: rationale
+- logged: v0.13.0 · 2026-10-18
+
+Before: each change measured `nearBottom()` (within 48 px) first and scrolled after, so anything that grew the thread outside those call sites (an approval card opening, a code block highlighting, an image, the tail turning into a finished block) left the view more than 48 px short and the follow stopped for good. Now `pinned` says whether the person is following. It turns off only on the person's own input (wheel up, touch drag, ArrowUp, PageUp, Home, or a scroll that lands away from the bottom and was not ours: `autoTop` holds the offset `follow()` last set, so our own scroll events are told apart) and turns back on when they reach the bottom, press the arrow button, send a message or open another chat. A ResizeObserver on the thread and the scroller calls `follow()`, which runs after layout and before paint, so growth from any source is followed in the same frame with no visible jump. The old `stick` captures at each call site are gone; those sites call `follow()`, which is a no-op when not pinned. Measured under 4x CPU and a slow network: 0 px from the bottom at every sample while a long reply streamed and when the approval card opened; a wheel up of 700 px stayed put while the reply went on; with the observer stubbed out for comparison the gap reached 83 px.
+
+### src/ui/chat-view.ts · the drop zone
+- refers-to: src/ui/chat-view.ts :: dropZone, the dragenter, dragover, dragleave and drop listeners on root, the window dragover and drop guards; src/ui/composer.ts :: addFiles (now public); src-tauri/src/main.rs :: open_main (disable_drag_drop_handler)
+- kind: rationale
+- logged: v0.13.0 · 2026-10-18
+
+Files dropped anywhere on the chat (thread, greeting or composer) go through `composer.addFiles`, the same path as the picker and paste, then the composer takes focus. An overlay card (`.ft-drop`, absolute over `.ft-center`, `--z-temp`, `pointer-events: none`) shows while files are over the chat; a depth counter over dragenter and dragleave hides it when the drag leaves. Only drags carrying `Files` are touched, so text drags inside the page behave as before. The composer's own drop listener still runs first; it calls `preventDefault`, and the chat's listener skips an event already handled, so a file is never added twice. Two window listeners stop the webview from navigating to a file dropped outside every zone. In the desktop app, Tauri's native drag-drop handler took file drops before the page saw them (docs.rs, tauri 2.12.4, WebviewWindowBuilder::disable_drag_drop_handler: required for HTML5 drag and drop on Windows; react-dropzone's Tauri guide: the native layer intercepts OS file drops before the webview), so the main window now disables it; nothing in the shell listened to Tauri's drag-drop events.
+
+### src/ui/composer.ts · /skill
+- refers-to: src/ui/composer.ts :: slash, slashMenu, pickSlash, the input and keydown listeners
+- kind: explainer
+- logged: v0.13.0 · 2026-10-18
+
+Typing `/` into an empty composer opens a Skills menu of the enabled skills above the input; clicking one, or Enter on a prefix (`/dev` then Enter), makes the message start `/name `. ArrowDown, ArrowUp or Tab moves focus into the menu. Typing anything that is not a `/name` prefix closes it. The menu is opened once, never rebuilt per keystroke, so it cannot flicker; it is not filtered as you type for the same reason (hiding rows would move a menu placed above its anchor). The engine treats `/name` and "use the name skill" as an invocation (see backend log, Skills invoked by name). The + menu's Skills still inserts "Use the name skill.", which the engine also recognises.
+
+### src/ui/composer.ts · Allow all
+- refers-to: src/ui/composer.ts :: MODES (auto), renderSettings (modeBtn data-mode); src/ui/tool-cards.ts :: Approve, the ask row (data-d all); src/app.ts :: ChatHooks.approve
+- kind: rationale
+- logged: v0.13.0 · 2026-10-18
+
+The `auto` permission mode already ran every tool without asking on both routes (`tools.decision_for`, `claude_code.can_use`), but it was labelled Auto, "Runs tools you have allowed without asking", so it read as the Always allow list. It is now Allow all, "Runs every tool without asking, and allows anything already waiting", and the mode button turns the warning colour while it is on. Every approval card gains Allow all beside Always allow: it sets `permissionMode` to `auto`, and the engine then allows every approval already waiting, this card included, so parallel calls do not each need a click. Always allow keeps its meaning (this tool from now on, setting `toolAllow`).
+
+### src/ui/tool-cards.ts · edits as a diff
+- refers-to: src/ui/tool-cards.ts :: diffShown, diffHtml, ToolCard.update (edit branch)
+- kind: explainer
+- logged: v0.13.0 · 2026-10-18
+
+An edit's detail showed the old and the new passage as two plain paragraphs, which read as two versions of the same line with nothing saying which was which. It now shows the old lines with a `-` on a red wash and the new lines with a `+` on a green wash (Claude Code's MultiEdit `edits` list as one pair after another). The markup is set only when the input changes (`diffShown` remembers it per card), so a streaming input or a status change does not rebuild it.
+
+### src/styles/ft-chat.css · sides, thinking, diff, drop, mode
+- refers-to: src/styles/ft-chat.css :: .ft-msg.is-user (justify-self end, justify-items end), .ft-thinking and its summary and body, .ft-diff-*, .ft-drop, .ft-drop-card, .ft-mode[data-mode="auto"]
+- kind: explainer
+- logged: v0.13.0 · 2026-10-18
+
+The person's messages sit on the right of the column, bubble, files and comments aligned to the right edge, text inside the bubble still left-aligned; Claude's replies stay full width from the left, as on claude.ai. Thinking is a quiet "Thinking" row with the same chevron as the tool summary, the text under a hairline on expand, instead of a bordered box between every step.
+
+### src/ui/chat-view.ts · known: the streaming caret's line
+- refers-to: src/styles/ft-chat.css :: .ft-msg.is-streaming .ft-md-tail > :last-child::after; src/ui/markdown.ts :: StreamRenderer
+- kind: todo
+- logged: v0.13.0 · 2026-10-18
+
+Inherited, not changed this turn. When a streamed text block ends in a code block, the caret wraps onto a line of its own under the code; when the block finishes, that line goes and what follows moves up one line (layout shift 0.0005, measured as `.ft-tools` moving 25 px, 50 ms after the caret drew). Fix idea: place the caret absolutely at the end of the last line, or reserve the caret's line on code blocks too.
 
 ---
 
