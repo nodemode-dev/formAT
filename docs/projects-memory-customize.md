@@ -26,9 +26,17 @@ A skill is a folder with a SKILL.md whose name and description tell Claude when 
 
 ### Connectors
 
-A connector is an MCP server that gives Claude more tools. Add custom connector takes a URL (with an optional access token and request headers) or a command:
+A connector is an MCP server that gives Claude more tools. Add custom connector takes a URL or a command. For a URL, choose how you sign in:
+
+- Sign in when needed (the default): Format connects without credentials, and if the server asks, its row shows Sign in.
+- Sign in now: the server's sign-in page opens as soon as you add it.
+- No sign-in: anyone with the URL can use it; an API key goes in the access token or a request header.
+
+With sign-in, Format registers itself with the server automatically, or uses your own OAuth client (its client ID, and a secret only if the server requires one). The sign-in page opens in your browser; approve there and come back, and the connector connects. If the server stops accepting the sign-in, the row shows Reconnect. Disconnect signs Format out. Under Advanced, Transport picks Streamable HTTP or the older SSE (a URL ending in /sse picks SSE). Where the server goes:
 
 - A public https URL goes to Claude through Anthropic's MCP connector; its tools start on Always allow.
 - A server on your computer or network, or one started by a command, runs inside Format; its tools start on Needs approval.
 
-Each row shows Connected, or a Connect button when it is disconnected. Open a connector for its page: a status chip, Disconnect or Connect, and a "..." menu with Reconnect and Remove. Under Tool permissions, set each tool, or All tools at once, to Always allow (runs without a card), Needs approval (asks in the chat first, unless Allow all or Allow for this chat is on) or Blocked (Claude never sees it). A public server with any tool on Needs approval, or with request headers, is run by Format instead of Anthropic so the approval can wait for you. Always allow on a connector's approval card sets that tool to Always allow here. The + menu turns connectors on and off.
+Each row shows Connected, or a Connect button when it is disconnected. Open a connector for its page: a status chip, Disconnect or Connect, and a "..." menu with Reconnect and Remove. Under Tool permissions, set each tool, or All tools at once, to Always allow (runs without a card), Needs approval (asks in the chat first, unless Allow all or Allow for this chat is on) or Blocked (Claude never sees it). A public server with any tool on Needs approval, or with request headers, is run by Format instead of Anthropic so the approval can wait for you. Always allow on a connector's approval card sets that tool to Always allow here.
+
+In a chat, + then Connectors has a switch for each connector: off keeps its tools out of that chat only, and it stays connected for the others. In a new chat the switches apply to the chat your first message starts.
