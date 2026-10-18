@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.21.0 · 2026-10-18
+
+The rest of skills, connectors and plugins.
+
+- Skills: Your skills and Discover. Discover lists the skills your marketplaces offer, added one at a time, with Add Anthropic's skills marketplace (anthropics/skills). Skills group under Created by you, From Anthropic and partners, From marketplaces and From plugins.
+- Skills: Add, Create with Claude and a skill's Edit with Claude start a chat where Claude writes or changes the skill and saves it when you approve.
+- Connectors: Your connectors and Discover, a directory of 24 remote servers by category, each with a link to the maker's page its URL came from. Connect adds it and opens its sign-in.
+- Connectors reach Claude Code too when Format answers through it, with Blocked tools kept out.
+- Plugins: zip-download, npm and command sources (a command is shown and runs only after Run and add); private GitHub marketplaces with an access token; `owner/repo@branch`; .plugin uploads; Anthropic's reserved marketplace names refused unless the repository is Anthropic's.
+- Fixed: a SKILL.md description written as a YAML block showed a leading ">".
+- Engine: `skill.discover`, `skill.installFrom`, `connector.directory`; `marketplace.add` `token`, `plugin.install` `confirm`, `chat.send` `output` `skill`; Claude's `save_skill` tool in those chats. 112 commands.
+
 ## 0.20.0 · 2026-10-18
 
 Make your own plugins.
