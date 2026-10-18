@@ -23,6 +23,10 @@ A plugin bundles skills, commands, connectors and agents for one kind of work, i
 - Add, then Add marketplace, takes a marketplace: a Git repository (a URL, or `owner/repo` for GitHub) or a folder with `.claude-plugin/marketplace.json`. Its plugins appear in Discover; select Add on one to install it. Only add marketplaces you trust: their plugins are not reviewed.
 - Under Discover, each marketplace has Check for updates (it pulls the latest catalog and updates the plugins you installed from it), Sync automatically (checks every hour while Format runs, for repositories), and Remove in its "..." menu, which also removes its plugins.
 - Add, then Upload plugin, takes a .zip of a plugin folder.
+- Add, then Create a plugin, opens an editor: a name, a description and the plugin's files (a skill is skills/name/SKILL.md, a command is commands/name.md). A plugin made this way has Edit files in its "..." menu.
+- Add, then Create with Claude, starts a chat where Claude asks what the plugin should do, writes its files in the chat folder and, when you approve its card, adds it to Format. Ask for changes in the same chat and approve again to replace it.
+
+In a message, type `/` and the plugin's name with a colon, such as `/demo-kit:`, to see only that plugin's skills and commands; `/demo-kit:ship` in a message loads that skill.
 
 A plugin's skills and commands appear under Skills, named after the plugin (`release-notes` in the `demo-kit` plugin becomes `demo-kit-release-notes`). Adding a plugin adds none of its connectors: its page's Connectors tab shows each as Connected, Not connected or Not added, with Add or Connect. Its page also has Skills, Commands and Agents tabs. The plugin's switch turns its skills and connectors on or off together, and Remove takes them all away. A plugin's agents and hooks are kept but not run in chat.
 
