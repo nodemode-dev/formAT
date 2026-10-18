@@ -191,6 +191,17 @@ def load(args: dict) -> tuple[str, bool]:
     return f"Skill {name}, SKILL.md:\n\n{text}{more}", False
 
 
+def read_file(name: str, rel: str) -> dict:
+    p = _folder(name)
+    target = (p / (rel or "")).resolve()
+    if p.resolve() not in target.parents or not target.is_file():
+        raise SkillError(f"No file {rel!r} in the skill {name}", 404)
+    data = target.read_bytes()
+    if b"\x00" in data[:8192]:
+        return {"name": name, "path": rel, "size": len(data), "text": f"{rel} is a binary file ({len(data)} bytes) and is not shown here.", "binary": True}
+    return {"name": name, "path": rel, "size": len(data), "text": data[:MAX_SKILL_FILE].decode("utf-8", errors="replace"), "binary": False}
+
+
 INVOKE = re.compile(r"(?:^|(?<=[\s(]))/([a-z0-9][a-z0-9-]{0,63})(?=$|[\s.,;:!?)])|\b(?:use|run|load|apply|with)\s+(?:the\s+)?/?([a-z0-9][a-z0-9-]{0,63})\s+skill\b", re.I)
 
 

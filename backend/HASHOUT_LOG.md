@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.14.0
-Last updated: 2026-10-18 · v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
+Current build version: v0.15.0
+Last updated: 2026-10-18 · v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
 
 ---
 
@@ -681,6 +681,13 @@ Each user turn gets its invoked skills' blocks after its attachments and comment
 - logged: v0.13.0 · 2026-10-18
 
 Before: chats answered through Claude Code never heard of Format's skills (the API path lists them in `prompt.system_prompt`; `_system` here did not), so "Use the dev-rules skill" in Format did nothing unless Claude Code happened to have a skill of that name itself. Now the appended system prompt lists every enabled skill with its folder and description and says to read the SKILL.md with Read first; an invoked skill's SKILL.md and folder go at the start of the turn; and the skills folder is passed with `--add-dir` so reading it needs no approval. Checked by calling `_system` and `_prompt` with a seeded skill; a full Claude Code session against a live model was not run here.
+
+### app/engine/skills.py and cmd_skill.py · skill.read
+- refers-to: app/engine/skills.py :: read_file; app/engine/cmd_skill.py :: read (skill.read); app/agent_guide.py :: GUIDE (read_skill_file)
+- kind: explainer
+- logged: v0.15.0 · 2026-10-18
+
+The Customize skill page reads any file of a skill, not only SKILL.md, as claude.ai lets a person read a skill's SKILL.md and files before turning it on (claude.com/docs/skills/overview). `read_file` resolves the path inside the skill's folder and refuses anything outside it (`../` answers 404, checked), returns up to 400 KB as text, and names a binary file instead of decoding it (a NUL byte in the first 8 KB). It is read-only and needs no approval. `./format agents sync` regenerated the references (98 commands); the diff was only the new command's entries.
 
 ### app/engine/cmd_conversation.py, tools.py, store.py · Allow for this chat
 - refers-to: app/engine/store.py :: connect (allow_all column migration); app/engine/cmd_conversation.py :: _get, list_, allow_all (conversation.allowAll); app/engine/tools.py :: chat_allowed, decision_for (conversation_id), allow_waiting (conversation_id); app/engine/chat.py :: _call_tool; app/engine/claude_code.py :: can_use; app/agent_guide.py :: GUIDE (allow_all_in_conversation)

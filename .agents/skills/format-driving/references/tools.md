@@ -315,6 +315,12 @@ The skills installed in Format, with their description, whether they are on, and
 
 - read-only · command `skill.list` · params: none
 
+### read_skill_file
+
+One file of an installed skill as text (up to 400 KB; a binary file is named, not shown). Use to read one file of an installed skill, such as a reference or script its SKILL.md names.
+
+- read-only · command `skill.read` · params: `name` string, `path` string
+
 ## Connectors
 
 ### add_connector

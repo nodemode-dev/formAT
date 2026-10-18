@@ -49,6 +49,7 @@ GUIDE: dict[str, tuple[str, str]] = {
     "conversation.list": ("list_conversations", "Use to find a chat by title or by words in its messages, or to get recent chat ids."),
     "conversation.move": ("move_conversation", "Use when a chat should get a project's instructions and files, or leave its project."),
     "conversation.pin": ("pin_conversation", "Use when the person wants a chat kept at the top of the sidebar, or unpinned."),
+    "skill.read": ("read_skill_file", "Use to read one file of an installed skill, such as a reference or script its SKILL.md names."),
     "conversation.allowAll": ("allow_all_in_conversation", "Use when the person wants every tool in one chat to run without approval cards, or to turn that off again."),
     "conversation.rename": ("rename_conversation", "Use when a chat's title should change."),
     "files.list": ("list_chat_files", "Use to see the files Claude wrote or changed in a chat's own folder."),

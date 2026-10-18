@@ -21,6 +21,12 @@ def get(name: str) -> dict:
     return _do(skills.get, name)
 
 
+@command("skill.read", "Read a skill file", {"name": NAME, "path": {"type": "string", "required": True, "description": "a path inside the skill's folder, as skill.get lists it"}}, mutates=False,
+         description="One file of an installed skill as text (up to 400 KB; a binary file is named, not shown).")
+def read(name: str, path: str) -> dict:
+    return _do(skills.read_file, name, path)
+
+
 @command("skill.add", "Add a skill", {"uploadId": {"type": "string", "required": True, "description": "a .zip of a skill folder, or a SKILL.md, from POST /api/uploads"}},
          description="Installs a skill from an uploaded .zip (its folder with SKILL.md) or SKILL.md file. A skill with the same name is replaced.")
 def add(uploadId: str) -> dict:
