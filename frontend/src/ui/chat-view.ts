@@ -1,19 +1,59 @@
-import type { AppState, ArtifactRef, ContentBlock, Message } from '../state/app-state';
+import type { AppState, ArtifactRef, Citation, ContentBlock, Message } from '../state/app-state';
 import type { Composer } from './composer';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
-import { StreamRenderer } from './markdown';
+import { citeMark, StreamRenderer } from './markdown';
 import { type Answer, type Approve, ArtifactCard, FileCard, type OpenArtifact, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
 
 interface PartApi {
-  set(text: string, done: boolean): void;
+  set(text: string, done: boolean, cites?: Citation[]): void;
   value(): string;
+}
+
+class TextRun {
+  readonly r = new StreamRenderer();
+  private texts: string[] = [];
+  private cites: Array<Citation[] | undefined> = [];
+
+  constructor(readonly first: number) {}
+
+  part(index: number): PartApi {
+    const k = index - this.first;
+    while (this.texts.length <= k) { this.texts.push(''); this.cites.push(undefined); }
+    return {
+      set: (text, done, cites) => {
+        this.texts[k] = text;
+        if (cites) this.cites[k] = cites;
+        this.r.set(this.source(), done, this.cites);
+      },
+      value: () => (k === 0 ? this.texts.join('') : ''),
+    };
+  }
+
+  private source(): string {
+    let out = '';
+    let held = '';
+    this.texts.forEach((text, k) => {
+      let t = text;
+      if (held) {
+        const lead = /^[.,;:!?)\]]+/.exec(t)?.[0] ?? '';
+        out += lead + held;
+        held = '';
+        t = t.slice(lead.length);
+      }
+      if (!this.cites[k]?.length) { out += t; return; }
+      const body = t.replace(/\s+$/, '');
+      if (body.length === t.length) { out += body; held = citeMark(k); }
+      else out += body + citeMark(k) + t.slice(body.length);
+    });
+    return out + held;
+  }
 }
 
 interface AssistantView {
   root: HTMLElement;
   blocks: HTMLElement;
-  parts: Array<{ type: string; api: PartApi } | null>;
+  parts: Array<{ type: string; api: PartApi; run?: TextRun } | null>;
   status: HTMLElement;
   actions: HTMLElement;
   group: ToolGroup | null;
@@ -187,7 +227,7 @@ export class ChatView {
       this.assistants.set(m.id, view);
       q(n, '.ft-act-copy').addEventListener('click', () => void navigator.clipboard?.writeText(this.plainText(m.id)));
       q(n, '.ft-act-retry').addEventListener('click', () => this.hooks.retry());
-      m.content.forEach((b, i) => this.ensurePart(view, i, b.type, b).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', m.meta?.status !== 'streaming'));
+      m.content.forEach((b, i) => this.ensurePart(view, i, b.type, b).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', m.meta?.status !== 'streaming', b.citations));
       this.applyStatuses(view, m);
       this.finishView(m);
     }
@@ -213,7 +253,7 @@ export class ChatView {
     this.assistants.get(id)?.arts.get(toolUseId)?.setArtifact(ref);
   }
 
-  private ensurePart(view: AssistantView, index: number, type: string, block?: ContentBlock): { set(text: string, done: boolean): void } {
+  private ensurePart(view: AssistantView, index: number, type: string, block?: ContentBlock): PartApi {
     while (view.parts.length <= index) view.parts.push(null);
     const existing = view.parts[index];
     if (type === 'tool_use' && block?.name === 'send_file' && block.id) {
@@ -264,6 +304,10 @@ export class ChatView {
       return NOOP;
     }
     if (existing) return existing.api;
+    if (type === 'redacted_thinking') {
+      view.parts[index] = { type, api: NOOP };
+      return NOOP;
+    }
     view.group = null;
     if (type === 'thinking') {
       const box = el(`<details class="ft-thinking"><summary><span>Thinking</span></summary><div class="ft-thinking-body"></div></details>`);
@@ -283,16 +327,27 @@ export class ChatView {
       view.parts[index] = { type, api };
       return api;
     }
-    const r = new StreamRenderer();
-    view.blocks.appendChild(r.root);
-    const api = { set: (t: string, done: boolean) => r.set(t, done), value: () => r.value };
-    view.parts[index] = { type, api };
+    const prev = view.parts[index - 1];
+    const run = prev?.run ?? new TextRun(index);
+    if (!prev?.run) view.blocks.appendChild(run.r.root);
+    const api = run.part(index);
+    view.parts[index] = { type, api, run };
     return api;
   }
 
   private plainText(id: string): string {
     const view = this.assistants.get(id);
-    return view ? view.parts.filter((p) => p?.type === 'text').map((p) => p!.api.value()).join('\n\n') : '';
+    return view ? view.parts.filter((p) => p?.type === 'text').map((p) => p!.api.value()).filter(Boolean).join('\n\n') : '';
+  }
+
+  applyCitation(id: string, index: number, citation: Citation): void {
+    const view = this.assistants.get(id);
+    const m = this.state.messages.find((x) => x.id === id);
+    const block = m?.content[index];
+    if (!view || !block || block.type !== 'text') return;
+    block.citations = [...(block.citations ?? []), citation];
+    this.ensurePart(view, index, block.type).set(block.text ?? '', false, block.citations);
+    this.follow();
   }
 
   private finishView(m: Message): void {
@@ -398,7 +453,7 @@ export class ChatView {
     }
     const view = this.assistants.get(m.id);
     if (!view) return;
-    m.content.forEach((b, i) => this.ensurePart(view, i, b.type, b).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', true));
+    m.content.forEach((b, i) => this.ensurePart(view, i, b.type, b).set(b.type === 'thinking' ? b.thinking ?? '' : b.text ?? '', true, b.citations));
     this.applyStatuses(view, m);
     this.finishView(m);
     this.render();

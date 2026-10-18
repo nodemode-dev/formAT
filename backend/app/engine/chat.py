@@ -116,6 +116,8 @@ def _run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: th
                     blocks[i]["signature"] = blocks[i].get("signature", "") + ev.text
                 elif ev.kind == "citation":
                     blocks[i].setdefault("citations", []).append(ev.data)
+                    flush()
+                    events.publish("message.citation", id=mid, conversationId=conversation_id, index=i, citation={k: v for k, v in ev.data.items() if k != "encrypted_index"})
                 elif ev.kind == "input_json":
                     partial[i] = partial.get(i, "") + ev.text
                 elif ev.kind == "block_stop":

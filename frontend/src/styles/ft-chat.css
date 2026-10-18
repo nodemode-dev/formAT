@@ -388,7 +388,7 @@
 .ft-compact-body summary { cursor: pointer; color: var(--text-muted); font-size: var(--fs-12); justify-self: center; width: fit-content; margin: 0 auto; }
 .ft-compact-text { margin-top: var(--space-2); padding: var(--space-3); border-radius: var(--radius-md); background: var(--ft-code-fill); white-space: pre-wrap; }
 .ft-msg-blocks { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); min-width: 0; }
-.ft-msg.is-streaming .ft-md-tail > :is(p, h1, h2, h3, h4, h5, h6):last-child::after, .ft-msg.is-streaming .ft-md-tail > :is(ul, ol):last-child > li:last-child:not(:has(> :is(ul, ol, pre, p, div)))::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; border-radius: 1px; background: var(--accent-color); animation: ft-caret 1s steps(1) infinite; }
+.ft-msg.is-streaming .ft-msg-blocks > .ft-md:last-child .ft-md-tail > :is(p, h1, h2, h3, h4, h5, h6):last-child::after, .ft-msg.is-streaming .ft-msg-blocks > .ft-md:last-child .ft-md-tail > :is(ul, ol):last-child > li:last-child:not(:has(> :is(ul, ol, pre, p, div)))::after { content: ""; display: inline-block; width: 7px; height: 1em; margin-left: 2px; vertical-align: -2px; border-radius: 1px; background: var(--accent-color); animation: ft-caret 1s steps(1) infinite; }
 @keyframes ft-caret { 50% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { .ft-msg.is-streaming .ft-md-tail > :last-child::after { animation: none; } }
 
@@ -419,6 +419,10 @@
 .ft-md ul, .ft-md ol { padding-left: 1.4em; }
 .ft-md li + li { margin-top: 0.25em; }
 .ft-md a { color: var(--accent-ink); text-decoration: underline; text-underline-offset: 2px; }
+.ft-cites { margin-left: 0.3em; }
+.ft-md .ft-cite { display: inline-block; max-width: min(20em, 100%); margin-right: 0.25em; padding: 0 0.6em; border-radius: var(--radius-pill); background: var(--ft-code-fill); color: var(--text-secondary); font: 500 0.74em / 1.5 var(--font-ui); vertical-align: middle; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: none; }
+.ft-md .ft-cite:last-child { margin-right: 0; }
+.ft-md a.ft-cite:hover { color: var(--text-primary); background: var(--line-2); }
 .ft-md blockquote { padding-left: var(--space-3); border-left: 3px solid var(--line-2); color: var(--text-secondary); }
 .ft-md hr { border: 0; border-top: 1px solid var(--line-1); margin: 1.2em 0; }
 .ft-md code { padding: 1px 5px; border-radius: var(--radius-sm); background: var(--ft-code-fill); color: var(--ft-code-ink); font: 0.88em var(--font-mono); }

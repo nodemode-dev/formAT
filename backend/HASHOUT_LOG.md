@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.21.0
-Last updated: 2026-10-18 · v0.21.0: archive, npm and command plugin sources, private marketplaces, .plugin uploads, skills Discover and Skill with Claude, the connector directory, connectors on the Claude Code route; v0.20.0: plugin.create and plugin.files, Create with Claude (output plugin and the add_plugin tool), /plugin:skill invocation; v0.19.0: plugin marketplaces (add, Check for updates, Sync automatically, remove), plugin.install from a marketplace, a plugin's connectors added on request; v0.18.0: signing in to a connector (OAuth with PKCE, registration or your own client, refresh, SSE transport) and connectors on or off per chat; v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
+Current build version: v0.22.0
+Last updated: 2026-10-18 · v0.22.0: message.citation sent as each citation streams; v0.21.0: archive, npm and command plugin sources, private marketplaces, .plugin uploads, skills Discover and Skill with Claude, the connector directory, connectors on the Claude Code route; v0.20.0: plugin.create and plugin.files, Create with Claude (output plugin and the add_plugin tool), /plugin:skill invocation; v0.19.0: plugin marketplaces (add, Check for updates, Sync automatically, remove), plugin.install from a marketplace, a plugin's connectors added on request; v0.18.0: signing in to a connector (OAuth with PKCE, registration or your own client, refresh, SSE transport) and connectors on or off per chat; v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
 
 ---
 
@@ -334,6 +334,13 @@ The decision to compact is made before the reply's `message.completed` is publis
 - logged: v0.4.0 · 2026-10-11
 
 Sources read 2026-10-11 on platform.claude.com: "Tool use with Claude", "Web search tool" and "Web fetch tool". A reply is one stored message however many rounds it takes: each round streams into the same block list at an offset, and client results are appended as `tool_result` blocks in that list. That keeps one node per reply in the window, one message per reply in the tree (so branching and retry treat a tool run as one reply), and one place to resume from. `harness.api_messages` turns the list back into the alternating assistant and user messages the API needs, results first in each user message. Rounds stop when the stop reason is not `tool_use` (`pause_turn` loops without running anything) or after 40, which is reported on the reply. Inputs arrive as `input_json` deltas and are parsed at `block_stop`; until then the window shows the call as preparing. `_close_open_calls` runs on every exit: a server call without its result is dropped and a client call without one gets "Not run", because a request with an unanswered `tool_use` is rejected and the chat could never continue.
+
+### app/engine/chat.py · citations as they stream
+- refers-to: app/engine/chat.py :: _run (the citation branch: flush, then message.citation)
+- kind: rationale
+- logged: v0.22.0 · 2026-10-18
+
+A `citations_delta` (platform.claude.com/docs/en/build-with-claude/citations, Streaming) was stored on its text block but never sent, so the window could show sources only after a reload, and did not show them at all. `_run` now publishes `message.citation` with the conversation, the reply id, the block index and the citation without `encrypted_index` (an opaque value the API needs back on the next turn, which stays in the stored block; the window has no use for it). Pending text is flushed first, so the window always has the block's text before its citation. Sub-agents keep their citations in their stored blocks only, since their text shows as a plain progress note in the card.
 
 ### app/harness/request.py · passing blocks back
 - refers-to: app/harness/request.py :: api_messages, _assistant_block

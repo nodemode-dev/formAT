@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type MarketplaceInfo, type PluginSummary, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type Citation, type ContentBlock, type FileComment, type MarketplaceInfo, type PluginSummary, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -455,6 +455,8 @@ export class App {
       if (e.conversationId === this.filesPane.conversationId) void this.filesPane.refresh().catch(() => undefined);
     } else if (e.type === 'message.delta') {
       if (e.conversationId === this.state.activeId) this.chat.applyDelta(e.id as string, e.index as number, e.kind as string, e.text as string);
+    } else if (e.type === 'message.citation') {
+      if (e.conversationId === this.state.activeId) this.chat.applyCitation(e.id as string, e.index as number, e.citation as Citation);
     } else if (e.type === 'message.completed') {
       const m = e.message as Message;
       const more = !!m.meta?.compactNext;

@@ -28,6 +28,19 @@ export interface ContentBlock {
   artifact?: ArtifactRef;
   server?: string;
   server_name?: string;
+  citations?: Citation[];
+}
+
+export interface Citation {
+  type?: string;
+  url?: string;
+  title?: string | null;
+  source?: string;
+  cited_text?: string;
+  document_title?: string | null;
+  document_index?: number;
+  start_page_number?: number;
+  end_page_number?: number;
 }
 
 export interface ArtifactRef { id: string; version: number; title: string; kind?: string }

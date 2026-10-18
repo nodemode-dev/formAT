@@ -52,6 +52,10 @@ The palette (Mod+K) finds chats by title at once and by message text after three
 
 Choose Research in the + menu. A pill beside the microphone shows it is on for the messages that follow (click it to turn it off). Claude plans the questions, searches and reads many sources, and writes a report with citations; the reply's footer says "research".
 
+## Sources
+
+When Claude answers from a web search, a page it read or a document you attached, each claim it backs with a source carries a small chip after it: the site's name for a web page (click it to open the page), or the document's title and page. Hover a chip to see the source's title and the passage Claude quoted. A claim backed by more than two sources shows two chips and "+N"; hover it for the rest. The chips appear as the reply streams, and Copy leaves them out.
+
 ## Create: documents, spreadsheets and slides
 
 Choose Create in the + menu and pick Document, Spreadsheet or Slides. The pill applies to your next message only. Claude answers with that kind of artifact beside the chat; see [Artifacts and documents](artifacts-and-documents.md).
