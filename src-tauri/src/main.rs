@@ -108,6 +108,7 @@ fn open_main(handle: &tauri::AppHandle, port: u16) {
         .center()
         .theme(Some(Theme::Dark))
         .background_color(tauri::webview::Color(11, 11, 12, 255))
+        .disable_drag_drop_handler()
         .on_navigation(move |target| {
             if is_engine(target, port) || matches!(target.scheme(), "about" | "blob" | "data") {
                 return true;
