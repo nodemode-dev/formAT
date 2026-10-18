@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.17.0 · 2026-10-18
+
+Customize, reworked for use.
+
+- On a window 1100 px or wider the list stays on the left and the skill, connector or plugin you open shows beside it, with its row marked; each side scrolls on its own. With nothing open, the right side says to pick one. Narrower windows keep a page per item with Back.
+- Skills and plugins have Enabled switches in their rows and on their pages.
+- Delete (skills) and Remove (plugins) moved into the page's "..." menu, like connectors, and ask once more with a red button before they act. A plugin's skill points you to its plugin.
+- Skills are grouped: Created by you, then From plugins; search hides a group with no matches.
+- Fixed: a long skill name no longer squeezes into a column of letters beside the page's buttons.
+
 ## 0.16.0 · 2026-10-18
 
 Connector pages like claude.ai's.
