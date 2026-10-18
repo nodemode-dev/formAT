@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.23.0 · 2026-10-18
+
+Attachments you can see.
+
+- Files you add show as tiles, in the composer at once and above your message once sent: a picture for images and SVG, a video's first frame and length, a waveform and length for audio, the first lines of text and code, and the name and type for PDFs, zips and other files.
+- Click a tile to open it full screen: images fit the window (click for full size), video and audio play, Markdown renders, code is coloured, PDFs open in their own viewer, and long text shows its first 2 MB. The arrow keys move between a message's files, Esc closes, and the download button saves the original.
+- The composer labels files the same way the sent message does (SVG, MD, PY, ZIP 2).
+
 ## 0.22.0 · 2026-10-18
 
 Cited answers, drawn the way the Claude API writes them.
