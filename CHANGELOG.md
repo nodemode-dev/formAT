@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.14.0 · 2026-10-18
+
+Allow for this chat.
+
+- Approval cards have Allow for this chat: every tool in that chat (any file, any command, through the API or Claude Code) runs without asking until you turn it off, while other chats keep asking. Approvals already waiting in the chat run at once.
+- The permission menu shows Allow for this chat, checked while it is on, to turn it off; the mode button reads Chat allowed in amber.
+- Always allow now names what it remembers (commands, edits, file writes, the browser, a connector tool), so it no longer reads as one file.
+- Engine: `conversation.allowAll` (`id`, `on`); conversations carry `allow_all`. 97 commands.
+
 ## 0.13.0 · 2026-10-18
 
 A chat that reads and behaves like claude.ai.
