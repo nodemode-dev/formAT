@@ -3,6 +3,9 @@ import type { AppState, ConnectorInfo, FileInfo, PluginSummary, SkillSummary } f
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { renderMarkdown } from './markdown';
+import { openMenu } from './menu';
+
+export interface CustomizeHooks { tryInChat(skill: string): void }
 
 interface SkillDetail extends SkillSummary { skillMd: string; fileList: string[] }
 
@@ -19,23 +22,28 @@ export class CustomizeView {
   private current: SkillDetail | null = null;
   private seq = 0;
 
-  constructor(private state: AppState) {
-    this.root = el(`<section class="ft-page ft-customize" data-view="customize" hidden>
+  constructor(private state: AppState, private hooks: CustomizeHooks = { tryInChat: () => undefined }) {
+    this.root = el(`<section class="ft-page ft-customize" data-view="customize" data-tab="skills" hidden>
       <div class="ft-cz-main">
         <header class="ft-proj-head"><h1>Customize</h1></header>
-        <section class="ft-cz-section ft-pl-section">
-          <div class="ft-cz-section-head"><h2>${ui('plugin', 16)}<span>Plugins</span></h2>
-            <div class="ft-cz-actions"><button type="button" class="ft-btn ft-pl-upload">${ui('paperclip', 14)}<span>Add a plugin</span></button></div></div>
+        <nav class="ft-cz-tabs" role="tablist" aria-label="Customize">
+          <button type="button" role="tab" class="ft-cz-tab" data-tab="skills" aria-selected="true">${ui('skills', 16)}<span>Skills</span><span class="ft-cz-count" data-count="skills"></span></button>
+          <button type="button" role="tab" class="ft-cz-tab" data-tab="connectors" aria-selected="false">${ui('plug', 16)}<span>Connectors</span><span class="ft-cz-count" data-count="connectors"></span></button>
+          <button type="button" role="tab" class="ft-cz-tab" data-tab="plugins" aria-selected="false">${ui('plugin', 16)}<span>Plugins</span><span class="ft-cz-count" data-count="plugins"></span></button>
+        </nav>
+        <section class="ft-cz-section ft-pl-section" data-sec="plugins">
+          <div class="ft-cz-section-head"><h2>${ui('plugin', 16)}<span>Your plugins</span></h2>
+            <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search plugins" aria-label="Search plugins"><button type="button" class="ft-btn ft-pl-upload">${ui('plus', 14)}<span>Upload plugin</span></button></div></div>
           <p class="ft-set-note">A plugin bundles skills, commands and connectors for one kind of work, in the Claude plugin format (a folder with .claude-plugin/plugin.json). Add one as a .zip of its folder: its skills and commands appear under Skills and its MCP servers under Connectors, and they turn on and off together.</p>
           <span class="ft-proj-msg ft-pl-msg" aria-live="polite"></span>
           <div class="ft-cz-list ft-pl-list" role="list"></div>
           <p class="ft-proj-none ft-pl-empty">No plugins yet.</p>
           <input type="file" class="ft-pl-picker" accept=".zip" hidden>
         </section>
-        <section class="ft-cz-section">
-          <div class="ft-cz-section-head"><h2>${ui('skills', 16)}<span>Skills</span></h2>
-            <div class="ft-cz-actions"><button type="button" class="ft-btn ft-cz-upload">${ui('paperclip', 14)}<span>Add from a file</span></button><button type="button" class="ft-btn ft-cz-write">${ui('pencil', 14)}<span>Write a skill</span></button></div></div>
-          <p class="ft-set-note">A skill is a folder of instructions, with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches it; you can also pick one from the + menu. Add a .zip of a skill folder or a SKILL.md, or write one here.</p>
+        <section class="ft-cz-section" data-sec="skills">
+          <div class="ft-cz-section-head"><h2>${ui('skills', 16)}<span>Your skills</span></h2>
+            <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search skills" aria-label="Search skills"><button type="button" class="ft-btn ft-cz-add" data-menu-anchor>${ui('plus', 14)}<span>Add</span></button></div></div>
+          <p class="ft-set-note">A skill is a folder of instructions, with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches it. Type / in a message to pick one, or open a skill to read its files and try it in a chat.</p>
           <span class="ft-proj-msg ft-cz-msg" aria-live="polite"></span>
           <div class="ft-proj-form ft-cz-form" hidden>
             <label class="ft-field"><span>Name</span><input class="ft-input" data-f="name" maxlength="64" placeholder="lowercase-with-hyphens"></label>
@@ -43,13 +51,13 @@ export class CustomizeView {
             <label class="ft-field"><span>Instructions</span><textarea class="ft-input" data-f="instructions" rows="8" placeholder="What Claude should do, step by step, in Markdown"></textarea></label>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-cz-create">Save skill</button><button type="button" class="ft-btn ft-cz-cancel">Cancel</button></div>
           </div>
-          <div class="ft-cz-list" role="list"></div>
+          <div class="ft-cz-list ft-sk-list" role="list"></div>
           <div class="ft-page-empty ft-cz-empty" hidden>${ui('skills', 28)}<p>No skills yet.</p></div>
           <input type="file" class="ft-cz-picker" accept=".zip,.md" hidden>
         </section>
-        <section class="ft-cz-section ft-cn-section">
-          <div class="ft-cz-section-head"><h2>${ui('plug', 16)}<span>Connectors</span></h2>
-            <div class="ft-cz-actions"><button type="button" class="ft-btn ft-cn-addopen">${ui('plus', 14)}<span>Add connector</span></button></div></div>
+        <section class="ft-cz-section ft-cn-section" data-sec="connectors">
+          <div class="ft-cz-section-head"><h2>${ui('plug', 16)}<span>Your connectors</span></h2>
+            <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search connectors" aria-label="Search connectors"><button type="button" class="ft-btn ft-cn-addopen">${ui('plus', 14)}<span>Add custom connector</span></button></div></div>
           <p class="ft-set-note">A connector is an MCP server that gives Claude more tools. A public https URL goes to Claude through Anthropic's MCP connector; a server on this computer or your network, or one started by a command, runs in Format's engine, and its tools ask before they run in Ask mode. Turn single tools off in a connector's page.</p>
           <span class="ft-proj-msg ft-cn-msg" aria-live="polite"></span>
           <div class="ft-proj-form ft-cn-form" hidden>
@@ -66,10 +74,12 @@ export class CustomizeView {
       </div>
       <div class="ft-cz-detail" hidden>
         <button type="button" class="ft-text-btn ft-cz-back">${ui('back', 14)}<span>Customize</span></button>
-        <div class="ft-cz-detail-head"><h1 class="ft-cz-name"></h1><label class="ft-field ft-check"><input type="checkbox" class="ft-cz-on"><span>On</span></label><button type="button" class="ft-btn ft-cz-delete">Delete skill</button></div>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name"></h1><label class="ft-field ft-check"><input type="checkbox" class="ft-cz-on"><span>On</span></label><button type="button" class="ft-btn ft-btn-primary ft-cz-try">${ui('chat', 14)}<span>Try in chat</span></button><button type="button" class="ft-btn ft-cz-delete">Delete skill</button></div>
         <p class="ft-cz-desc"></p>
-        <div class="ft-cz-files"></div>
-        <div class="ft-md ft-cz-body"></div>
+        <div class="ft-cz-browser">
+          <nav class="ft-cz-tree" aria-label="Files in this skill"></nav>
+          <div class="ft-cz-viewer"><div class="ft-cz-viewer-head"></div><div class="ft-md ft-cz-body"></div><pre class="ft-cz-raw" hidden></pre></div>
+        </div>
       </div>
       <div class="ft-cz-detail ft-cn-detail" hidden>
         <button type="button" class="ft-text-btn ft-cn-back">${ui('back', 14)}<span>Customize</span></button>
@@ -94,15 +104,30 @@ export class CustomizeView {
       </div>
     </section>`);
     this.main = q(this.root, '.ft-cz-main');
-    this.list = q(this.root, '.ft-cz-list');
+    this.list = q(this.root, '.ft-sk-list');
     this.empty = q(this.root, '.ft-cz-empty');
     this.msg = q(this.root, '.ft-cz-msg');
     this.writeForm = q(this.root, '.ft-cz-form');
     this.detail = q(this.root, '.ft-cz-detail');
     this.picker = q<HTMLInputElement>(this.root, '.ft-cz-picker');
-    q(this.root, '.ft-cz-upload').addEventListener('click', () => this.picker.click());
+    q(this.root, '.ft-cz-add').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
+      { label: 'Upload a skill', desc: 'A .zip of a skill folder, or a SKILL.md', icon: 'paperclip', action: () => this.picker.click() },
+      { label: 'Write a skill', desc: 'A name, when to use it, and the instructions', icon: 'pencil', action: () => { this.writeForm.hidden = false; q<HTMLInputElement>(this.writeForm, '[data-f=name]').focus(); } },
+    ], 'down'));
     this.picker.addEventListener('change', () => { const f = this.picker.files?.[0]; this.picker.value = ''; if (f) void this.upload(f); });
-    q(this.root, '.ft-cz-write').addEventListener('click', () => { this.writeForm.hidden = false; q<HTMLInputElement>(this.writeForm, '[data-f=name]').focus(); });
+    q(this.root, '.ft-cz-tabs').addEventListener('click', (e) => {
+      const tab = (e.target as HTMLElement).closest<HTMLElement>('[data-tab]')?.dataset.tab;
+      if (tab) this.showTab(tab);
+    });
+    this.root.addEventListener('input', (e) => {
+      const box = (e.target as HTMLElement).closest<HTMLInputElement>('.ft-cz-search');
+      if (box) this.filterSection(box);
+    });
+    q(this.root, '.ft-cz-try').addEventListener('click', () => { if (this.current) this.hooks.tryInChat(this.current.name); });
+    q(this.root, '.ft-cz-tree').addEventListener('click', (e) => {
+      const file = (e.target as HTMLElement).closest<HTMLElement>('[data-file]')?.dataset.file;
+      if (file) void this.showFile(file);
+    });
     q(this.root, '.ft-cz-cancel').addEventListener('click', () => { this.writeForm.hidden = true; });
     q(this.root, '.ft-cz-create').addEventListener('click', () => void this.create());
     this.list.addEventListener('click', (e) => {
@@ -210,6 +235,7 @@ export class CustomizeView {
     });
     const empty = q(this.root, '.ft-pl-empty');
     if (empty.hidden !== items.length > 0) empty.hidden = items.length > 0;
+    this.counts();
     if (this.plOpen) {
       if (!live.has(this.plOpen)) this.showList();
       else this.paintPlugin();
@@ -344,6 +370,7 @@ export class CustomizeView {
     });
     const empty = q(this.root, '.ft-cn-empty');
     if (empty.hidden !== items.length > 0) empty.hidden = items.length > 0;
+    this.counts();
     if (this.cnOpen) {
       if (!live.has(this.cnOpen)) this.showList();
       else this.paintConnector();
@@ -390,6 +417,45 @@ export class CustomizeView {
     setText(this.msg, text);
   }
 
+  showTab(tab: string): void {
+    if (this.root.dataset.tab !== tab) this.root.dataset.tab = tab;
+    this.root.querySelectorAll<HTMLElement>('.ft-cz-tab').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.tab === tab)));
+    this.showList();
+  }
+
+  private filterSection(box: HTMLInputElement): void {
+    const words = box.value.trim().toLowerCase();
+    box.closest('.ft-cz-section')?.querySelectorAll<HTMLElement>('.ft-cz-list > .ft-cz-row').forEach((row) => {
+      const show = !words || (row.textContent ?? '').toLowerCase().includes(words);
+      if (row.hidden === show) row.hidden = !show;
+    });
+  }
+
+  private counts(): void {
+    const set = (k: string, n: number): void => setText(q(this.root, `[data-count="${k}"]`), n ? String(n) : '');
+    set('skills', this.state.skills.length);
+    set('connectors', this.state.connectors.length);
+    set('plugins', this.state.plugins.length);
+  }
+
+  private async showFile(path: string): Promise<void> {
+    const s = this.current;
+    if (!s) return;
+    const seq = this.seq;
+    const md = path.toLowerCase().endsWith('.md');
+    const text = path === 'SKILL.md' ? s.skillMd.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '') : (await run<{ text: string }>('skill.read', { name: s.name, path }).catch((err) => ({ text: err instanceof Error ? err.message : String(err) }))).text;
+    if (seq !== this.seq || this.current !== s) return;
+    this.root.querySelectorAll<HTMLElement>('.ft-cz-tree [data-file]').forEach((b) => b.classList.toggle('is-on', b.dataset.file === path));
+    setText(q(this.root, '.ft-cz-viewer-head'), path);
+    const body = q(this.root, '.ft-cz-body');
+    const raw = q(this.root, '.ft-cz-raw');
+    if (md) {
+      if (body.dataset.v !== text) { body.dataset.v = text; body.innerHTML = renderMarkdown(text); }
+    } else setText(raw, text);
+    if (body.hidden === !md) body.hidden = !md;
+    if (raw.hidden === md) raw.hidden = md;
+  }
+
   render(): void {
     const items = this.state.skills;
     const live = new Set(items.map((s) => s.name));
@@ -409,6 +475,7 @@ export class CustomizeView {
       if (this.list.children[i] !== row) this.list.insertBefore(row, this.list.children[i] ?? null);
     });
     if (this.empty.hidden !== items.length > 0) this.empty.hidden = items.length > 0;
+    this.counts();
     if (this.current) {
       const now = items.find((s) => s.name === this.current?.name);
       if (!now) this.showList();
@@ -452,12 +519,11 @@ export class CustomizeView {
     setText(q(this.root, '.ft-cz-desc'), s.description);
     const on = q<HTMLInputElement>(this.root, '.ft-cz-on');
     if (on.checked !== s.enabled) on.checked = s.enabled;
-    const files = s.fileList.map((f) => `<span class="ft-chip ft-cz-file">${ui('file', 12)} ${esc(f)}</span>`).join('');
-    const fbox = q(this.root, '.ft-cz-files');
-    if (fbox.dataset.v !== files) { fbox.dataset.v = files; fbox.innerHTML = files; }
-    const body = s.skillMd.replace(/^---\s*\n[\s\S]*?\n---\s*\n?/, '');
-    const box = q(this.root, '.ft-cz-body');
-    if (box.dataset.v !== body) { box.dataset.v = body; box.innerHTML = renderMarkdown(body); }
+    const order = ['SKILL.md', ...s.fileList.filter((f) => f !== 'SKILL.md')];
+    const tree = order.map((f) => `<button type="button" class="ft-cz-tree-item" data-file="${esc(f)}" title="${esc(f)}">${ui('file', 14)}<span>${esc(f)}</span></button>`).join('');
+    const tbox = q(this.root, '.ft-cz-tree');
+    if (tbox.dataset.v !== tree) { tbox.dataset.v = tree; tbox.innerHTML = tree; }
+    void this.showFile('SKILL.md');
     const del = q<HTMLButtonElement>(this.root, '.ft-cz-delete');
     if (del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Delete skill'; }
     if (!this.main.hidden) this.main.hidden = true;

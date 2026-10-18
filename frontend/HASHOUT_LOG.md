@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.14.1
-Last updated: 2026-10-18 · v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
+Current build version: v0.15.0
+Last updated: 2026-10-18 · v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -38,7 +38,8 @@ frontend/
     │   ├── artifact-panel.ts      the artifact beside the chat: two frames, versions, code, links
     │   ├── files-pane.ts          the chat folder's files and their previews, comments on a block
     │   ├── projects-view.ts       the Projects page: tiles, one project with chats, instructions and files
-    │   ├── customize-view.ts      Customize: skills (list, on and off, add, write, one skill), connectors (add, tools, reconnect)
+    │   ├── customize-view.ts      Customize: tabs for skills, connectors and plugins with search and Add; a skill's files in a browser, Try in chat
+    │   ├── slash-menu.ts          the / menu above the composer: commands, skills and plugin commands, filtered in place
     │   ├── memory-panel.ts        Settings, Memory: the setting, the scope, the memory files and their editor
     │   ├── scheduled-view.ts      the Scheduled page: tasks, the form, one task with its runs
     │   ├── background-panel.ts    Background: the top-bar badge's popover of running and waiting work
@@ -481,6 +482,14 @@ New chat in this project sets a draft project: the empty chat shows "New chat in
 ---
 
 ## src/ui/customize-view.ts and src/ui/memory-panel.ts {#src-ui-customize}
+
+### src/ui/customize-view.ts · claude.ai's shape: tabs, search, Add, the file browser
+- refers-to: src/ui/customize-view.ts :: CustomizeHooks (tryInChat), the template (ft-cz-tabs, data-sec, ft-cz-search, ft-cz-add, ft-sk-list, ft-cz-try, ft-cz-browser, ft-cz-tree, ft-cz-viewer), showTab, filterSection, counts, showFile, open (the tree), render, renderPlugins and renderConnectors (counts); src/app.ts :: CustomizeView hooks; src/styles/ft-shell.css :: .ft-customize .ft-cz-main:not([hidden]), .ft-cz-tabs, .ft-cz-tab, .ft-cz-count, .ft-cz-actions .ft-cz-search, .ft-cz-browser, .ft-cz-tree*, .ft-cz-viewer*, .ft-cz-raw, the 900 and 480 px rules
+- kind: rationale
+- logged: v0.15.0 · 2026-10-18
+
+Sources read 2026-10-18 (through a research agent): claude.com/docs/skills/overview (Customize > Skills, Your skills, a switch on the skill page, SKILL.md and files readable before turning a skill on, plugin skills labelled with their plugin), claude.com/docs/connectors/getting-started and /custom/add-unlisted (Your connectors, Add custom connector), claude.com/docs/plugins/overview (Your plugins, Upload plugin). Customize was three stacked lists; it is now a left column of Skills, Connectors and Plugins with counts (top tabs under 900 px) and one section at a time (`data-tab` on the page, sections keep their DOM), each with a search box that hides rows in place and claude.ai's Add actions: Upload a skill and Write a skill under Add, Add custom connector, Upload plugin. A skill's page lists SKILL.md and every other file; picking one shows it in the viewer (SKILL.md and other .md rendered, anything else as wrapped text, through `skill.read`), and Try in chat opens a new chat with the skill's pill in the composer. Found and fixed while doing it: `this.list` took the first `.ft-cz-list` on the page, the Plugins list since v0.10.3 put Plugins first, so skill rows were inserted into the Plugins list; it is now `.ft-sk-list`. The page's new grid rule first beat `.ft-cz-main[hidden]`, so a skill's page showed under the list; the rule now applies only `:not([hidden])`. Verified under 4x CPU and a slow network: counts Skills 4, Plugins 1; the search found release-notes; tabs hid the other sections; the skill page replaced the list and showed SKILL.md then references/guide.md; Try in chat opened the chat with the test-skill pill; layout shift none with real typing; no page errors.
+Still to come for parity (DEV_PLAN Phase 11): Discover tabs (skills directory, the connector directory, plugin marketplaces by Git URL or owner/repo), per-tool connector permissions (Always allow, Needs approval, Blocked), Disconnect and the custom connector's sign-in options, plugin pages with a tab per component and Check for updates.
 
 ### src/ui/customize-view.ts · skills
 - refers-to: src/ui/customize-view.ts :: CustomizeView; src/ui/composer.ts :: plusMenu (Skills), useSkill; src/ui/tool-cards.ts :: describe (skill)
