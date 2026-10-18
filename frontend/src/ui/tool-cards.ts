@@ -2,7 +2,7 @@ import type { ArtifactRef, ContentBlock } from '../state/app-state';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
-export type Approve = (toolUseId: string, decision: 'allow' | 'always' | 'all' | 'deny') => void;
+export type Approve = (toolUseId: string, decision: 'allow' | 'chat' | 'always' | 'all' | 'deny') => void;
 export type Answer = (toolUseId: string, answer: string | string[]) => void;
 export interface TaskItem { title: string; status: 'pending' | 'in_progress' | 'completed' }
 
@@ -150,6 +150,7 @@ const STATE_TEXT: Record<string, string> = {
 };
 
 const diffShown = new WeakMap<HTMLElement, string>();
+const ALWAYS_WORD: Record<string, string> = { bash: 'commands', edit: 'edits', write: 'file writes', browser: 'the browser' };
 
 function diffHtml(input: Record<string, unknown>): string {
   const pairs = Array.isArray(input.edits) ? (input.edits as Array<Record<string, unknown>>) : [input];
@@ -309,7 +310,7 @@ export class ToolCard {
     this.root = el(`<div class="ft-tool" data-status="input">
       <details class="ft-tool-d"><summary class="ft-tool-head"><span class="ft-tool-icon">${ui(ICON[this.name] ?? (connectorParts(this.name) ? 'plug' : 'skills'), 14)}</span><span class="ft-tool-title"></span><span class="ft-tool-sub"></span><span class="ft-tool-state"></span></summary>
         <div class="ft-tool-body"><pre class="ft-tool-input" hidden></pre><pre class="ft-tool-out" hidden></pre><ul class="ft-tool-links" hidden></ul></div></details>
-      <div class="ft-tool-ask" hidden><span class="ft-tool-ask-text"></span><button type="button" class="ft-btn ft-btn-primary" data-d="allow">Allow once</button><button type="button" class="ft-btn" data-d="always">Always allow</button><button type="button" class="ft-btn" data-d="all" title="Switch to Allow all: every tool runs without asking, in every chat, until you change the mode">Allow all</button><button type="button" class="ft-btn" data-d="deny">Deny</button></div>
+      <div class="ft-tool-ask" hidden><span class="ft-tool-ask-text"></span><button type="button" class="ft-btn ft-btn-primary" data-d="allow">Allow once</button><button type="button" class="ft-btn" data-d="chat" title="Every tool in this chat runs without asking, any file, any command, until you turn it off in the permission menu">Allow for this chat</button><button type="button" class="ft-btn" data-d="always">Always allow</button><button type="button" class="ft-btn" data-d="all" title="Switch to Allow all: every tool runs without asking, in every chat, until you change the mode">Allow all</button><button type="button" class="ft-btn" data-d="deny">Deny</button></div>
       <div class="ft-tool-q" hidden><p class="ft-tool-q-text"></p><div class="ft-tool-q-opts"></div>
         <div class="ft-tool-q-other"><input class="ft-input" maxlength="2000" placeholder="Or type your own answer" aria-label="Your own answer"><button type="button" class="ft-btn ft-btn-primary ft-tool-q-send">Send</button></div></div>
     </div>`);
@@ -338,7 +339,7 @@ export class ToolCard {
     this.outBox.appendChild(this.out);
     this.links = q(this.root, '.ft-tool-links');
     this.ask.addEventListener('click', (e) => {
-      const d = (e.target as HTMLElement).closest<HTMLElement>('[data-d]')?.dataset.d as 'allow' | 'always' | 'all' | 'deny' | undefined;
+      const d = (e.target as HTMLElement).closest<HTMLElement>('[data-d]')?.dataset.d as 'allow' | 'chat' | 'always' | 'all' | 'deny' | undefined;
       if (!d) return;
       this.ask.querySelectorAll('button').forEach((x) => { x.disabled = true; });
       this.approve(this.id, d);
@@ -396,6 +397,10 @@ export class ToolCard {
     if (waiting) {
       const c = connectorParts(this.name);
       setText(q(this.ask, '.ft-tool-ask-text'), this.name === 'bash' ? 'Allow Claude to run this command?' : c ? `Allow Claude to use ${c.tool} from the ${c.connector} connector?` : `Allow Claude to ${this.name} ${base(this.input.path)}?`);
+      const always = q(this.ask, '[data-d="always"]');
+      const word = ALWAYS_WORD[this.name] ?? (c ? c.tool : '');
+      setText(always, word ? `Always allow ${word}` : 'Always allow');
+      setAttr(always, 'title', 'This kind of step runs without asking from now on, in every chat (Settings, Tools, Always allowed)');
       this.ask.querySelectorAll('button').forEach((x) => { x.disabled = false; });
     }
     this.failed = status === 'error';

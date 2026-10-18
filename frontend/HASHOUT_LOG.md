@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.13.0
-Last updated: 2026-10-18 · v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
+Current build version: v0.14.0
+Last updated: 2026-10-18 · v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -696,6 +696,13 @@ Typing `/` into an empty composer opens a Skills menu of the enabled skills abov
 - logged: v0.13.0 · 2026-10-18
 
 The `auto` permission mode already ran every tool without asking on both routes (`tools.decision_for`, `claude_code.can_use`), but it was labelled Auto, "Runs tools you have allowed without asking", so it read as the Always allow list. It is now Allow all, "Runs every tool without asking, and allows anything already waiting", and the mode button turns the warning colour while it is on. Every approval card gains Allow all beside Always allow: it sets `permissionMode` to `auto`, and the engine then allows every approval already waiting, this card included, so parallel calls do not each need a click. Always allow keeps its meaning (this tool from now on, setting `toolAllow`).
+
+### src/ui/tool-cards.ts and composer.ts · Allow for this chat
+- refers-to: src/ui/tool-cards.ts :: Approve ('chat'), the ask row (data-d chat), ALWAYS_WORD, setStatus (the Always allow label); src/app.ts :: ChatHooks.approve; src/ui/composer.ts :: modeMenu, renderSettings (chatOn, data-mode chat), the active and conversations listeners; src/state/app-state.ts :: Conversation.allow_all; src/styles/ft-chat.css :: .ft-mode[data-mode="chat"]
+- kind: rationale
+- logged: v0.14.0 · 2026-10-18
+
+The owner read Always allow on "Allow Claude to edit main.py?" as allowing that one file, and wanted one switch for the whole chat. Approval cards now read Allow once, Allow for this chat, Always allow [commands, edits, file writes, the browser, or the connector tool; plain Always allow for anything else, since only those persist], Allow all, Deny. Allow for this chat calls `conversation.allowAll` on the active chat, which also lets the waiting card run. The permission menu gains a checked Allow for this chat item under the three modes, to see it and turn it off. The mode button says Chat allowed, amber, while the mode is Ask and the open chat is allowed; it listens to `active` and `conversations` so switching chats updates it. Checked under 4x CPU and a slow network: the write and the following edit ran after one click, a new chat still asked and read Ask, the first chat read Chat allowed again and turned off from the menu; layout shift only the zero-value caret entry; no page errors.
 
 ### src/ui/tool-cards.ts · edits as a diff
 - refers-to: src/ui/tool-cards.ts :: diffShown, diffHtml, ToolCard.update (edit branch)

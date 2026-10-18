@@ -3,6 +3,7 @@ export interface Conversation {
   title: string;
   project_id: string | null;
   pinned: boolean;
+  allow_all?: boolean;
   model: string | null;
   created: number;
   updated: number;

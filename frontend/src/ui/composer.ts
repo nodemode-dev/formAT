@@ -192,6 +192,8 @@ export class Composer {
       this.addFiles([...(e.dataTransfer?.files ?? [])]);
     });
     state.on('settings', () => this.renderSettings());
+    state.on('active', () => this.renderSettings());
+    state.on('conversations', () => this.renderSettings());
   }
 
   focus(): void {
@@ -454,10 +456,15 @@ export class Composer {
   }
 
   private modeMenu(): void {
-    openMenu(this.modeBtn, MODES.map(([id, label, desc]) => ({
+    const chat = this.state.activeId;
+    const chatOn = !!chat && !!this.state.conversations.get(chat)?.allow_all;
+    openMenu(this.modeBtn, [...MODES.map(([id, label, desc]) => ({
       label, desc, checked: this.state.settings.permissionMode === id, icon: 'shield' as const,
       action: () => void run('settings.set', { key: 'permissionMode', value: id }),
-    })), 'up');
+    })), ...(chat ? [{ divider: true }, {
+      label: 'Allow for this chat', desc: 'Every tool in this chat runs without asking; other chats keep the mode above', checked: chatOn, icon: 'shield' as const,
+      action: () => void run('conversation.allowAll', { id: chat, on: !chatOn }),
+    }] : [])], 'up');
   }
 
   renderSettings(): void {
@@ -467,8 +474,10 @@ export class Composer {
     setText(q(this.modelBtn, '.ft-model-name'), name);
     setText(q(this.modelBtn, '.ft-model-effort'), EFFORT_LABEL[s.effort] ?? s.effort);
     const mode = MODES.find(([id]) => id === s.permissionMode);
-    setText(this.modeBtn, mode ? mode[1] : s.permissionMode);
-    if (this.modeBtn.dataset.mode !== s.permissionMode) this.modeBtn.dataset.mode = s.permissionMode;
+    const chatOn = s.permissionMode === 'ask' && !!this.state.activeId && !!this.state.conversations.get(this.state.activeId)?.allow_all;
+    setText(this.modeBtn, chatOn ? 'Chat allowed' : mode ? mode[1] : s.permissionMode);
+    const tone = chatOn ? 'chat' : s.permissionMode;
+    if (this.modeBtn.dataset.mode !== tone) this.modeBtn.dataset.mode = tone;
     if (this.notice.classList.contains('is-alert')) return;
     const via = this.state.route();
     setText(this.notice, via === 'api' ? `${name} through the Anthropic API can make mistakes.` : via === 'claude-code' ? `${name} through Claude Code can make mistakes.` : 'Add an Anthropic API key in Settings, or install Claude Code, to start chatting.');
