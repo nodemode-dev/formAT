@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.15.0 · 2026-10-18
+
+The / menu and Customize, closer to claude.ai.
+
+- Type / anywhere in a message for the command menu: commands (add files, Research, a document, spreadsheet or slides, Summarize earlier messages, Manage skills), your skills, and each plugin's commands under its name. It filters as you type, including by plugin name; Up and Down, Enter or Tab, Escape.
+- A picked skill is a pill in the composer and a chip on the sent message, and loads for that turn. The + menu's Skills adds the same pill.
+- Customize has a column of Skills, Connectors and Plugins with counts, a search box and Add actions in each (Upload a skill, Write a skill, Add custom connector, Upload plugin).
+- A skill's page lists SKILL.md and every other file beside a viewer, and Try in chat starts a chat with it picked.
+- Fixed: skills were listed inside the Plugins section once a plugin was installed.
+- Engine: `skill.read` (name, path). 98 commands.
+
 ## 0.14.1 · 2026-10-18
 
 Zero overflow.
