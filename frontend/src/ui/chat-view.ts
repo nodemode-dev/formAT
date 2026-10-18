@@ -1,6 +1,7 @@
 import type { AppState, ArtifactRef, Citation, ContentBlock, Message } from '../state/app-state';
 import type { Composer } from './composer';
 import { el, esc, q, setAttr, setText } from './dom';
+import { kindLabel, openViewer, preview } from './attach-view';
 import { ui } from './icons-ft';
 import { citeMark, StreamRenderer } from './markdown';
 import { type Answer, type Approve, ArtifactCard, FileCard, type OpenArtifact, RESULT_TYPES, resultView, TOOL_TYPES, ToolCard, ToolGroup } from './tool-cards';
@@ -193,7 +194,7 @@ export class ChatView {
       const notes = m.meta?.comments ?? [];
       n = el(`<article class="ft-msg is-user" data-id="${esc(m.id)}">
         ${skillNames.length ? `<div class="ft-msg-skills">${skillNames.map((s) => `<span class="ft-msg-skill" title="This message used the ${esc(s)} skill">${ui('skills', 12)}<span>${esc(s)}</span></span>`).join('')}</div>` : ''}
-        ${files.length ? `<div class="ft-msg-files">${files.map((f) => `<span class="ft-file-chip" title="${esc(f.name)}"><span class="ft-file-chip-name">${esc(f.name)}</span><span class="ft-file-chip-kind">${esc(f.kind.toUpperCase())}</span></span>`).join('')}</div>` : ''}
+        ${files.length ? `<div class="ft-msg-files">${files.map((f, i) => `<button type="button" class="ft-attach ft-msg-file" data-i="${i}" title="${esc(f.name)}" aria-label="Preview ${esc(f.name)}"><span class="ft-attach-name">${esc(f.name)}</span><span class="ft-attach-type">${esc(kindLabel(f))}</span></button>`).join('')}</div>` : ''}
         ${notes.length ? `<div class="ft-msg-comments">${notes.map((c) => `<button type="button" class="ft-comment-card" data-path="${esc(c.path)}" title="Open ${esc(c.path)}"><span class="ft-comment-file">${ui('comment', 14)}<span>${esc(c.path.startsWith('artifact:') ? (c.path.split('#')[1] || 'Document') : c.path)}</span></span>${c.quote ? `<span class="ft-comment-quote">${esc(c.quote.slice(0, 280))}</span>` : ''}<span class="ft-comment-note">${esc(c.note)}</span></button>`).join('')}</div>` : ''}
         <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div>
         <div class="ft-msg-tools"><span class="ft-branch" hidden><button type="button" class="ft-icon-btn ft-branch-prev" title="Previous version" aria-label="Previous version">${ui('chevronLeft', 14)}</button><span class="ft-branch-count"></span><button type="button" class="ft-icon-btn ft-branch-next" title="Next version" aria-label="Next version">${ui('chevronRight', 14)}</button></span>
@@ -202,6 +203,11 @@ export class ChatView {
       const id = m.id;
       q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(said, id));
       n.querySelectorAll<HTMLElement>('.ft-comment-card').forEach((c) => c.addEventListener('click', () => this.hooks.openFile(c.dataset.path as string)));
+      n.querySelectorAll<HTMLElement>('.ft-msg-file').forEach((b) => {
+        const i = Number(b.dataset.i);
+        preview(b, files[i]);
+        b.addEventListener('click', () => openViewer(files, i));
+      });
       const step = (d: number): void => {
         const b = this.state.messages.find((x) => x.id === id)?.branch;
         const to = b?.ids[b.index + d];

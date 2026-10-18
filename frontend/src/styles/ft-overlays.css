@@ -138,3 +138,37 @@
 #toast-root { bottom: var(--space-4); }
 .ft-toast { max-width: 360px; padding: var(--space-2) var(--space-3); border: 1px solid var(--line-2); border-radius: var(--radius-md); background: var(--ft-menu-bg); color: var(--text-primary); font: var(--fs-13) var(--font-ui); box-shadow: var(--shadow-window); opacity: 0; transform: translateY(4px); transition: opacity var(--transition-fast), transform var(--transition-fast); overflow-wrap: anywhere; }
 .ft-toast.is-on { opacity: 1; transform: none; }
+
+.ft-viewer { position: fixed; inset: 0; z-index: var(--z-overlay); display: grid; grid-template-rows: auto minmax(0, 1fr); background: color-mix(in srgb, var(--bg-primary) 94%, transparent); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); color: var(--text-primary); font: var(--fs-13) var(--font-ui); }
+.ft-viewer[hidden] { display: none; }
+.ft-viewer-bar { display: flex; align-items: center; gap: var(--space-2); min-width: 0; height: 52px; padding: 0 var(--space-3) 0 var(--space-4); border-bottom: 1px solid var(--line-1); }
+.ft-viewer-title { display: flex; align-items: baseline; gap: var(--space-2); flex: 1; min-width: 0; }
+.ft-viewer-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 500 var(--fs-14) var(--font-ui); }
+.ft-viewer-meta { flex: none; font: var(--fs-11) var(--font-mono); color: var(--text-muted); }
+.ft-viewer-count { flex: none; font-size: var(--fs-12); color: var(--text-secondary); }
+.ft-viewer-stage { position: relative; min-height: 0; overflow: hidden; }
+.ft-viewer-layer { position: absolute; inset: 0; display: grid; place-items: center; padding: var(--space-4) 64px; box-sizing: border-box; overflow: auto; }
+.ft-viewer-layer.is-loading { visibility: hidden; }
+.ft-viewer-img { max-width: 100%; max-height: 100%; object-fit: contain; border-radius: var(--radius-md); cursor: zoom-in; }
+.ft-viewer-layer.is-zoomed { display: block; }
+.ft-viewer-layer.is-zoomed .ft-viewer-img { max-width: none; max-height: none; cursor: zoom-out; }
+.ft-viewer-video { max-width: 100%; max-height: 100%; border-radius: var(--radius-md); background: var(--surface-0); }
+.ft-viewer-sound { display: grid; justify-items: center; gap: var(--space-4); width: min(480px, 100%); padding: var(--space-8) var(--space-6); box-sizing: border-box; border: 1px solid var(--line-2); border-radius: var(--radius-lg); background: var(--surface-1); color: var(--accent-ink); }
+.ft-viewer-sound-name { max-width: 100%; color: var(--text-primary); font-size: var(--fs-14); text-align: center; overflow-wrap: anywhere; }
+.ft-viewer-audio { width: 100%; }
+.ft-viewer-frame { width: min(1000px, 100%); height: 100%; border: 0; border-radius: var(--radius-md); background: var(--ft-artifact-canvas); color-scheme: light; }
+.ft-viewer .ft-viewer-doc { width: min(900px, 100%); max-height: 100%; margin: 0; padding: var(--space-6); box-sizing: border-box; overflow: auto; border: 1px solid var(--line-2); border-radius: var(--radius-lg); background: var(--surface-1); }
+.ft-viewer .ft-viewer-doc pre { margin: 0; }
+.ft-viewer .ft-viewer-doc code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-12); }
+.ft-viewer-note { margin: var(--space-4) 0 0; color: var(--text-muted); font-size: var(--fs-12); }
+.ft-viewer-none { display: grid; justify-items: center; gap: var(--space-2); max-width: 360px; color: var(--text-secondary); text-align: center; }
+.ft-viewer-nav { position: absolute; top: calc(50% + 26px); width: 40px; height: 40px; margin-top: -20px; display: grid; place-items: center; border: 1px solid var(--line-2); border-radius: 50%; background: var(--surface-2); color: var(--text-primary); cursor: pointer; }
+.ft-viewer-nav:hover { background: var(--bg-hover); }
+.ft-viewer-nav.is-prev { left: var(--space-3); }
+.ft-viewer-nav.is-next { right: var(--space-3); }
+.ft-viewer.is-single .ft-viewer-nav { display: none; }
+@media (max-width: 600px) {
+  .ft-viewer-layer { padding: var(--space-2) var(--space-2) 64px; }
+  .ft-viewer-nav { top: auto; bottom: var(--space-3); margin-top: 0; }
+  .ft-viewer-meta { display: none; }
+}

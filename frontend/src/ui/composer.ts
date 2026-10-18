@@ -1,5 +1,6 @@
 import { run } from '../engine-client/api';
 import type { AppState, ConnectorInfo, FileComment, FileInfo, Settings } from '../state/app-state';
+import { guessKind, kindLabel, openViewer, preview, type Shown } from './attach-view';
 import { signIn } from './customize-view';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
@@ -23,6 +24,8 @@ interface Pending {
   comment?: FileComment;
   error?: string;
   card?: HTMLElement;
+  blob?: File;
+  local?: string;
 }
 
 const EFFORT_LABEL: Record<string, string> = { low: 'Low', medium: 'Medium', high: 'High', xhigh: 'Extra', max: 'Max' };
@@ -388,8 +391,10 @@ export class Composer {
       return;
     }
     this.input.value = '';
+    const sent = this.files;
     this.files = [];
     this.renderFiles();
+    sent.forEach((p) => { if (p.local) URL.revokeObjectURL(p.local); });
     if (this.picks.length) { this.picks = []; this.renderPicks(); }
     this.autosize();
     if (this.hooks.isRunning()) {
@@ -413,7 +418,7 @@ export class Composer {
 
   addFiles(files: File[]): void {
     for (const f of files) {
-      const p: Pending = { key: `f${++this.seq}`, name: f.name };
+      const p: Pending = { key: `f${++this.seq}`, name: f.name, blob: f, local: URL.createObjectURL(f) };
       this.files.push(p);
       void this.upload(p, f);
     }
@@ -446,9 +451,14 @@ export class Composer {
     }
     p.card.classList.toggle('is-loading', !p.file && !p.error);
     p.card.classList.toggle('is-error', !!p.error);
-    const label = p.error ? 'FAILED' : p.file ? (p.file.kind === 'zip' ? `ZIP ${p.file.entries ?? 0}` : p.file.kind.toUpperCase()) : 'UPLOADING';
+    const label = p.error ? 'FAILED' : p.file ? kindLabel(p.file) : 'UPLOADING';
     setText(q(p.card, '.ft-attach-type'), label);
     if (p.error) setAttr(p.card, 'title', p.error);
+  }
+
+  private shown(p: Pending): Shown {
+    const b = p.blob as File;
+    return { name: p.name, kind: p.file?.kind ?? guessKind(b), mime: p.file?.mime ?? b.type, size: p.file?.size ?? b.size, entries: p.file?.entries, local: p.local, blob: b };
   }
 
   private renderFiles(): void {
@@ -457,12 +467,26 @@ export class Composer {
     [...this.attachRow.children].forEach((c) => { if (!wanted.has((c as HTMLElement).dataset.key ?? '')) c.remove(); });
     for (const p of this.files) {
       if (!p.card) {
-        p.card = el(`<div class="ft-attach" data-key="${p.key}"><span class="ft-attach-name">${esc(p.name)}</span><span class="ft-attach-type"></span><button type="button" class="ft-attach-x" aria-label="Remove ${esc(p.name)}">${ui('close', 12)}</button></div>`);
-        q(p.card, '.ft-attach-x').addEventListener('click', () => {
+        p.card = el(`<div class="ft-attach" data-key="${p.key}" title="${esc(p.name)}"><span class="ft-attach-name">${esc(p.name)}</span><span class="ft-attach-type"></span><button type="button" class="ft-attach-x" aria-label="Remove ${esc(p.name)}">${ui('close', 12)}</button></div>`);
+        q(p.card, '.ft-attach-x').addEventListener('click', (e) => {
+          e.stopPropagation();
           this.files = this.files.filter((x) => x !== p);
+          if (p.local) URL.revokeObjectURL(p.local);
           this.renderFiles();
           this.renderRunning();
         });
+        if (p.blob) {
+          setAttr(p.card, 'role', 'button');
+          setAttr(p.card, 'tabindex', '0');
+          setAttr(p.card, 'aria-label', `Preview ${p.name}`);
+          preview(p.card, this.shown(p));
+          const show = (): void => {
+            const list = this.files.filter((x) => x.blob);
+            openViewer(list.map((x) => this.shown(x)), list.indexOf(p));
+          };
+          p.card.addEventListener('click', show);
+          p.card.addEventListener('keydown', (e) => { if (e.target === p.card && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); show(); } });
+        }
         this.attachRow.appendChild(p.card);
       }
       this.renderCard(p);

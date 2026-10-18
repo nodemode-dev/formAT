@@ -54,6 +54,8 @@ const UI: Record<string, string> = {
   folder: `<path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3.2l1.6 1.8h6.2A1.5 1.5 0 0 1 17 8.3v6.2a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 3 14.5z" ${S}/>`,
   comment: `<path d="M4 5.5A1.5 1.5 0 0 1 5.5 4h9A1.5 1.5 0 0 1 16 5.5v6a1.5 1.5 0 0 1-1.5 1.5H9l-3.5 3v-3h0A1.5 1.5 0 0 1 4 11.5z" ${S}/><path d="M7.5 7.5h5M7.5 10h3" ${S}/>`,
   back: `<path d="M12 5l-5 5 5 5" ${S}/>`,
+  play: `<path d="M7 4.5v11l9-5.5z" fill="currentColor"/>`,
+  wave: `<path d="M3 10h1.5M6 7v6M9 4.5v11M12 7.5v5M15 6v8M17 9v2" ${S}/>`,
 };
 
 export type UiIcon = keyof typeof UI;

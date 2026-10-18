@@ -19,6 +19,8 @@ The reply is followed to the bottom while it streams, approval cards included. S
 
 Pick, paste, or drag files from your desktop and drop them anywhere on the chat: a card says "Drop files to add them to the chat" while they are over it. Images and PDFs go to Claude as such; text and code as text; a .zip as its list of files with the readable ones included. Files of 1 MB or more are uploaded once through Anthropic's Files API and referred to after that.
 
+Each file shows as a square tile, in the composer as soon as you add it and above your message once it is sent: a picture for images (SVG too), the first frame and length for a video, a waveform and length for audio, the first lines for text and code, and the name and type for PDFs, zips and other files. Click a tile (or press Enter on it) to open it full screen: images fit the window and a click shows them at full size, video and audio play with their controls, Markdown is rendered, code is coloured, a PDF opens in its own viewer, and long text files show their first 2 MB. The arrow keys move between the message's files, the download button saves the original, and Esc closes the view.
+
 ## Dictation
 
 Click the microphone, speak, click again. Settings, Account, Dictation engine chooses who turns speech into text:

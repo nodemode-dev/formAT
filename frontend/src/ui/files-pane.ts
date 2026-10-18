@@ -12,7 +12,7 @@ export interface FilesHooks {
 
 interface ReadReply { path: string; kind: string; size: number; modified: number; truncated: boolean; text: string }
 
-const LANG: Record<string, string> = {
+export const LANG: Record<string, string> = {
   py: 'python', js: 'javascript', mjs: 'javascript', ts: 'typescript', tsx: 'typescript', jsx: 'javascript', json: 'json', css: 'css', scss: 'scss',
   html: 'xml', htm: 'xml', xml: 'xml', svg: 'xml', sh: 'bash', bash: 'bash', rs: 'rust', go: 'go', java: 'java', c: 'c', h: 'c', cpp: 'cpp', hpp: 'cpp',
   cs: 'csharp', rb: 'ruby', php: 'php', sql: 'sql', yaml: 'yaml', yml: 'yaml', toml: 'ini', ini: 'ini', md: 'markdown', kt: 'kotlin', swift: 'swift', lua: 'lua', r: 'r',

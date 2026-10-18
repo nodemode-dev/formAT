@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.22.0
-Last updated: 2026-10-18 · v0.22.0: message.citation sent as each citation streams; v0.21.0: archive, npm and command plugin sources, private marketplaces, .plugin uploads, skills Discover and Skill with Claude, the connector directory, connectors on the Claude Code route; v0.20.0: plugin.create and plugin.files, Create with Claude (output plugin and the add_plugin tool), /plugin:skill invocation; v0.19.0: plugin marketplaces (add, Check for updates, Sync automatically, remove), plugin.install from a marketplace, a plugin's connectors added on request; v0.18.0: signing in to a connector (OAuth with PKCE, registration or your own client, refresh, SSE transport) and connectors on or off per chat; v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
+Current build version: v0.23.0
+Last updated: 2026-10-18 · v0.23.0: GET /api/uploads/{id} serves an attachment back to the window (ranges, immutable cache, sandboxing CSP); v0.22.0: message.citation sent as each citation streams; v0.21.0: archive, npm and command plugin sources, private marketplaces, .plugin uploads, skills Discover and Skill with Claude, the connector directory, connectors on the Claude Code route; v0.20.0: plugin.create and plugin.files, Create with Claude (output plugin and the add_plugin tool), /plugin:skill invocation; v0.19.0: plugin marketplaces (add, Check for updates, Sync automatically, remove), plugin.install from a marketplace, a plugin's connectors added on request; v0.18.0: signing in to a connector (OAuth with PKCE, registration or your own client, refresh, SSE transport) and connectors on or off per chat; v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
 
 ---
 
@@ -394,6 +394,13 @@ An artifact is a row per page and a row per version; a version is never changed,
 - logged: v0.5.0 · 2026-10-11
 
 `GET /api/artifacts/{id}/v/{n}` serves a version as its own HTML document with a Content-Security-Policy that carries a `sandbox` directive. The directive is the important part: the window's iframe is also sandboxed without `allow-same-origin`, but a page opened in a new tab (Pop out) has no iframe, and without the header it would run on the engine's own origin with access to `/api/commands`. With it, the page gets an opaque origin wherever it is opened. `connect-src 'none'` blocks fetch and WebSocket unless `artifactNetwork` is on (then https only); scripts, styles and fonts may come from cdnjs, jsdelivr, unpkg and Google Fonts, as claude.ai allows. `frame-ancestors 'self'` keeps other sites from framing it; `form-action 'none'` and `base-uri 'none'` close the remaining exits. `?download=1` sends it as an attachment named after the title and version.
+
+### app/routers/files.py · attachments served back
+- refers-to: app/routers/files.py :: upload_file
+- kind: rationale
+- logged: v0.23.0 · 2026-10-18
+
+The window had no way to read back a file the person attached, so a sent message could only show a name chip. `GET /api/uploads/{id}` now serves the stored file under its own MIME type, inline (`?download=1` for a download named as uploaded). The id must be alphanumeric and `uploads.get` takes only its last path segment, so it cannot leave the uploads folder (a `../` probe answers 404). Uploads never change, so the response is `cache-control: private, max-age=31536000, immutable` and a thumbnail is fetched once. Starlette 1.8's FileResponse answers `Range` with 206, which video in WebKit (the macOS app) needs to play and seek, and which the window uses to read only the first kilobyte of a text file for its tile. Like chat files, everything but a PDF carries a `sandbox` CSP and `nosniff`, so an SVG or HTML file opened in its own tab runs nothing on the engine's origin.
 
 ---
 

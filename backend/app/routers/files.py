@@ -1,5 +1,6 @@
 import tempfile
 import zipfile
+from pathlib import Path
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
@@ -18,6 +19,18 @@ async def upload(file: UploadFile = File(...)) -> JSONResponse:
         return JSONResponse({"ok": False, "error": "File is larger than 512 MB"}, status_code=413)
     meta = uploads.save(file.filename or "file", data, file.content_type)
     return JSONResponse({"ok": True, "file": uploads.public(meta)})
+
+
+@router.get("/uploads/{fid}")
+def upload_file(fid: str, download: bool = False) -> FileResponse:
+    meta = uploads.get(fid) if fid.isalnum() else None
+    path = Path(meta["path"]) if meta else None
+    if not path or not path.is_file():
+        raise HTTPException(404, "No such upload")
+    headers = {"x-content-type-options": "nosniff", "referrer-policy": "no-referrer", "cache-control": "private, max-age=31536000, immutable"}
+    if meta["kind"] != "pdf":
+        headers["content-security-policy"] = "sandbox; default-src 'none'; img-src 'self' data:; media-src 'self'; style-src 'unsafe-inline'"
+    return FileResponse(path, media_type=meta["mime"], filename=meta["name"], content_disposition_type="attachment" if download else "inline", headers=headers)
 
 
 def _chat_or_404(cid: str) -> None:
