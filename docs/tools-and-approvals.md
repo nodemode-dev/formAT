@@ -24,7 +24,7 @@ Settings, Tools turns groups off: workspace tools, web tools, the browser.
 
 The permission menu in the composer sets how much Claude may do without you:
 
-- **Ask** (default): commands, file changes, the browser and local connector tools wait for an approval card in the reply. Allow once, Always allow (this tool from now on, remembered in Settings, Tools, Always allowed), Allow all (switches the mode to Allow all) or Deny. A denied step is reported to Claude, which carries on without it. Edits show as a diff: removed lines in red with a minus, added lines in green with a plus.
+- **Ask** (default): commands, file changes, the browser and local connector tools wait for an approval card in the reply. Allow once; Allow for this chat (every tool in this chat, any file and any command, runs without asking until you turn it off; other chats still ask); Always allow commands, edits or file writes (that kind of step from now on, in every chat, remembered in Settings, Tools, Always allowed); Allow all (switches the mode to Allow all); or Deny. The permission menu shows Allow for this chat checked while it is on, and the mode button reads Chat allowed; pick it again to turn it off. A denied step is reported to Claude, which carries on without it. Edits show as a diff: removed lines in red with a minus, added lines in green with a plus.
 - **Allow all**: everything runs without asking, in every chat, until you change the mode (claude.ai calls this Bypass). Switching to it also allows any card already waiting. The mode button turns amber while it is on.
 - **Plan**: Claude may read and search but not change anything; it describes what it would do.
 

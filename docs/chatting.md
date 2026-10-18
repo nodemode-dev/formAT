@@ -9,7 +9,7 @@ Under the box, left to right:
 - **+** opens the menu: Add files or photos, Skills, Connectors, Research, and Create (Document, Spreadsheet or Slides).
 - **Microphone**: dictation (see below).
 - **Model and effort**: the model menu lists your key's models with a short description; Effort goes from Low to Max where the model supports it. Show thinking displays Claude's thinking summaries above each reply.
-- **Permission mode**: Ask, Allow all or Plan (see [Tools and approvals](tools-and-approvals.md)).
+- **Permission mode**: Ask, Allow all or Plan, and Allow for this chat for the open chat only (see [Tools and approvals](tools-and-approvals.md)).
 - **/** at the start of an empty message lists your skills; pick one (or type its name and press Enter) and the message starts `/name`, which loads that skill for the message.
 
 The reply is followed to the bottom while it streams, approval cards included. Scroll up and it stays where you are; the arrow above the composer, or sending a message, follows again. Your messages sit on the right, Claude's replies on the left.
