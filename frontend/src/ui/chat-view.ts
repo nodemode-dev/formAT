@@ -139,10 +139,16 @@ export class ChatView {
     let n = this.nodes.get(m.id);
     if (n) return n;
     if (m.role === 'user') {
-      const text = m.content.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('\n\n');
+      const said = m.content.filter((b) => b.type === 'text').map((b) => b.text ?? '').join('\n\n');
+      const known = new Set(this.state.skills.map((s) => s.name));
+      const lead = /^(?:\/([a-z0-9][a-z0-9-]*)(?:\s+|$))+/i.exec(said)?.[0] ?? '';
+      const used = [...lead.matchAll(/\/([a-z0-9][a-z0-9-]*)/gi)].map((x) => x[1].toLowerCase());
+      const skillNames = used.length && used.every((u) => known.has(u)) ? used : [];
+      const text = skillNames.length ? said.slice(lead.length) : said;
       const files = m.meta?.files ?? [];
       const notes = m.meta?.comments ?? [];
       n = el(`<article class="ft-msg is-user" data-id="${esc(m.id)}">
+        ${skillNames.length ? `<div class="ft-msg-skills">${skillNames.map((s) => `<span class="ft-msg-skill" title="This message used the ${esc(s)} skill">${ui('skills', 12)}<span>${esc(s)}</span></span>`).join('')}</div>` : ''}
         ${files.length ? `<div class="ft-msg-files">${files.map((f) => `<span class="ft-file-chip" title="${esc(f.name)}"><span class="ft-file-chip-name">${esc(f.name)}</span><span class="ft-file-chip-kind">${esc(f.kind.toUpperCase())}</span></span>`).join('')}</div>` : ''}
         ${notes.length ? `<div class="ft-msg-comments">${notes.map((c) => `<button type="button" class="ft-comment-card" data-path="${esc(c.path)}" title="Open ${esc(c.path)}"><span class="ft-comment-file">${ui('comment', 14)}<span>${esc(c.path.startsWith('artifact:') ? (c.path.split('#')[1] || 'Document') : c.path)}</span></span>${c.quote ? `<span class="ft-comment-quote">${esc(c.quote.slice(0, 280))}</span>` : ''}<span class="ft-comment-note">${esc(c.note)}</span></button>`).join('')}</div>` : ''}
         <div class="ft-msg-bubble"><div class="ft-msg-body"></div></div>
@@ -150,7 +156,7 @@ export class ChatView {
         <button type="button" class="ft-icon-btn ft-msg-edit" title="Edit" aria-label="Edit this message">${ui('pencil', 16)}</button></div></article>`);
       q(n, '.ft-msg-body').textContent = text;
       const id = m.id;
-      q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(text, id));
+      q(n, '.ft-msg-edit').addEventListener('click', () => this.hooks.edit(said, id));
       n.querySelectorAll<HTMLElement>('.ft-comment-card').forEach((c) => c.addEventListener('click', () => this.hooks.openFile(c.dataset.path as string)));
       const step = (d: number): void => {
         const b = this.state.messages.find((x) => x.id === id)?.branch;

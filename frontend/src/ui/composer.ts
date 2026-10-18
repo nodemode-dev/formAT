@@ -3,6 +3,7 @@ import type { AppState, FileComment, FileInfo, Settings } from '../state/app-sta
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { closeMenus, openMenu, type MenuItem } from './menu';
+import { SlashMenu, type SlashItem } from './slash-menu';
 import { Dictation } from './dictation';
 
 export interface ComposerHooks {
@@ -36,7 +37,9 @@ export class Composer {
   private sendBtn: HTMLButtonElement;
   private modelBtn: HTMLButtonElement;
   private modeBtn: HTMLButtonElement;
-  private slash: HTMLElement | null = null;
+  private slash: SlashMenu;
+  private picks: string[] = [];
+  private pickRow: HTMLElement;
   private notice: HTMLElement;
   private attachRow: HTMLElement;
   private files: Pending[] = [];
@@ -102,6 +105,7 @@ export class Composer {
           <button type="button" class="ft-icon-btn ft-mic" aria-label="Dictation" aria-pressed="false" title="Dictation">${ui('mic')}</button>
           <button type="button" class="ft-pill ft-output-pill" title="The answer comes as this kind of artifact. Click to turn it off." hidden>${ui('file', 14)}<span></span>${ui('close', 12)}</button>
           <button type="button" class="ft-pill ft-research-pill" title="Research mode is on: Claude searches and reads many sources and writes a cited report. Click to turn it off." hidden>${ui('research', 14)}<span>Research</span>${ui('close', 12)}</button>
+          <span class="ft-skill-picks"></span>
         </div>
         <div class="ft-bar-notice"></div>
         <div class="ft-bar-right">
@@ -142,21 +146,29 @@ export class Composer {
       e.preventDefault();
       this.addFiles(files);
     });
+    this.slash = new SlashMenu((item) => this.pickSlash(item));
+    this.root.appendChild(this.slash.root);
+    this.pickRow = q(this.root, '.ft-skill-picks');
+    this.pickRow.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-pick]');
+      if (btn) this.removePick(btn.dataset.pick as string);
+    });
     this.input.addEventListener('input', () => {
       this.autosize();
-      if (this.input.value === '/') this.slashMenu();
-      else if (this.slash?.isConnected && !/^\/[a-z0-9-]*$/i.test(this.input.value)) closeMenus();
+      this.syncSlash();
     });
+    this.input.addEventListener('click', () => this.syncSlash());
+    this.input.addEventListener('blur', () => this.slash.close());
     this.input.addEventListener('keydown', (e) => {
-      if (this.slash?.isConnected && (e.key === 'ArrowDown' || e.key === 'ArrowUp' || e.key === 'Tab')) {
+      if (this.slash.key(e)) {
         e.preventDefault();
-        this.slash.querySelector<HTMLButtonElement>('.ft-menu-item')?.focus();
+        e.stopPropagation();
         return;
       }
-      if (e.key === 'Enter' && !e.isComposing && this.slash?.isConnected && /^\/[a-z0-9-]*$/i.test(this.input.value)) {
-        const typed = this.input.value.slice(1).toLowerCase();
-        const hit = this.state.skills.find((s) => s.enabled && s.name.startsWith(typed));
-        if (hit) { e.preventDefault(); closeMenus(); this.pickSlash(hit.name); return; }
+      if (e.key === 'Backspace' && this.picks.length && this.input.selectionStart === 0 && this.input.selectionEnd === 0) {
+        this.removePick(this.picks[this.picks.length - 1]);
+        e.preventDefault();
+        return;
       }
       if (e.key !== 'Enter' || e.isComposing) return;
       const modWanted = this.state.account.sendKey === 'modEnter';
@@ -232,7 +244,7 @@ export class Composer {
 
   renderRunning(): void {
     const running = this.hooks.isRunning();
-    const typed = !!this.input.value.trim();
+    const typed = !!this.input.value.trim() || this.picks.length > 0;
     const uploading = this.files.some((f) => !f.file && !f.error);
     const stopMode = running && !typed;
     this.sendBtn.classList.toggle('is-stop', stopMode);
@@ -243,25 +255,80 @@ export class Composer {
     this.sendBtn.disabled = !stopMode && (!(typed || this.files.some((f) => f.file || f.comment)) || uploading);
   }
 
-  private slashMenu(): void {
+  private slashToken(): { start: number; end: number; query: string } | null {
+    const end = this.input.selectionStart ?? 0;
+    if (end !== this.input.selectionEnd) return null;
+    const m = /(^|\s)\/([a-z0-9-]*)$/i.exec(this.input.value.slice(0, end));
+    return m ? { start: end - m[2].length - 1, end, query: m[2] } : null;
+  }
+
+  private slashItems(): SlashItem[] {
+    const cmd = (id: string, label: string, desc: string, icon: SlashItem['icon'], run: () => void, hint?: string): SlashItem => ({ id: `cmd:${id}`, label, desc, group: 'Commands', icon, run, hint });
+    const items: SlashItem[] = [
+      cmd('files', 'Add files or photos', 'Attach files from your computer', 'paperclip', () => this.openFilePicker(), `${modKey}U`),
+      cmd('research', this.research ? 'Research off' : 'Research', 'Search and read many sources, then write a cited report', 'research', () => this.setResearch(!this.research)),
+      cmd('doc', 'Create a document', 'The answer comes as a document you can comment on and export', 'file', () => this.setOutput(this.output === 'doc' ? null : 'doc')),
+      cmd('sheet', 'Create a spreadsheet', 'The answer comes as a sheet you can export to Excel or CSV', 'file', () => this.setOutput(this.output === 'sheet' ? null : 'sheet')),
+      cmd('deck', 'Create slides', 'The answer comes as a deck you can present or export', 'file', () => this.setOutput(this.output === 'deck' ? null : 'deck')),
+      cmd('compact', 'Summarize earlier messages', 'Compact this chat so it can keep going', 'compress', () => {
+        if (this.state.activeId) run('chat.compact', { conversationId: this.state.activeId }).catch((err) => this.flash(err instanceof Error ? err.message : String(err)));
+      }),
+      cmd('skills', 'Manage skills', 'Open Customize to add, write or turn off skills', 'customize', () => this.hooks.openCustomize()),
+    ];
     const on = this.state.skills.filter((s) => s.enabled);
-    if (!on.length) return;
-    this.slash = openMenu(this.input, on.map((s) => ({ label: `/${s.name}`, desc: s.description.slice(0, 90), icon: 'skills' as const, action: () => this.pickSlash(s.name) })), 'up', 0, 'Skills');
+    for (const s of on.filter((x) => !x.plugin)) items.push({ id: `skill:${s.name}`, label: `/${s.name}`, desc: s.description, group: 'Skills', icon: 'skills', run: () => this.addPick(s.name) });
+    for (const s of on.filter((x) => x.plugin)) items.push({ id: `skill:${s.name}`, label: `/${s.name}`, desc: s.description, group: `Plugin: ${s.plugin}`, icon: 'plugin', run: () => this.addPick(s.name) });
+    return items;
   }
 
-  private pickSlash(name: string): void {
-    this.input.value = `/${name} ${this.input.value.replace(/^\/[a-z0-9-]*\s?/i, '')}`;
-    this.input.setSelectionRange(this.input.value.length, this.input.value.length);
+  private syncSlash(): void {
+    const tok = this.slashToken();
+    if (!tok) { this.slash.close(); return; }
+    if (!this.slash.isOpen) {
+      closeMenus();
+      this.slash.setItems(this.slashItems());
+    }
+    this.slash.open(tok.query);
+  }
+
+  private pickSlash(item: SlashItem): void {
+    const tok = this.slashToken();
+    if (tok) {
+      this.input.value = this.input.value.slice(0, tok.start) + this.input.value.slice(tok.end).replace(/^\s/, '');
+      this.input.setSelectionRange(tok.start, tok.start);
+    }
     this.autosize();
+    this.input.focus();
+    item.run();
+  }
+
+  private addPick(name: string): void {
+    if (!this.picks.includes(name)) {
+      this.picks.push(name);
+      this.renderPicks();
+    }
     this.input.focus();
   }
 
-  private useSkill(name: string): void {
-    const lead = `Use the ${name} skill. `;
-    if (!this.input.value.startsWith(lead)) this.input.value = lead + this.input.value;
-    this.input.setSelectionRange(this.input.value.length, this.input.value.length);
-    this.autosize();
+  private removePick(name: string): void {
+    this.picks = this.picks.filter((p) => p !== name);
+    this.renderPicks();
     this.input.focus();
+  }
+
+  private renderPicks(): void {
+    const have = new Map([...this.pickRow.querySelectorAll<HTMLElement>('[data-pick]')].map((n) => [n.dataset.pick as string, n]));
+    for (const [name, node] of have) if (!this.picks.includes(name)) node.remove();
+    for (const name of this.picks) {
+      if (have.has(name)) continue;
+      const pill = el(`<button type="button" class="ft-pill ft-skill-pill" data-pick="${esc(name)}" title="This message uses the ${esc(name)} skill. Click to remove it.">${ui('skills', 14)}<span>${esc(name)}</span>${ui('close', 12)}</button>`);
+      this.pickRow.appendChild(pill);
+    }
+    this.renderRunning();
+  }
+
+  useSkill(name: string): void {
+    this.addPick(name);
   }
 
   addComment(c: FileComment): void {
@@ -280,7 +347,9 @@ export class Composer {
   }
 
   private async submit(): Promise<void> {
-    const text = this.input.value.trim();
+    if (this.slash.isOpen) this.slash.close();
+    const typed = this.input.value.trim();
+    const text = this.picks.length && !this.editing ? `${this.picks.map((p) => `/${p}`).join(' ')}${typed ? ` ${typed}` : ''}` : typed;
     const files = this.files.filter((f) => f.file).map((f) => f.file as FileInfo);
     const comments = this.files.filter((f) => f.comment).map((f) => f.comment as FileComment);
     if ((!text && !files.length && !comments.length) || this.files.some((f) => !f.file && !f.comment && !f.error)) return;
@@ -296,6 +365,7 @@ export class Composer {
     this.input.value = '';
     this.files = [];
     this.renderFiles();
+    if (this.picks.length) { this.picks = []; this.renderPicks(); }
     this.autosize();
     if (this.hooks.isRunning()) {
       this.queued.push({ text, files, comments });
