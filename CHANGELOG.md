@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.16.0 · 2026-10-18
+
+Connector pages like claude.ai's.
+
+- Each connector tool is Always allow, Needs approval or Blocked, set one by one or for all tools on the connector's page. Always allow runs it with no card, Needs approval asks in the chat, Blocked keeps it from Claude. Public servers start on Always allow, local ones on Needs approval; old turned-off tools become Blocked.
+- A public server with a tool on Needs approval, or with request headers, is run by Format so the approval can wait for you.
+- Always allow on a connector's approval card sets that tool to Always allow on its connector.
+- A connector's page has a status chip, Disconnect or Connect, and a "..." menu with Reconnect and Remove; a disconnected row shows Connect.
+- Add custom connector takes request headers.
+- Engine: `connector.update` `toolPermissions`, `connector.add` `headers`; connectors report each tool's `permission`.
+
 ## 0.15.0 · 2026-10-18
 
 The / menu and Customize, closer to claude.ai.
