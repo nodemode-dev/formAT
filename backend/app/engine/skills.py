@@ -189,3 +189,35 @@ def load(args: dict) -> tuple[str, bool]:
     text = (p / "SKILL.md").read_text(encoding="utf-8", errors="replace")
     more = ("\n\nFiles in this skill (read one with the skill tool and file):\n" + "\n".join(f"- {f}" for f in files[:200])) if files else ""
     return f"Skill {name}, SKILL.md:\n\n{text}{more}", False
+
+
+INVOKE = re.compile(r"(?:^|(?<=[\s(]))/([a-z0-9][a-z0-9-]{0,63})(?=$|[\s.,;:!?)])|\b(?:use|run|load|apply|with)\s+(?:the\s+)?/?([a-z0-9][a-z0-9-]{0,63})\s+skill\b", re.I)
+
+
+def enabled_names() -> list[str]:
+    off = _disabled()
+    return [p.name for p in sorted(root().iterdir()) if p.is_dir() and NAME.match(p.name) and p.name not in off and (p / "SKILL.md").is_file()]
+
+
+def invoked(text: str, names: list[str] | None = None) -> list[str]:
+    known = set(enabled_names() if names is None else names)
+    found: list[str] = []
+    for m in INVOKE.finditer(text or ""):
+        name = (m.group(1) or m.group(2) or "").lower()
+        if name in known and name not in found:
+            found.append(name)
+    return found
+
+
+def invocation_blocks(text: str, names: list[str] | None = None, with_folder: bool = False) -> list[dict]:
+    blocks = []
+    for name in invoked(text, names):
+        p = root() / name
+        if with_folder:
+            body = f"Its folder is {p}; read the other files it names there with your tools.\n\n" + (p / "SKILL.md").read_text(encoding="utf-8", errors="replace")[:MAX_SKILL_FILE]
+        else:
+            body, failed = load({"name": name})
+            if failed:
+                continue
+        blocks.append({"type": "text", "text": f"The person invoked the skill {name} for this message: follow it.\n\n{body}"})
+    return blocks

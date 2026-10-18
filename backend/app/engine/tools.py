@@ -187,6 +187,15 @@ def pending(conversation_id: str | None = None) -> list[dict]:
             for e in items if conversation_id is None or e["conversationId"] == conversation_id]
 
 
+def allow_waiting() -> int:
+    with _waits_lock:
+        items = [e for e in _waits.values() if e.get("kind", "approval") == "approval" and e["answer"] is None]
+    for e in items:
+        e["answer"] = "allow"
+        e["event"].set()
+    return len(items)
+
+
 def kind_of_wait(tool_use_id: str) -> str | None:
     with _waits_lock:
         e = _waits.get(tool_use_id)

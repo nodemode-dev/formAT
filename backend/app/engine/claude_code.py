@@ -8,7 +8,7 @@ import time
 from pathlib import Path
 
 from app import providers
-from app.engine import events, projects, tools, uploads
+from app.engine import events, projects, skills, tools, uploads
 from app.engine.cmd_account import account
 from app.engine.cmd_message import messages_of, update
 from app.engine.cmd_settings import current
@@ -132,6 +132,7 @@ def _prompt(path: list[dict], resumed: bool) -> list[dict]:
     if files:
         lead += "The person attached these files; read them with your tools:\n" + "\n".join(files) + "\n\n"
     parts.extend(content.comment_blocks(meta.get("comments")))
+    parts.extend(skills.invocation_blocks("\n".join(b.get("text") or "" for b in last["content"] if b.get("type") == "text"), with_folder=True))
     for b in last["content"]:
         if b.get("type") == "text" and b.get("text"):
             parts.append({"type": "text", "text": b["text"]})
@@ -153,6 +154,10 @@ def _system(conversation_id: str) -> str:
     if project and project.get("files"):
         names = [f"- {u['name']}: {u['path']}" for u in (uploads.get(f) for f in project["files"]) if u]
         parts.append("The project's knowledge files, readable with your tools:\n" + "\n".join(names))
+    found = skills.enabled()
+    if found:
+        parts.append("The person's skills installed in Format, each a folder with a SKILL.md: when a task matches a skill's description, read its SKILL.md with your Read tool first and follow it. A message may name one as /name or \"use the name skill\".\n"
+                     + "\n".join(f"- {s['name']} ({skills.root() / s['name']}): {s['description']}" for s in found))
     return "\n\n".join(parts)
 
 
@@ -349,7 +354,7 @@ def run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: thr
     found = info()
     args = [found["path"] or "claude", "-p", "--input-format", "stream-json", "--output-format", "stream-json", "--verbose", "--include-partial-messages",
             "--permission-prompt-tool", "stdio", "--model", model["id"], "--permission-mode", MODES.get(settings.get("permissionMode", "ask"), "manual"),
-            "--append-system-prompt", _system(conversation_id), "--add-dir", str(uploads.root())]
+            "--append-system-prompt", _system(conversation_id), "--add-dir", str(uploads.root()), "--add-dir", str(skills.root())]
     if settings.get("effort") in ("low", "medium", "high", "xhigh", "max"):
         args += ["--effort", settings["effort"]]
     if session:

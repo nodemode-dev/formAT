@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.12.0
-Last updated: 2026-10-12 · v0.12.0: chats answered through Claude Code when there is no API key (claude_code.py)
+Current build version: v0.13.0
+Last updated: 2026-10-18 · v0.13.0: skills invoked by name on both routes, Claude Code told about Format's skills, Allow all answers what is waiting
 
 ---
 
@@ -81,6 +81,7 @@ backend/
 - [app/routers/__init__.py](#app-routers-init)
 - [app/engine/terminal.py](#app-engine-terminal)
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
+- [Skills invoked by name and Allow all](#skills-invoked)
 - [app/routers/stream.py](#app-routers-stream)
 
 ---
@@ -656,6 +657,38 @@ In the desktop app the window does not hand downloads to the webview: it asks th
 - logged: v0.11.1 · 2026-10-12
 
 The owner's first macOS build stopped twice. Run from `setup/`, `desktop_build` said to run `./format install-desktop`, which is not in that folder; after that, cargo compiled `phf_macros` and then could not load it (`E0463 can't find crate for phf_macros`, rustc 1.97.1 while rustup's stable is newer, so most likely Homebrew's `rust` on PATH). A proc macro is a dylib that one rustc builds and the next rustc loads, so anything that splits the two (two Rust installs on PATH, a `RUSTC_WRAPPER` cache such as sccache, a target folder from another compiler, a stripped dylib) fails exactly this way. `build_app` is the one entry the owner asked for: it runs from its own folder, so the folder you call it from does not matter; it uses rustup's stable everywhere (`~/.cargo/bin` first, `RUSTUP_TOOLCHAIN`, the environment overrides cleared, and a stop if `rustc` and `cargo` still come from different folders); it stamps the compiler into `target/.format-rustc` and cleans the target when that changes, and cleans and retries once on a Rust compile error. Proc macros and build scripts are no longer stripped. The macOS disk image is made with `hdiutil` from the built `.app`, since Tauri's `bundle_dmg.sh` scripts Finder and fails without Automation permission in a plain terminal. The app is copied to Applications with its quarantine flag cleared, so the ad-hoc signed build opens without the warning. The exact cause on that Mac could not be reproduced here; the script removes every split it can see and leaves `build_app.log` for the next report.
+---
+
+## Skills invoked by name and Allow all {#skills-invoked}
+
+### app/engine/skills.py · INVOKE, enabled_names, invoked, invocation_blocks
+- refers-to: app/engine/skills.py :: INVOKE, enabled_names, invoked, invocation_blocks
+- kind: rationale
+- logged: v0.13.0 · 2026-10-18
+
+A skill named in a message is loaded for that message rather than left to Claude's judgement: `/name` (at the start or after a space or parenthesis, ending at a space, punctuation or the end) and "use, run, load, apply or with the name skill" both count, for enabled skills only, so a path such as `/usr/bin` or a skill that is off or missing is ignored. `invocation_blocks` returns one text block per invoked skill, "The person invoked the skill name for this message: follow it." followed by its SKILL.md (through `load`, so the file list says to read more with the skill tool), or, for Claude Code, the folder path and SKILL.md. `enabled_names` lists folder names without reading every SKILL.md, since the API path calls it on every request.
+
+### app/harness/request.py · api_messages, invoked skills
+- refers-to: app/harness/request.py :: api_messages (names, the user branch)
+- kind: explainer
+- logged: v0.13.0 · 2026-10-18
+
+Each user turn gets its invoked skills' blocks after its attachments and comments and before its text, the same place comment blocks go. The blocks are rebuilt from the current skill files on every request, like attachments, so earlier turns stay the same request to request and keep the prompt cache, unless a skill is edited or turned off. Checked against a stand-in for the Messages API: `/test-skill write the file please` reached the API as the invocation block with the SKILL.md, then the person's text; the system prompt still lists the skill.
+
+### app/engine/claude_code.py · skills on the Claude Code route
+- refers-to: app/engine/claude_code.py :: _system (skills), _prompt (invocation blocks), run (args, --add-dir skills root)
+- kind: rationale
+- logged: v0.13.0 · 2026-10-18
+
+Before: chats answered through Claude Code never heard of Format's skills (the API path lists them in `prompt.system_prompt`; `_system` here did not), so "Use the dev-rules skill" in Format did nothing unless Claude Code happened to have a skill of that name itself. Now the appended system prompt lists every enabled skill with its folder and description and says to read the SKILL.md with Read first; an invoked skill's SKILL.md and folder go at the start of the turn; and the skills folder is passed with `--add-dir` so reading it needs no approval. Checked by calling `_system` and `_prompt` with a seeded skill; a full Claude Code session against a live model was not run here.
+
+### app/engine/tools.py and cmd_settings.py · Allow all answers what is waiting
+- refers-to: app/engine/tools.py :: allow_waiting; app/engine/cmd_settings.py :: set_ (permissionMode auto)
+- kind: explainer
+- logged: v0.13.0 · 2026-10-18
+
+Setting `permissionMode` to `auto` (the window's Allow all) also answers every approval already waiting with allow, on both routes, since both wait through `tools.wait_for_approval`. Questions (`kind` question) are left alone. The window's Allow all button on an approval card is just this setting, so one click lets that call and any parallel ones run and stops later cards. Checked in the window against the stand-in: a write waiting in Ask, Allow all, the write and the following edit ran with no second card.
+
 ---
 
 ## app/routers/stream.py {#app-routers-stream}

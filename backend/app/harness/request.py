@@ -87,6 +87,8 @@ def api_messages(history: list[dict], model: dict, accepts, provider=None) -> li
         else:
             out.append({"role": role, "content": blocks})
 
+    from app.engine import skills
+    names = skills.enabled_names()
     for m in since_summary(history):
         if m["role"] == "assistant":
             segment: list[dict] = []
@@ -109,6 +111,7 @@ def api_messages(history: list[dict], model: dict, accepts, provider=None) -> li
         for fid in (m.get("meta") or {}).get("attachments", []):
             blocks.extend(content.blocks_for(fid, model, accepts, provider))
         blocks.extend(content.comment_blocks((m.get("meta") or {}).get("comments")))
+        blocks.extend(skills.invocation_blocks("\n".join(b.get("text") or "" for b in m["content"] if b.get("type") == "text"), names))
         for b in m["content"]:
             if b.get("type") not in KEEP_BLOCKS or (b["type"] == "text" and not b.get("text")):
                 continue

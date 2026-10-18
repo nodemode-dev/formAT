@@ -80,4 +80,7 @@ def set_(key: str, value: object) -> dict:
     store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (f"setting.{key}", json.dumps(value)))
     settings = current()
     events.publish("settings.changed", settings=settings)
+    if key == "permissionMode" and value == "auto":
+        from app.engine import tools
+        tools.allow_waiting()
     return settings
