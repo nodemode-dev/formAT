@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.18.0 · 2026-10-18
+
+Connector sign-in, and connectors per chat.
+
+- Add custom connector has Authentication: Sign in when needed (the default), Sign in now, or No sign-in. With sign-in, Format registers itself with the server or uses your own OAuth client ID and secret, opens the server's sign-in page in your browser, and connects when you approve.
+- A connector waiting for sign-in shows Sign in on its row and page; one whose sign-in stopped working shows Reconnect. Tokens refresh on their own; Disconnect signs out.
+- Advanced, Transport: Streamable HTTP or SSE (a URL ending in /sse picks SSE).
+- + then Connectors has a switch per connector for this chat only; in a new chat the switches apply to the chat your first message starts.
+- Engine: `connector.signin`, `conversation.setConnector`; `connector.add` `auth`, `oauthClient`, `clientId`, `clientSecret`, `transport`; `chat.send` `connectorsOff`; the callback `GET /api/connectors/oauth/callback`. 100 commands.
+
 ## 0.17.0 · 2026-10-18
 
 Customize, reworked for use.
