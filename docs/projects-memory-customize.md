@@ -18,7 +18,13 @@ The Customize page has three sections, Skills, Connectors and Plugins, chosen by
 
 ### Plugins
 
-A plugin bundles skills, commands and connectors for one kind of work, in the Claude plugin format: a folder with `.claude-plugin/plugin.json`. Add a plugin as a .zip of its folder. Its skills and commands appear under Skills, named after the plugin (`release-notes` in the `demo-kit` plugin becomes `demo-kit-release-notes`), and its MCP servers under Connectors. The plugin's switch turns all of them on or off together; its page lists them with links, and Remove takes them all away. A plugin's hooks and agent definitions are kept but not run.
+A plugin bundles skills, commands, connectors and agents for one kind of work, in the Claude plugin format: a folder with `.claude-plugin/plugin.json`. The Plugins section has Your plugins and Discover.
+
+- Add, then Add marketplace, takes a marketplace: a Git repository (a URL, or `owner/repo` for GitHub) or a folder with `.claude-plugin/marketplace.json`. Its plugins appear in Discover; select Add on one to install it. Only add marketplaces you trust: their plugins are not reviewed.
+- Under Discover, each marketplace has Check for updates (it pulls the latest catalog and updates the plugins you installed from it), Sync automatically (checks every hour while Format runs, for repositories), and Remove in its "..." menu, which also removes its plugins.
+- Add, then Upload plugin, takes a .zip of a plugin folder.
+
+A plugin's skills and commands appear under Skills, named after the plugin (`release-notes` in the `demo-kit` plugin becomes `demo-kit-release-notes`). Adding a plugin adds none of its connectors: its page's Connectors tab shows each as Connected, Not connected or Not added, with Add or Connect. Its page also has Skills, Commands and Agents tabs. The plugin's switch turns its skills and connectors on or off together, and Remove takes them all away. A plugin's agents and hooks are kept but not run in chat.
 
 ### Skills
 
