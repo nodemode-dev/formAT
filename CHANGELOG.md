@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.22.0 · 2026-10-18
+
+Cited answers, drawn the way the Claude API writes them.
+
+- An answer from a web search or an attached document is no longer broken into a paragraph per claim: the API sends each claim as its own text block, and Format now joins them into one flow.
+- Each claim backed by a source ends in a chip: the site's name (a link) or the document's title and page. Hover it for the source's title and the quoted passage. More than two sources fold into "+N". Chips appear while the reply streams; Copy leaves them out.
+- Redacted thinking no longer prints a bare "redacted thinking" note.
+- The streaming caret shows only on the reply's last text, not also on a paragraph before a search.
+- An inline sum or integral in math no longer nudges what follows it when its font arrives.
+
 ## 0.21.1 · 2026-10-18
 
 Fixes from a whole-app audit: every view at 1920, 1280, 1100, 760, 390 and 360 px had no overflow, no visible scrollbars and no errors.
