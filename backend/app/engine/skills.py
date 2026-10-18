@@ -202,7 +202,15 @@ def read_file(name: str, rel: str) -> dict:
     return {"name": name, "path": rel, "size": len(data), "text": data[:MAX_SKILL_FILE].decode("utf-8", errors="replace"), "binary": False}
 
 
-INVOKE = re.compile(r"(?:^|(?<=[\s(]))/([a-z0-9][a-z0-9-]{0,63})(?=$|[\s.,;:!?)])|\b(?:use|run|load|apply|with)\s+(?:the\s+)?/?([a-z0-9][a-z0-9-]{0,63})\s+skill\b", re.I)
+INVOKE = re.compile(r"(?:^|(?<=[\s(]))/([a-z0-9][a-z0-9-]{0,63}(?::[a-z0-9][a-z0-9-]{0,63})?)(?=$|[\s.,;:!?)])"
+                    r"|\b(?:use|run|load|apply|with)\s+(?:the\s+)?/?([a-z0-9][a-z0-9-]{0,63}(?::[a-z0-9][a-z0-9-]{0,63})?)\s+skill\b", re.I)
+
+
+def _plain(name: str) -> str:
+    plugin, _, short = name.partition(":")
+    if not short:
+        return name
+    return short if short.startswith(f"{plugin}-") else f"{plugin}-{short}"
 
 
 def enabled_names() -> list[str]:
@@ -214,7 +222,7 @@ def invoked(text: str, names: list[str] | None = None) -> list[str]:
     known = set(enabled_names() if names is None else names)
     found: list[str] = []
     for m in INVOKE.finditer(text or ""):
-        name = (m.group(1) or m.group(2) or "").lower()
+        name = _plain((m.group(1) or m.group(2) or "").lower())
         if name in known and name not in found:
             found.append(name)
     return found

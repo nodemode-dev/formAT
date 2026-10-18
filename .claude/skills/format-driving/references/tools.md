@@ -637,6 +637,12 @@ Adds one of a plugin's MCP servers as a connector (a plugin adds none by itself,
 
 - changes state · command `plugin.addConnector` · params: `name` string, `server` string
 
+### create_plugin
+
+Writes a plugin from its files and installs it (Customize, Plugins, Add, Create a plugin). Creating one with the name of an installed plugin replaces it and keeps its connectors and on or off state; plugin.files gives the files to edit. Use to write a plugin from its files and install it, or to save edits to one (same name replaces it).
+
+- changes state · command `plugin.create` · params: `name` string, `description` string, `version?` string, `files?` array
+
 ### delete_plugin
 
 Removes a plugin with the skills and connectors it added. Not undoable. Use only when the person asks to remove a plugin.
@@ -648,6 +654,12 @@ Removes a plugin with the skills and connectors it added. Not undoable. Use only
 Turns all of a plugin's skills and connectors on or off together. Use to turn a plugin's skills and connectors on or off together.
 
 - changes state · command `plugin.enable` · params: `name` string, `enabled` boolean
+
+### get_plugin_files
+
+The text files of an installed plugin, as {path, content}, for editing and plugin.create (plugin.json is left out; its name, description and version are on plugin.get). Use to read an installed plugin's text files before editing it with create_plugin.
+
+- read-only · command `plugin.files` · params: `name` string
 
 ### get_plugin
 

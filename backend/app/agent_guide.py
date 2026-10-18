@@ -28,6 +28,8 @@ GUIDE: dict[str, tuple[str, str]] = {
     "plugin.enable": ("enable_plugin", "Use to turn a plugin's skills and connectors on or off together."),
     "plugin.delete": ("delete_plugin", "Use only when the person asks to remove a plugin."),
     "plugin.addConnector": ("add_plugin_connector", "Use when a plugin's connector shows not_added and the person wants it: adds it as a connector, then connect it."),
+    "plugin.create": ("create_plugin", "Use to write a plugin from its files and install it, or to save edits to one (same name replaces it)."),
+    "plugin.files": ("get_plugin_files", "Use to read an installed plugin's text files before editing it with create_plugin."),
     "plugin.install": ("install_plugin_from_marketplace", "Use to install a plugin that an added marketplace offers, by marketplace and plugin name."),
     "marketplace.list": ("list_marketplaces", "Use to see the plugin marketplaces added to Format and the plugins each offers, installed or not."),
     "marketplace.add": ("add_marketplace", "Use when the person gives a plugin marketplace as a repository URL, owner/repo, or a folder."),

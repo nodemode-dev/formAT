@@ -14,7 +14,7 @@ from app.engine.commands import CommandError, command
           "title": {"type": "string", "description": "with no conversationId: the new chat's title (default: the first line of text)"},
           "connectorsOff": {"type": "array", "items": {"type": "string"}, "description": "with no conversationId: connector ids turned off for the new chat (the toggles under + then Connectors before the first message)"},
           "research": {"type": "boolean", "description": "Research mode for this message: Claude plans, searches and reads many sources, and writes a cited report (web tools on, high effort)"},
-          "output": {"type": "string", "enum": ["doc", "sheet", "deck"], "description": "Ask for the answer as a document, spreadsheet or slide deck beside the chat (the composer's Create picker)"}},
+          "output": {"type": "string", "enum": ["doc", "sheet", "deck", "plugin"], "description": "Ask for the answer as a document, spreadsheet or slide deck beside the chat (the composer's Create picker), or plugin: Create with Claude, where Claude writes a plugin in the chat folder and installs it with add_plugin for the rest of the chat"}},
          description="Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
 def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None, title: str | None = None,
          research: bool | None = None, output: str | None = None, connectorsOff: list | None = None) -> dict:

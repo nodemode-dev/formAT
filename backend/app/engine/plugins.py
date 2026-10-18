@@ -237,6 +237,55 @@ def add_connector(name: str, server: str) -> dict:
     return summary(folder) | {"added": c["id"]}
 
 
+MAX_EDIT_BYTES = 1_000_000
+
+
+def files_of(name: str) -> list[dict]:
+    folder = _folder(name)
+    out = []
+    for f in sorted(folder.rglob("*")):
+        rel = f.relative_to(folder).as_posix()
+        if not f.is_file() or rel == STATE or rel.startswith(".claude-plugin/") or f.stat().st_size > 200_000:
+            continue
+        try:
+            out.append({"path": rel, "content": f.read_text(encoding="utf-8")})
+        except UnicodeDecodeError:
+            continue
+    return out
+
+
+def create(name: str, description: str, files: list | None, version: str = "") -> dict:
+    import tempfile
+    name = (name or "").strip().lower()
+    if not NAME.match(name):
+        raise CommandError("A plugin name is lowercase letters, digits and hyphens, up to 64")
+    if not (description or "").strip():
+        raise CommandError("Give the plugin a description: it is how you and Claude know what it is for")
+    items = files or []
+    if not isinstance(items, list) or any(not isinstance(f, dict) or not isinstance(f.get("path"), str) or not isinstance(f.get("content", ""), str) for f in items):
+        raise CommandError("files is a list of {path, content}")
+    if len(items) > 200 or sum(len(f.get("content", "")) for f in items) > MAX_EDIT_BYTES:
+        raise CommandError("A plugin written here holds at most 200 files and 1 MB of text")
+    with tempfile.TemporaryDirectory(prefix="format-plugin-") as tmp:
+        base = Path(tmp) / name
+        (base / ".claude-plugin").mkdir(parents=True)
+        manifest = {"name": name, "description": description.strip(), "version": (version or "").strip() or "0.1.0"}
+        old = root() / name
+        if old.is_dir():
+            prev = _manifest(old) or {}
+            manifest = {k: v for k, v in prev.items() if k not in ("name", "description", "version")} | manifest
+        (base / ".claude-plugin" / "plugin.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        for f in items:
+            rel = Path(f["path"].strip().lstrip("/"))
+            if not f["path"].strip() or ".." in rel.parts or rel.parts[0] in (".claude-plugin", STATE):
+                raise CommandError(f"The path {f['path']!r} must be inside the plugin and not in .claude-plugin")
+            target = base / rel
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_text(f.get("content", ""), encoding="utf-8")
+        origin = _state(old).get("origin") if old.is_dir() else None
+        return install(base, origin if isinstance(origin, dict) and origin.get("kind") == "created" else {"kind": "created"})
+
+
 def owner_of_skill(skill: str) -> str:
     for p in root().iterdir():
         if p.is_dir() and skill in (_state(p).get("skills") or []):
@@ -280,6 +329,20 @@ def plugin_add(uploadId: str | None = None, path: str | None = None) -> dict:
          description="Adds one of a plugin's MCP servers as a connector (a plugin adds none by itself, as on claude.ai); then connector.connect connects it. Returns the plugin with added, the new connector's id.")
 def plugin_add_connector(name: str, server: str) -> dict:
     return add_connector(name, server)
+
+
+@command("plugin.create", "Create a plugin",
+         {"name": {"type": "string", "required": True, "description": "lowercase letters, digits and hyphens"}, "description": {"type": "string", "required": True},
+          "version": {"type": "string"}, "files": {"type": "array", "items": {"type": "object"}, "description": "the plugin's files as {path, content}, such as skills/<skill>/SKILL.md, commands/<name>.md or .mcp.json"}},
+         description="Writes a plugin from its files and installs it (Customize, Plugins, Add, Create a plugin). Creating one with the name of an installed plugin replaces it and keeps its connectors and on or off state; plugin.files gives the files to edit.")
+def plugin_create(name: str, description: str, version: str | None = None, files: list | None = None) -> dict:
+    return create(name, description, files, version or "")
+
+
+@command("plugin.files", "A plugin's files", {"name": {"type": "string", "required": True}}, mutates=False,
+         description="The text files of an installed plugin, as {path, content}, for editing and plugin.create (plugin.json is left out; its name, description and version are on plugin.get).")
+def plugin_files(name: str) -> dict:
+    return {"name": name, "files": files_of(name)}
 
 
 @command("plugin.enable", "Turn a plugin on or off", {"name": {"type": "string", "required": True}, "enabled": {"type": "boolean", "required": True}},

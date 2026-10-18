@@ -79,7 +79,9 @@ DEFINITIONS = [
                                                         "caption": {"type": "string", "description": "One line of context, optional"}},
                       "required": ["path"]}},
 ]
-NAMES = {d["name"] for d in DEFINITIONS} | {"memory", "skill", "browser"}
+ADD_PLUGIN = {"name": "add_plugin", "description": "Install a Claude plugin you wrote in this chat's workspace into Format (the person approves first). folder is the plugin's folder, the one holding .claude-plugin/plugin.json. Calling it again with the same plugin name replaces the installed copy and keeps the connectors already added.",
+              "input_schema": {"type": "object", "properties": {"folder": {"type": "string", "description": "Path of the plugin folder, relative to the workspace folder"}}, "required": ["folder"]}}
+NAMES = {d["name"] for d in DEFINITIONS} | {"memory", "skill", "browser", "add_plugin"}
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
 
 _waits: dict[str, dict] = {}
@@ -113,6 +115,8 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
             out.append(dict(browser.DEFINITION))
     if settings.get("memory") and not agent:
         out.append(dict(MEMORY))
+    if settings.get("output") == "plugin" and not agent:
+        out.append(dict(ADD_PLUGIN))
     from app.engine import connectors, skills
     if skills.enabled():
         out.append(dict(SKILL))
@@ -289,6 +293,18 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
         if name.startswith("mcp__"):
             from app.engine import connectors
             return connectors.call(name, args, conversation_id)
+        if name == "add_plugin":
+            from app.engine import plugins
+            from app.engine.commands import CommandError
+            folder = _inside(root, str(args.get("folder") or ""))
+            if not folder.is_dir():
+                return f"No folder {args.get('folder')} in the workspace.", True
+            try:
+                got = plugins.install(folder, {"kind": "created", "conversation": conversation_id})
+            except CommandError as exc:
+                return f"The plugin was not installed: {exc}", True
+            return (f"Installed the {got['name']} plugin in Format: {len(got['skills'])} skill(s) and command(s)"
+                    + (f", and {len(got['servers'])} connector(s) the person can add from its page in Customize, Plugins" if got.get("servers") else "") + "."), False
         if name == "task_list":
             items = args.get("tasks")
             if not isinstance(items, list) or not items:
