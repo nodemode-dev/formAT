@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.14.0
-Last updated: 2026-10-18 · v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
+Current build version: v0.14.1
+Last updated: 2026-10-18 · v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -718,12 +718,19 @@ An edit's detail showed the old and the new passage as two plain paragraphs, whi
 
 The person's messages sit on the right of the column, bubble, files and comments aligned to the right edge, text inside the bubble still left-aligned; Claude's replies stay full width from the left, as on claude.ai. Thinking is a quiet "Thinking" row with the same chevron as the tool summary, the text under a hairline on expand, instead of a bordered box between every step.
 
-### src/ui/chat-view.ts · known: the streaming caret's line
-- refers-to: src/styles/ft-chat.css :: .ft-msg.is-streaming .ft-md-tail > :last-child::after; src/ui/markdown.ts :: StreamRenderer
-- kind: todo
-- logged: v0.13.0 · 2026-10-18
+### src/styles/ft-chat.css · the streaming caret's line
+- refers-to: src/styles/ft-chat.css :: .ft-msg.is-streaming .ft-md-tail > :is(p, h1-h6):last-child::after, and the last li of a last ul or ol
+- kind: rationale
+- logged: v0.13.0 · 2026-10-18, fixed v0.14.1 · 2026-10-18
 
-Inherited, not changed this turn. When a streamed text block ends in a code block, the caret wraps onto a line of its own under the code; when the block finishes, that line goes and what follows moves up one line (layout shift 0.0005, measured as `.ft-tools` moving 25 px, 50 ms after the caret drew). Fix idea: place the caret absolutely at the end of the last line, or reserve the caret's line on code blocks too.
+When a streamed text block ended in a code block (or a list, a table, a quote), the caret, drawn as `::after` of the tail's last child, landed on a line of its own under that block; when the block finished the line went and what followed moved up (layout shift 0.0005, `.ft-tools` up 25 px, 50 ms after the caret drew). The caret is now drawn only where it sits inline at the end of text: a last paragraph or heading, or the last item of a last list when that item holds no nested block. While a code block or table streams there is no caret; the growing block shows the progress. Measured after: the 0.0005 entry is gone.
+
+### src/styles/ft-chat.css · zero horizontal overflow
+- refers-to: src/styles/ft-chat.css :: .ft-chat-scroll (overflow-x hidden), .ft-chat, .ft-thread, .ft-msg.is-assistant, .ft-msg.is-compaction, .ft-msg-blocks, .ft-tools, .ft-tools-text, .ft-tools-list, .ft-tool, .ft-tool-d, .ft-tool-body, .ft-agent, .ft-panel (grid-template-columns minmax(0, 1fr), min-width 0, the panel's width capped), .ft-tool-ask-text (flex-basis 100%), .ft-code pre, .ft-tool-input.is-diff, .ft-thinking-body, .ft-md table (wrap anywhere), .ft-composer-bar (minmax(0, auto)), .ft-bar-left, .ft-bar-right, .ft-model-name, .ft-model-effort, the 480 px rule
+- kind: rationale
+- logged: v0.14.1 · 2026-10-18
+
+The owner's screenshots (v0.14.0, Claude Code route): a long `date; cd nodeform && for f in ...` command ran past the column, the approval row with five buttons ran off the window, and the whole thread scrolled sideways. Cause: every grid in the thread had an implicit `auto` column, and an `auto` track takes the min-content width of its widest item. A tool head is a flex row whose command text is `nowrap` (ellipsis), so its min-content is the whole command; that set the width of `.ft-tool`, the tool list, the group, `.ft-msg-blocks` and the reply, so every paragraph of that reply grew with it and `.ft-chat-scroll` (overflow-y auto, so overflow-x auto too) scrolled sideways. Measured before: the chat could scroll 698 px sideways at 760 px wide and 1022 px at 390 px; the approval row was 1359 px wide; 174 elements past the column. Now every grid on the path declares `minmax(0, 1fr)` and its items `min-width: 0`, so content is laid out to the column and long text breaks: commands ellipsize in the head and wrap in the body, diffs, code blocks, thinking and table cells wrap anywhere (code blocks wrap instead of scrolling, since scrollbars are hidden and a clipped line looked like overflow). The approval question takes its own line and the buttons wrap under it. `overflow-x: hidden` on the scroller is the backstop. The same `auto`-column pattern made the app wider than a phone screen: `.ft-chat` took the composer bar's min-content (326 px), so at 390 and 360 px the composer, thread and top-bar icons were clipped on the right; `.ft-chat` now has a `minmax(0, 1fr)` column, the bar's right group shrinks with ellipsis, and below 480 px the context meter and the effort label are not shown (effort stays in the model menu). The Outputs panel's fixed 304 px width (ft-chat.css loads after ft-shell.css's narrow override) is capped to the space available. Measured after, under 4x CPU and a slow network with a long command, a 220-character URL, 200-character inline code, a nine-column table, a 300-character code line and a 260-character unbroken word in one reply: at 1920, 1280, 760, 390 and 360 px, sideways scroll 0 (a forced scrollLeft of 500 stays 0), 0 elements past the column, the approval row 627 px in a 640 px column (247 px in 260 px at 360), the app exactly the window's width; the earlier checks (follow, sides, `/skill`, Allow all, diff, drop, Allow for this chat) unchanged; no page errors.
 
 ---
 
