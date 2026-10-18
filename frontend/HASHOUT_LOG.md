@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.15.0
-Last updated: 2026-10-18 · v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
+Current build version: v0.16.0
+Last updated: 2026-10-18 · v0.16.0: a connector's page with status, Disconnect, the "..." menu and tool permissions; v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -482,6 +482,13 @@ New chat in this project sets a draft project: the empty chat shows "New chat in
 ---
 
 ## src/ui/customize-view.ts and src/ui/memory-panel.ts {#src-ui-customize}
+
+### src/ui/customize-view.ts · a connector's page: status, Disconnect, the "..." menu, tool permissions
+- refers-to: src/ui/customize-view.ts :: the connector page template (ft-cn-chip, ft-cn-power, ft-cn-delete, ft-cn-more, ft-cn-perm-head, ft-cn-perm, ft-cn-perm-note), the add form (ft-cn-headers), wireConnectors (power, more, delete, the change listener on the page, headers parsing), powerConnector, chipText, stateText, renderConnectors (ft-cn-rowstate, ft-cn-rowconnect), openConnector, paintConnector; src/state/app-state.ts :: ConnectorInfo (headerNames, defaultPermission, tools.permission), ToolPermission; src/styles/ft-shell.css :: .ft-cn-tool, select.ft-cn-perm, .ft-cn-perm-head, .ft-cn-perm-all, .ft-cn-perm-note, .ft-cn-chip, .ft-cn-rowstate, the 480 px rule
+- kind: rationale
+- logged: v0.16.0 · 2026-10-18
+
+Per claude.com/docs/connectors/getting-started: a connector page has Tool permissions (Always allow, Needs approval, Blocked, per tool or for a group), Disconnect (the row then shows Connect), a "..." menu with Remove, and Reconnect when access is lost. The page head now has a status chip (Connected, Connected through Anthropic, Connecting, Needs reconnecting, Disconnected), a Disconnect or Connect button, and a "..." menu with Reconnect and Remove; Remove shows a confirm button beside it rather than deleting at once. The tools are a list of rows with a select each, and an All tools select above them that reads Mixed when they differ; a note under the heading says what the permissions do on this connector's route (Needs approval on a public server moves it to the engine, and back when nothing needs approval). A list row shows its chip while connected and a Connect button while disconnected (it turns the connector on and connects it), in place of the on and off checkbox. The add form gains request headers, one `Name: value` per line, for servers reached by URL. The tool rows are rebuilt only when the connector's tool names change (keyed by id and names); permission changes set each select's value in place. Verified under 4x CPU and a slow network: the row read Connected; the selects showed ask for a local server and changed the engine; All tools read Mixed; Disconnect, then the row's Connect, then Connected; the "..." menu and the confirm; layout shift none; no page errors; at 390 px nothing past the edge, All tools on one line. Still to come in Phase 11: the custom connector's sign-in choices with OAuth, and connectors on or off per chat from the + menu.
 
 ### src/ui/customize-view.ts · claude.ai's shape: tabs, search, Add, the file browser
 - refers-to: src/ui/customize-view.ts :: CustomizeHooks (tryInChat), the template (ft-cz-tabs, data-sec, ft-cz-search, ft-cz-add, ft-sk-list, ft-cz-try, ft-cz-browser, ft-cz-tree, ft-cz-viewer), showTab, filterSection, counts, showFile, open (the tree), render, renderPlugins and renderConnectors (counts); src/app.ts :: CustomizeView hooks; src/styles/ft-shell.css :: .ft-customize .ft-cz-main:not([hidden]), .ft-cz-tabs, .ft-cz-tab, .ft-cz-count, .ft-cz-actions .ft-cz-search, .ft-cz-browser, .ft-cz-tree*, .ft-cz-viewer*, .ft-cz-raw, the 900 and 480 px rules

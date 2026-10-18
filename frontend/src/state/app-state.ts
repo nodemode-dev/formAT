@@ -154,8 +154,12 @@ export interface ConnectorInfo {
   route: 'api' | 'local';
   status: string;
   error: string;
-  tools: Array<{ name: string; description: string; enabled: boolean }>;
+  headerNames?: string[];
+  defaultPermission?: ToolPermission;
+  tools: Array<{ name: string; description: string; enabled: boolean; permission?: ToolPermission }>;
 }
+
+export type ToolPermission = 'allow' | 'ask' | 'block';
 
 export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number; plugin?: string }
 

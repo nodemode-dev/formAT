@@ -382,7 +382,21 @@
 .ft-cn-state { margin: 0 0 var(--space-4); font-size: var(--fs-13); color: var(--text-secondary); overflow-wrap: anywhere; }
 .ft-cn-state.is-error { color: var(--danger-text); }
 .ft-cn-tools { display: grid; gap: var(--space-2); }
-.ft-cn-tool { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: var(--space-3); align-items: start; padding: var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); cursor: pointer; }
+.ft-cn-tool { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius-md); background: var(--surface-1); }
+.ft-customize select.ft-cn-perm { flex: none; width: auto; max-width: 100%; min-width: 0; height: var(--ctl-md); padding: 0 var(--space-2); font-size: var(--fs-12); }
+.ft-cn-perm-all span { white-space: nowrap; }
+.ft-cn-perm-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--space-2); }
+.ft-cn-perm-head[hidden] { display: none; }
+.ft-cn-perm-all { display: inline-flex; align-items: center; gap: var(--space-2); font-size: var(--fs-12); color: var(--text-secondary); }
+.ft-cn-perm-note { margin: var(--space-1) 0 var(--space-3); }
+.ft-cn-chip { display: inline-flex; align-items: center; height: 22px; padding: 0 var(--space-2); border: 1px solid var(--line-2); border-radius: 999px; font: var(--fs-11) var(--font-ui); color: var(--text-secondary); white-space: nowrap; }
+.ft-cn-chip[hidden] { display: none; }
+.ft-cn-chip[data-s="connected"] { border-color: color-mix(in srgb, var(--ok) 45%, transparent); color: var(--ok); }
+.ft-cn-chip[data-s="error"] { border-color: color-mix(in srgb, var(--warn) 45%, transparent); color: var(--warn); }
+.ft-cn-rowstate { display: inline-flex; align-items: center; justify-content: flex-end; min-width: 0; }
+.ft-cn-rowconnect[hidden] { display: none; }
+.ft-cn-delete[hidden] { display: none; }
+@media (max-width: 480px) { .ft-cn-tool { grid-template-columns: minmax(0, 1fr); } .ft-customize .ft-cn-badge { display: none; } }
 .ft-cn-tool input { width: 16px; height: 16px; margin: 2px 0 0; accent-color: var(--accent-color); }
 .ft-cn-tool span { display: grid; gap: 2px; min-width: 0; }
 .ft-cn-tool b { font: 500 var(--fs-13) var(--font-mono); }

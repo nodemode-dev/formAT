@@ -64,7 +64,8 @@ export class CustomizeView {
             <label class="ft-field"><span>Name</span><input class="ft-input" data-c="name" maxlength="40" placeholder="lowercase, for example docs or github"></label>
             <div class="ft-cn-kind" role="radiogroup" aria-label="Kind"><label class="ft-field ft-check"><input type="radio" name="ft-cn-kind" value="url" checked><span>By URL</span></label><label class="ft-field ft-check"><input type="radio" name="ft-cn-kind" value="command"><span>By command (a local server)</span></label></div>
             <label class="ft-field ft-cn-url"><span>Server URL</span><input class="ft-input" data-c="url" placeholder="https://example.com/mcp" spellcheck="false"></label>
-            <label class="ft-field ft-cn-token"><span>Token (optional)</span><input class="ft-input" data-c="token" type="password" autocomplete="off" placeholder="Bearer token, if the server needs one"></label>
+            <label class="ft-field ft-cn-token"><span>Access token (optional)</span><input class="ft-input" data-c="token" type="password" autocomplete="off" placeholder="Sent as a Bearer token, if the server needs one"></label>
+            <label class="ft-field ft-cn-headers"><span>Request headers (optional, one per line)</span><textarea class="ft-input" data-c="headers" rows="2" spellcheck="false" placeholder="X-Api-Key: your-key"></textarea></label>
             <label class="ft-field ft-cn-cmd" hidden><span>Command</span><input class="ft-input" data-c="command" placeholder="npx -y @modelcontextprotocol/server-filesystem ~/notes" spellcheck="false"></label>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-cn-add">Add and connect</button><button type="button" class="ft-btn ft-cn-cancel">Cancel</button></div>
           </div>
@@ -83,10 +84,11 @@ export class CustomizeView {
       </div>
       <div class="ft-cz-detail ft-cn-detail" hidden>
         <button type="button" class="ft-text-btn ft-cn-back">${ui('back', 14)}<span>Customize</span></button>
-        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-cn-name"></h1><label class="ft-field ft-check"><input type="checkbox" class="ft-cn-on"><span>On</span></label><button type="button" class="ft-btn ft-cn-reconnect">Reconnect</button><button type="button" class="ft-btn ft-cn-delete">Remove</button></div>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-cn-name"></h1><span class="ft-cn-chip"></span><button type="button" class="ft-btn ft-cn-power"></button><button type="button" class="ft-btn ft-cn-delete" hidden>Remove? Claude loses its tools</button><button type="button" class="ft-icon-btn ft-cn-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
         <p class="ft-cz-desc ft-cn-where"></p>
         <p class="ft-cn-state"></p>
-        <h2 class="ft-proj-sub">Tools</h2>
+        <div class="ft-cn-perm-head"><h2 class="ft-proj-sub">Tool permissions</h2><label class="ft-cn-perm-all"><span>All tools</span><select class="ft-input ft-cn-perm" data-tool="*" aria-label="Permission for all tools"><option value="">Mixed</option><option value="allow">Always allow</option><option value="ask">Needs approval</option><option value="block">Blocked</option></select></label></div>
+        <p class="ft-set-note ft-cn-perm-note"></p>
         <div class="ft-cn-tools" role="list"></div>
         <p class="ft-proj-none ft-cn-notools">No tools listed yet. Reconnect to list them.</p>
       </div>
@@ -282,7 +284,7 @@ export class CustomizeView {
     const kind = () => (form.querySelector<HTMLInputElement>('input[name=ft-cn-kind]:checked')?.value ?? 'url');
     const syncKind = () => {
       const url = kind() === 'url';
-      for (const [sel, hide] of [['.ft-cn-url', !url], ['.ft-cn-token', !url], ['.ft-cn-cmd', url]] as const) {
+      for (const [sel, hide] of [['.ft-cn-url', !url], ['.ft-cn-token', !url], ['.ft-cn-headers', !url], ['.ft-cn-cmd', url]] as const) {
         const node = q(form, sel);
         if (node.hidden !== hide) node.hidden = hide;
       }
@@ -292,7 +294,8 @@ export class CustomizeView {
     q(this.root, '.ft-cn-cancel').addEventListener('click', () => { form.hidden = true; });
     q(this.root, '.ft-cn-add').addEventListener('click', async () => {
       const get = (k: string) => q<HTMLInputElement>(form, `[data-c=${k}]`).value.trim();
-      const params = kind() === 'url' ? { name: get('name').toLowerCase(), url: get('url'), token: get('token') } : { name: get('name').toLowerCase(), command: get('command') };
+      const headers = Object.fromEntries(get('headers').split('\n').map((l) => l.trim()).filter(Boolean).map((l) => { const i = l.indexOf(':'); return i > 0 ? [l.slice(0, i).trim(), l.slice(i + 1).trim()] : [l, '']; }));
+      const params = kind() === 'url' ? { name: get('name').toLowerCase(), url: get('url'), token: get('token'), ...(Object.keys(headers).length ? { headers } : {}) } : { name: get('name').toLowerCase(), command: get('command') };
       const msg = q(this.root, '.ft-cn-msg');
       try {
         const c = await run<{ id: string; name: string }>('connector.add', params);
@@ -309,36 +312,49 @@ export class CustomizeView {
     list.addEventListener('click', (e) => {
       const t = e.target as HTMLElement;
       const id = t.closest<HTMLElement>('[data-cn]')?.dataset.cn;
-      if (id && !t.closest('.ft-cz-toggle')) this.openConnector(id);
-    });
-    list.addEventListener('change', (e) => {
-      const box = (e.target as HTMLElement).closest<HTMLInputElement>('.ft-cz-toggle input');
-      const id = box?.closest<HTMLElement>('[data-cn]')?.dataset.cn;
-      if (box && id) void run('connector.update', { id, enabled: box.checked }).catch(() => undefined);
+      if (!id) return;
+      if (t.closest('.ft-cn-rowconnect')) { void this.powerConnector(id, true); return; }
+      this.openConnector(id);
     });
     q(this.root, '.ft-cn-back').addEventListener('click', () => this.showList());
-    q<HTMLInputElement>(this.root, '.ft-cn-on').addEventListener('change', (e) => {
-      if (this.cnOpen) void run('connector.update', { id: this.cnOpen, enabled: (e.target as HTMLInputElement).checked }).catch(() => undefined);
-    });
-    q(this.root, '.ft-cn-reconnect').addEventListener('click', () => { if (this.cnOpen) void run('connector.connect', { id: this.cnOpen }).catch(() => undefined); });
-    q(this.root, '.ft-cn-delete').addEventListener('click', async (e) => {
-      const btn = e.currentTarget as HTMLButtonElement;
-      if (!this.cnOpen) return;
-      if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Remove? Claude loses its tools'; return; }
-      await run('connector.delete', { id: this.cnOpen }).catch(() => undefined);
-    });
-    q(this.root, '.ft-cn-tools').addEventListener('change', (e) => {
-      const box = e.target as HTMLInputElement;
+    q(this.root, '.ft-cn-power').addEventListener('click', () => {
       const c = this.state.connectors.find((x) => x.id === this.cnOpen);
-      if (!c || !box.dataset.tool) return;
-      const off = new Set(c.tools.filter((t) => !t.enabled).map((t) => t.name));
-      if (box.checked) off.delete(box.dataset.tool); else off.add(box.dataset.tool);
-      void run('connector.update', { id: c.id, disabledTools: [...off] }).catch(() => undefined);
+      if (c) void this.powerConnector(c.id, !c.enabled);
+    });
+    q(this.root, '.ft-cn-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
+      { label: 'Reconnect', desc: 'Connect again and list its tools', icon: 'retry', action: () => { if (this.cnOpen) void run('connector.connect', { id: this.cnOpen }).catch(() => undefined); } },
+      { label: 'Remove', desc: 'Delete this connector from Format', icon: 'trash', action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-cn-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
+    ], 'down'));
+    q(this.root, '.ft-cn-delete').addEventListener('click', async () => {
+      if (this.cnOpen) await run('connector.delete', { id: this.cnOpen }).catch(() => undefined);
+    });
+    this.cnDetail.addEventListener('change', (e) => {
+      const sel = (e.target as HTMLElement).closest<HTMLSelectElement>('.ft-cn-perm');
+      const c = this.state.connectors.find((x) => x.id === this.cnOpen);
+      if (!sel || !c || !sel.dataset.tool || !sel.value) return;
+      void run('connector.update', { id: c.id, toolPermissions: { [sel.dataset.tool]: sel.value } }).catch(() => undefined);
     });
   }
 
+  private async powerConnector(id: string, on: boolean): Promise<void> {
+    try {
+      await run('connector.update', { id, enabled: on });
+      if (on) await run('connector.connect', { id });
+    } catch (err) {
+      setText(q(this.root, '.ft-cn-msg'), err instanceof Error ? err.message : String(err));
+    }
+  }
+
+  private chipText(c: ConnectorInfo): string {
+    if (!c.enabled) return 'Disconnected';
+    if (c.status === 'connected') return 'Connected';
+    if (c.status === 'connecting') return 'Connecting';
+    if (c.status === 'error') return c.route === 'api' ? 'Connected through Anthropic' : 'Needs reconnecting';
+    return c.route === 'api' ? 'Connected through Anthropic' : 'Not connected yet';
+  }
+
   private stateText(c: ConnectorInfo): string {
-    if (!c.enabled) return 'Off';
+    if (!c.enabled) return 'Disconnected';
     if (c.status === 'connected') return `${c.tools.filter((t) => t.enabled).length} of ${c.tools.length} tools on`;
     if (c.status === 'connecting') return 'Connecting';
     if (c.status === 'error') return c.route === 'api' ? 'Sent through Anthropic; tools not listed here' : 'Not connected';
@@ -353,7 +369,7 @@ export class CustomizeView {
     items.forEach((c, i) => {
       let row = this.cnRows.get(c.id);
       if (!row) {
-        row = el(`<div class="ft-cz-row" role="listitem" data-cn="${esc(c.id)}"><span class="ft-cz-icon">${ui('plug', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cn-badge"></span><label class="ft-cz-toggle" title="On or off"><input type="checkbox" aria-label="Connector on"></label></div>`);
+        row = el(`<div class="ft-cz-row" role="listitem" data-cn="${esc(c.id)}"><span class="ft-cz-icon">${ui('plug', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cn-badge"></span><span class="ft-cn-rowstate"><span class="ft-cn-chip"></span><button type="button" class="ft-btn ft-cn-rowconnect">Connect</button></span></div>`);
         this.cnRows.set(c.id, row);
       }
       setText(q(row, '.ft-cz-row-name'), c.name);
@@ -362,8 +378,12 @@ export class CustomizeView {
       const badge = q(row, '.ft-cn-badge');
       if (badge.dataset.s !== c.status) badge.dataset.s = c.status;
       setAttr(badge, 'title', c.route === 'api' ? 'Claude reaches this server through Anthropic\'s MCP connector' : 'Format\'s engine runs this server\'s tools; they ask before running in Ask mode');
-      const box = q<HTMLInputElement>(row, '.ft-cz-toggle input');
-      if (box.checked !== c.enabled) box.checked = c.enabled;
+      const chip = q(row, '.ft-cn-chip');
+      setText(chip, this.chipText(c));
+      if (chip.dataset.s !== (c.enabled ? c.status : 'off')) chip.dataset.s = c.enabled ? c.status : 'off';
+      const conn = q<HTMLButtonElement>(row, '.ft-cn-rowconnect');
+      if (conn.hidden === !c.enabled) conn.hidden = c.enabled;
+      if (chip.hidden === !c.enabled) chip.hidden = !c.enabled;
       row.classList.toggle('is-off', !c.enabled);
       row.classList.toggle('is-error', c.status === 'error' && c.route === 'local');
       if (list.children[i] !== row) list.insertBefore(row, list.children[i] ?? null);
@@ -380,7 +400,7 @@ export class CustomizeView {
   private openConnector(id: string): void {
     this.cnOpen = id;
     const del = q<HTMLButtonElement>(this.root, '.ft-cn-delete');
-    if (del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Remove'; }
+    if (!del.hidden) del.hidden = true;
     this.paintConnector();
     if (!this.main.hidden) this.main.hidden = true;
     if (!this.detail.hidden) this.detail.hidden = true;
@@ -397,18 +417,31 @@ export class CustomizeView {
     setText(st, c.status !== 'error' ? this.stateText(c) : c.route === 'api'
       ? `Its tools could not be listed from this computer (${c.error}); Claude still reaches the server through Anthropic.` : `Last connection failed: ${c.error}`);
     st.classList.toggle('is-error', c.status === 'error');
-    const on = q<HTMLInputElement>(this.root, '.ft-cn-on');
-    if (on.checked !== c.enabled) on.checked = c.enabled;
+    const chip = q(this.cnDetail, '.ft-cn-chip');
+    setText(chip, this.chipText(c));
+    if (chip.dataset.s !== (c.enabled ? c.status : 'off')) chip.dataset.s = c.enabled ? c.status : 'off';
+    setText(q(this.root, '.ft-cn-power'), c.enabled ? 'Disconnect' : 'Connect');
+    const perm = (t: { enabled: boolean; permission?: string }): string => t.permission ?? (t.enabled ? c.defaultPermission ?? 'ask' : 'block');
     const box = q(this.root, '.ft-cn-tools');
     const key = JSON.stringify(c.tools.map((t) => t.name));
     if (box.dataset.v !== `${c.id}:${key}`) {
       box.dataset.v = `${c.id}:${key}`;
-      box.innerHTML = c.tools.map((t) => `<label class="ft-cn-tool" role="listitem"><input type="checkbox" data-tool="${esc(t.name)}"><span><b>${esc(t.name)}</b><small>${esc(t.description)}</small></span></label>`).join('');
+      box.innerHTML = c.tools.map((t) => `<div class="ft-cn-tool" role="listitem"><span><b>${esc(t.name)}</b><small>${esc(t.description)}</small></span><select class="ft-input ft-cn-perm" data-tool="${esc(t.name)}" aria-label="Permission for ${esc(t.name)}"><option value="allow">Always allow</option><option value="ask">Needs approval</option><option value="block">Blocked</option></select></div>`).join('');
     }
     c.tools.forEach((t) => {
-      const input = box.querySelector<HTMLInputElement>(`input[data-tool="${CSS.escape(t.name)}"]`);
-      if (input && input.checked !== t.enabled) input.checked = t.enabled;
+      const sel = box.querySelector<HTMLSelectElement>(`select[data-tool="${CSS.escape(t.name)}"]`);
+      if (sel && sel.value !== perm(t)) sel.value = perm(t);
     });
+    const kinds = new Set(c.tools.map(perm));
+    const all = q<HTMLSelectElement>(this.cnDetail, '.ft-cn-perm[data-tool="*"]');
+    const allValue = kinds.size === 1 ? [...kinds][0] : '';
+    if (all.value !== allValue) all.value = allValue;
+    const head = q(this.cnDetail, '.ft-cn-perm-head');
+    if (head.hidden === !c.tools.length) head.hidden = !c.tools.length;
+    setText(q(this.cnDetail, '.ft-cn-perm-note'), c.kind === 'url' && c.route === 'local' && !(c.headerNames ?? []).length && kinds.has('ask')
+      ? 'A tool needs approval, so Format runs this server itself and the approval card waits for you; with every tool on Always allow or Blocked, Claude reaches it through Anthropic again.'
+      : c.route === 'api' ? 'Claude reaches this server through Anthropic\'s MCP connector. Set a tool to Needs approval to have Format run the server and ask before each use.'
+        : 'Always allow runs a tool without a card, Needs approval asks in the chat first (unless Allow all or Allow for this chat is on), Blocked hides it from Claude.');
     const none = q(this.root, '.ft-cn-notools');
     if (none.hidden !== c.tools.length > 0) none.hidden = c.tools.length > 0;
   }
