@@ -32,7 +32,7 @@ Two optional parts install separately:
 
 If Claude Code is installed (the `claude` command) and you have signed in to it once, Format needs no key: each reply runs through Claude Code on your Claude plan, in the chat's own folder, and streams into the chat like any other reply. The line under the composer says "through Claude Code", and so does the account line at the bottom of the sidebar.
 
-- Claude Code's tools show as Format's cards (Ran a command, Edited a file, Read a file), and Ask, Auto and Plan work the same way: in Ask, a command or file change waits for Allow once, Always allow or Deny; Auto allows them; Plan blocks them. Claude Code's questions arrive as Format's question card, and its sub-agents show nested.
+- Claude Code's tools show as Format's cards (Ran a command, Edited a file, Read a file), and Ask, Allow all and Plan work the same way: in Ask, a command or file change waits for Allow once, Always allow, Allow all or Deny; Allow all allows them; Plan blocks them. Format's skills are offered to Claude Code too. Claude Code's questions arrive as Format's question card, and its sub-agents show nested.
 - Each reply continues the chat's Claude Code session, so Claude remembers the chat. Editing an earlier message branches from the session at that point.
 - To choose, open the model menu, Answer through: Automatic (your API key when one is set, otherwise Claude Code), Anthropic API key, or Claude Code. The menu item appears once Format finds Claude Code.
 - If a reply says Claude Code is not signed in, run `claude` in a terminal (Format's terminal dock works), sign in with `/login`, then retry.

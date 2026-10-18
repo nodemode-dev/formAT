@@ -11,7 +11,7 @@ This manual is for people using Format. People changing Format's code want the d
 | [Getting started](getting-started.md) | install, first run, your API key, the window at a glance |
 | [The desktop app](desktop-app.md) | Format for macOS, Windows and Linux: installing, first launch, where data lives, building it |
 | [Chatting](chatting.md) | the composer, models and effort, attachments, dictation, editing and branches, find, Research, Create |
-| [Tools and approvals](tools-and-approvals.md) | what Claude can do on your computer, Ask, Auto and Plan, the sandbox, questions, plans, sub-agents |
+| [Tools and approvals](tools-and-approvals.md) | what Claude can do on your computer, Ask, Allow all and Plan, the sandbox, questions, plans, sub-agents |
 | [Artifacts and documents](artifacts-and-documents.md) | pages and apps beside the chat, documents, spreadsheets and slides, comments, export, share links, files and outputs |
 | [Projects, memory and Customize](projects-memory-customize.md) | projects, memory, skills, plugins, connectors |
 | [The built-in browser](browser.md) | browsing in Format, and Claude using the same browser |

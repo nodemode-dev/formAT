@@ -9,12 +9,15 @@ Under the box, left to right:
 - **+** opens the menu: Add files or photos, Skills, Connectors, Research, and Create (Document, Spreadsheet or Slides).
 - **Microphone**: dictation (see below).
 - **Model and effort**: the model menu lists your key's models with a short description; Effort goes from Low to Max where the model supports it. Show thinking displays Claude's thinking summaries above each reply.
-- **Permission mode**: Ask, Auto or Plan (see [Tools and approvals](tools-and-approvals.md)).
+- **Permission mode**: Ask, Allow all or Plan (see [Tools and approvals](tools-and-approvals.md)).
+- **/** at the start of an empty message lists your skills; pick one (or type its name and press Enter) and the message starts `/name`, which loads that skill for the message.
+
+The reply is followed to the bottom while it streams, approval cards included. Scroll up and it stays where you are; the arrow above the composer, or sending a message, follows again. Your messages sit on the right, Claude's replies on the left.
 - The context meter shows how full the conversation is.
 
 ## Attachments
 
-Pick, drag, drop or paste files. Images and PDFs go to Claude as such; text and code as text; a .zip as its list of files with the readable ones included. Files of 1 MB or more are uploaded once through Anthropic's Files API and referred to after that.
+Pick, paste, or drag files from your desktop and drop them anywhere on the chat: a card says "Drop files to add them to the chat" while they are over it. Images and PDFs go to Claude as such; text and code as text; a .zip as its list of files with the readable ones included. Files of 1 MB or more are uploaded once through Anthropic's Files API and referred to after that.
 
 ## Dictation
 

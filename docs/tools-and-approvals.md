@@ -20,12 +20,12 @@ Claude in Format can act, not only talk. Each step it takes shows in the reply a
 
 Settings, Tools turns groups off: workspace tools, web tools, the browser.
 
-## Ask, Auto and Plan
+## Ask, Allow all and Plan
 
 The permission menu in the composer sets how much Claude may do without you:
 
-- **Ask** (default): commands, file changes, the browser and local connector tools wait for an approval card in the reply. Allow once, Always allow (remembered in Settings, Tools, Always allowed) or Deny. A denied step is reported to Claude, which carries on without it.
-- **Auto**: everything runs without asking (claude.ai calls this Bypass).
+- **Ask** (default): commands, file changes, the browser and local connector tools wait for an approval card in the reply. Allow once, Always allow (this tool from now on, remembered in Settings, Tools, Always allowed), Allow all (switches the mode to Allow all) or Deny. A denied step is reported to Claude, which carries on without it. Edits show as a diff: removed lines in red with a minus, added lines in green with a plus.
+- **Allow all**: everything runs without asking, in every chat, until you change the mode (claude.ai calls this Bypass). Switching to it also allows any card already waiting. The mode button turns amber while it is on.
 - **Plan**: Claude may read and search but not change anything; it describes what it would do.
 
 Reading files, searching, asking you, keeping a plan and publishing artifacts never need approval.
