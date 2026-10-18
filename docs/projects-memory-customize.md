@@ -26,9 +26,9 @@ A skill is a folder with a SKILL.md whose name and description tell Claude when 
 
 ### Connectors
 
-A connector is an MCP server that gives Claude more tools. Add one by URL or by command:
+A connector is an MCP server that gives Claude more tools. Add custom connector takes a URL (with an optional access token and request headers) or a command:
 
-- A public https URL goes to Claude through Anthropic's MCP connector.
-- A server on your computer or network, or one started by a command, runs inside Format; its tools ask before running in Ask mode.
+- A public https URL goes to Claude through Anthropic's MCP connector; its tools start on Always allow.
+- A server on your computer or network, or one started by a command, runs inside Format; its tools start on Needs approval.
 
-Open a connector to reconnect it or turn single tools on and off. The + menu turns connectors on and off for chats.
+Each row shows Connected, or a Connect button when it is disconnected. Open a connector for its page: a status chip, Disconnect or Connect, and a "..." menu with Reconnect and Remove. Under Tool permissions, set each tool, or All tools at once, to Always allow (runs without a card), Needs approval (asks in the chat first, unless Allow all or Allow for this chat is on) or Blocked (Claude never sees it). A public server with any tool on Needs approval, or with request headers, is run by Format instead of Anthropic so the approval can wait for you. Always allow on a connector's approval card sets that tool to Always allow here. The + menu turns connectors on and off.
