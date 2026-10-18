@@ -26,7 +26,7 @@ def kind_of(name: str, mime: str) -> str:
         return "image"
     if mime == "application/pdf" or low.endswith(".pdf"):
         return "pdf"
-    if low.endswith(".zip"):
+    if low.endswith((".zip", ".plugin")):
         return "zip"
     if mime.startswith("video/"):
         return "video"

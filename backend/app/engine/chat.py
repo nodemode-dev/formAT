@@ -46,8 +46,9 @@ def start(conversation_id: str) -> dict:
         settings = settings | {"research": True, "webTools": True, "effort": "high"}
     if asked.get("output") in ("doc", "sheet", "deck"):
         settings = settings | {"output": asked["output"], "workspaceTools": True}
-    if any((m.get("meta") or {}).get("output") == "plugin" for m in path if m["role"] == "user"):
-        settings = settings | {"output": "plugin", "workspaceTools": True}
+    for mode in ("plugin", "skill"):
+        if any((m.get("meta") or {}).get("output") == mode for m in path if m["role"] == "user"):
+            settings = settings | {"output": mode, "workspaceTools": True}
     try:
         via = claude_code.route(settings)
     except providers.ProviderError as exc:

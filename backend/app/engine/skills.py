@@ -33,7 +33,8 @@ def parse(text: str) -> tuple[dict, str]:
         kv = re.match(r"^([A-Za-z0-9_-]+):\s*(.*)$", line)
         if kv:
             key = kv.group(1)
-            front[key] = kv.group(2).strip().strip("\"'")
+            value = kv.group(2).strip()
+            front[key] = "" if re.fullmatch(r"[>|][+-]?", value) else value.strip("\"'")
         elif key and line.startswith((" ", "\t")):
             front[key] = (front[key] + " " + line.strip()).strip()
     return front, text[m.end():]
@@ -61,9 +62,23 @@ def _summary(p: Path, off: set[str]) -> dict:
     front, body = parse((p / "SKILL.md").read_text(encoding="utf-8", errors="replace"))
     files = [f for f in p.rglob("*") if f.is_file()]
     from app.engine import plugins
+    try:
+        source = json.loads((p / ORIGIN).read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        source = {}
     return {"name": p.name, "description": front.get("description", "")[:1024], "enabled": p.name not in off,
-            "files": len(files), "size": sum(f.stat().st_size for f in files), "modified": (p / "SKILL.md").stat().st_mtime,
-            "plugin": plugins.owner_of_skill(p.name)}
+            "files": len([f for f in files if f.name != ORIGIN]), "size": sum(f.stat().st_size for f in files), "modified": (p / "SKILL.md").stat().st_mtime,
+            "plugin": plugins.owner_of_skill(p.name), "source": source if isinstance(source, dict) else {}}
+
+
+ORIGIN = ".format-skill.json"
+
+
+def install_from(src: Path, origin: dict) -> dict:
+    got = _install(src, src.name)
+    (root() / got["name"] / ORIGIN).write_text(json.dumps(origin), encoding="utf-8")
+    _publish()
+    return get(got["name"])
 
 
 def list_() -> list[dict]:

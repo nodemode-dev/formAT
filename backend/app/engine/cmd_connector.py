@@ -50,6 +50,14 @@ def update(id: str, enabled: bool | None = None, disabledTools: list | None = No
     return _do(connectors.update, id, enabled, disabledTools, token, toolPermissions)
 
 
+@command("connector.directory", "Connector directory", mutates=False,
+         description="Remote MCP servers whose makers publish them, each with its URL as given on the maker's page (docs), category, sign-in (oauth, token or none), when it was checked, and whether a connector with that URL is already added. Connect one with connector.add (auth needed for oauth), then connector.connect or connector.signin.")
+def directory() -> dict:
+    from app.engine.connector_directory import DIRECTORY
+    have = {c["url"].rstrip("/"): c for c in connectors.list_() if c["url"]}
+    return {"connectors": [e | {"added": e["url"].rstrip("/") in have, "connectorId": (have.get(e["url"].rstrip("/")) or {}).get("id", "")} for e in DIRECTORY]}
+
+
 @command("connector.connect", "Connect or reconnect", {"id": CID},
          description="Connects to the server (starting it, for a command) and lists its tools; run it again to reconnect. Returns the connector with status connected or error.")
 def connect(id: str) -> dict:

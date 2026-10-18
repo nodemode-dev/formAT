@@ -357,6 +357,12 @@ def run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: thr
             "--append-system-prompt", _system(conversation_id), "--add-dir", str(uploads.root()), "--add-dir", str(skills.root())]
     if settings.get("effort") in ("low", "medium", "high", "xhigh", "max"):
         args += ["--effort", settings["effort"]]
+    from app.engine import connectors
+    servers, blocked = connectors.claude_code_servers(settings.get("connectorsOff"))
+    if servers:
+        args += ["--mcp-config", json.dumps({"mcpServers": servers})]
+    if blocked:
+        args += ["--disallowedTools", *blocked]
     if session:
         args += ["--resume", session, "--fork-session"]
     meta["claudeCode"] = {"version": found.get("version"), "resumed": session}

@@ -303,6 +303,12 @@ Removes a skill's folder. Not undoable. Use only when the person asks to remove 
 
 - changes state · command `skill.delete` · params: `name` string
 
+### discover_skills
+
+Skills the added marketplaces offer (from plugins kept in the marketplace itself): name, description, marketplace, plugin, path, official (from github.com/anthropics), and whether it is installed. Use to see skills the added marketplaces offer, to add one on its own.
+
+- read-only · command `skill.discover` · params: none
+
 ### enable_skill
 
 A skill that is off is not offered to Claude. Use to turn a skill on or off for Format's Claude.
@@ -314,6 +320,12 @@ A skill that is off is not offered to Claude. Use to turn a skill on or off for 
 One skill: its SKILL.md and the list of its files. Use to read a skill's SKILL.md and its files.
 
 - read-only · command `skill.get` · params: `name` string
+
+### install_skill_from_marketplace
+
+Installs one skill from a marketplace on its own, without its plugin. It is listed under From Anthropic and partners when the marketplace is Anthropic's, otherwise From marketplaces. Use to add one skill from a marketplace without its plugin.
+
+- changes state · command `skill.installFrom` · params: `marketplace` string, `path` string
 
 ### list_skills
 
@@ -346,6 +358,12 @@ Connects to the server (starting it, for a command) and lists its tools; run it 
 Removes a connector and closes its connection. Use only when the person asks to remove a connector.
 
 - changes state · command `connector.delete` · params: `id` string
+
+### list_connector_directory
+
+Remote MCP servers whose makers publish them, each with its URL as given on the maker's page (docs), category, sign-in (oauth, token or none), when it was checked, and whether a connector with that URL is already added. Connect one with connector.add (auth needed for oauth), then connector.connect or connector.signin. Use to find a known remote MCP server (with its maker's URL) before adding one by hand.
+
+- read-only · command `connector.directory` · params: none
 
 ### list_connectors
 
@@ -591,9 +609,9 @@ For each provider: whether a key is set, where it comes from (format: saved in F
 
 ### add_marketplace
 
-Adds a plugin marketplace: Format clones the repository (or reads the folder) and lists its plugins in Discover. Nothing is installed until plugin.install. Use when the person gives a plugin marketplace as a repository URL, owner/repo, or a folder.
+Adds a plugin marketplace: Format clones the repository (or reads the folder) and lists its plugins in Discover. Nothing is installed until plugin.install. Official Anthropic marketplace names are refused unless the repository is under github.com/anthropics. Use when the person gives a plugin marketplace as a repository URL, owner/repo, or a folder.
 
-- changes state · command `marketplace.add` · params: `source` string
+- changes state · command `marketplace.add` · params: `source` string, `token?` string
 
 ### list_marketplaces
 
@@ -669,9 +687,9 @@ One plugin: its description, version, author, skills, commandSkills, servers wit
 
 ### install_plugin_from_marketplace
 
-Installs one plugin a marketplace offers (marketplace.list): from a folder in the marketplace, or by cloning its github, url or git-subdir source. Its skills and commands become skills; its connectors are listed on the plugin to add. Use to install a plugin that an added marketplace offers, by marketplace and plugin name.
+Installs one plugin a marketplace offers (marketplace.list): from a folder in the marketplace, by cloning a github, url or git-subdir source, by downloading an archive (https zip, sha256 checked) or an npm package (scripts not run), or by running a command source's command once confirmed. Its skills and commands become skills; its connectors are listed on the plugin to add. Use to install a plugin that an added marketplace offers, by marketplace and plugin name.
 
-- changes state · command `plugin.install` · params: `marketplace` string, `plugin` string
+- changes state · command `plugin.install` · params: `marketplace` string, `plugin` string, `confirm?` boolean
 
 ### list_plugins
 

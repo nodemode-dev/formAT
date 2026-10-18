@@ -81,7 +81,9 @@ DEFINITIONS = [
 ]
 ADD_PLUGIN = {"name": "add_plugin", "description": "Install a Claude plugin you wrote in this chat's workspace into Format (the person approves first). folder is the plugin's folder, the one holding .claude-plugin/plugin.json. Calling it again with the same plugin name replaces the installed copy and keeps the connectors already added.",
               "input_schema": {"type": "object", "properties": {"folder": {"type": "string", "description": "Path of the plugin folder, relative to the workspace folder"}}, "required": ["folder"]}}
-NAMES = {d["name"] for d in DEFINITIONS} | {"memory", "skill", "browser", "add_plugin"}
+SAVE_SKILL = {"name": "save_skill", "description": "Install a skill you wrote or edited in this chat's workspace into Format (the person approves first). folder holds its SKILL.md; a skill with the same name is replaced. Skills that came with a plugin cannot be replaced.",
+              "input_schema": {"type": "object", "properties": {"folder": {"type": "string", "description": "Path of the skill folder, relative to the workspace folder"}}, "required": ["folder"]}}
+NAMES = {d["name"] for d in DEFINITIONS} | {"memory", "skill", "browser", "add_plugin", "save_skill"}
 SKIP_DIRS = {".git", "node_modules", "__pycache__", ".venv", "venv"}
 
 _waits: dict[str, dict] = {}
@@ -117,6 +119,8 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
         out.append(dict(MEMORY))
     if settings.get("output") == "plugin" and not agent:
         out.append(dict(ADD_PLUGIN))
+    if settings.get("output") == "skill" and not agent:
+        out.append(dict(SAVE_SKILL))
     from app.engine import connectors, skills
     if skills.enabled():
         out.append(dict(SKILL))
@@ -305,6 +309,19 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
                 return f"The plugin was not installed: {exc}", True
             return (f"Installed the {got['name']} plugin in Format: {len(got['skills'])} skill(s) and command(s)"
                     + (f", and {len(got['servers'])} connector(s) the person can add from its page in Customize, Plugins" if got.get("servers") else "") + "."), False
+        if name == "save_skill":
+            from app.engine import plugins, skills
+            folder = _inside(root, str(args.get("folder") or ""))
+            if not (folder / "SKILL.md").is_file():
+                return f"No SKILL.md in {args.get('folder')}.", True
+            want = str(skills.parse((folder / "SKILL.md").read_text(encoding="utf-8", errors="replace"))[0].get("name") or folder.name).strip().lower()
+            if plugins.owner_of_skill(want):
+                return f"The {want} skill came with the {plugins.owner_of_skill(want)} plugin and is not replaced here; give the new skill another name.", True
+            try:
+                got = skills._install(folder, folder.name)
+            except skills.SkillError as exc:
+                return f"The skill was not saved: {exc}", True
+            return f"Saved the {got['name']} skill in Format; it is on and Claude can use it in any chat.", False
         if name == "task_list":
             items = args.get("tasks")
             if not isinstance(items, list) or not items:

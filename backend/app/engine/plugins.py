@@ -306,7 +306,7 @@ def plugin_get(name: str) -> dict:
 
 
 @command("plugin.add", "Add a plugin",
-         {"uploadId": {"type": "string", "description": "A .zip of the plugin folder, from POST /api/uploads"},
+         {"uploadId": {"type": "string", "description": "A .zip or .plugin of the plugin folder, from POST /api/uploads"},
           "path": {"type": "string", "description": "Or a plugin folder on this computer"}},
          description="Installs a Claude plugin (a folder with .claude-plugin/plugin.json): its skills/ and commands/ become skills; its .mcp.json servers are listed on the plugin for plugin.addConnector, not added. Adding a plugin with the same name replaces it and keeps the connectors already added.")
 def plugin_add(uploadId: str | None = None, path: str | None = None) -> dict:
@@ -321,7 +321,7 @@ def plugin_add(uploadId: str | None = None, path: str | None = None) -> dict:
     if meta is None:
         raise CommandError(f"No uploaded file {uploadId}", 404)
     if meta["kind"] != "zip" or not Path(meta.get("unzipped") or "").is_dir():
-        raise CommandError("Add a plugin as a .zip of its folder")
+        raise CommandError("Add a plugin as a .zip or .plugin of its folder")
     return install(Path(meta["unzipped"]))
 
 

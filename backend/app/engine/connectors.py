@@ -268,6 +268,22 @@ def request_parts(chat_off_ids: list | None = None) -> tuple[list[dict], list[di
     return servers, toolsets, local
 
 
+def claude_code_servers(chat_off_ids: list | None = None) -> tuple[dict, list[str]]:
+    servers, blocked = {}, []
+    for r in active():
+        if r["id"] in (chat_off_ids or ()) or r["status"] == "needs_auth":
+            continue
+        if r["kind"] == "command":
+            parts = shlex.split(r["command"])
+            servers[r["name"]] = {"command": parts[0], "args": parts[1:]} | ({"env": json.loads(r["env"] or "{}")} if json.loads(r["env"] or "{}") else {})
+        else:
+            bearer = MANAGER._bearer(r)
+            headers = dict(json.loads(r.get("headers") or "{}")) | ({"Authorization": f"Bearer {bearer}"} if bearer else {})
+            servers[r["name"]] = {"type": "sse" if (r.get("transport") or "http") == "sse" else "http", "url": r["url"]} | ({"headers": headers} if headers else {})
+        blocked += [f"mcp__{r['name']}__{t['name']}" for t in json.loads(r["tools"] or "[]") if perm_of(r, t["name"]) == "block"]
+    return servers, blocked
+
+
 def resolve_call(name: str, chat_off_ids: list | None = None) -> tuple[dict, str] | None:
     for r in active():
         if route(r) != "local" or r["id"] in (chat_off_ids or ()):
