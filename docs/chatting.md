@@ -12,8 +12,8 @@ Under the box, left to right:
 - **Permission mode**: Ask, Allow all or Plan, and Allow for this chat for the open chat only (see [Tools and approvals](tools-and-approvals.md)).
 - **/** at the start of an empty message lists your skills; pick one (or type its name and press Enter) and the message starts `/name`, which loads that skill for the message.
 
-The reply is followed to the bottom while it streams, approval cards included. Scroll up and it stays where you are; the arrow above the composer, or sending a message, follows again. Your messages sit on the right, Claude's replies on the left.
-- The context meter shows how full the conversation is.
+The reply is followed to the bottom while it streams, approval cards included. Scroll up and it stays where you are; the arrow above the composer, or sending a message, follows again. Your messages sit on the right, Claude's replies on the left. Nothing in a chat is ever wider than its column, on any screen: long commands, paths, links and code lines wrap, and an approval card's buttons wrap under its question.
+- The context meter shows how full the conversation is (hidden on screens under 480 px wide, together with the effort label; the effort is still in the model menu).
 
 ## Attachments
 
