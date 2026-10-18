@@ -20,9 +20,10 @@ The Customize page has three sections, Skills, Connectors and Plugins, chosen by
 
 A plugin bundles skills, commands, connectors and agents for one kind of work, in the Claude plugin format: a folder with `.claude-plugin/plugin.json`. The Plugins section has Your plugins and Discover.
 
-- Add, then Add marketplace, takes a marketplace: a Git repository (a URL, or `owner/repo` for GitHub) or a folder with `.claude-plugin/marketplace.json`. Its plugins appear in Discover; select Add on one to install it. Only add marketplaces you trust: their plugins are not reviewed.
+- Add, then Add marketplace, takes a marketplace: a Git repository (a URL, or `owner/repo` for GitHub, with `@branch` to pin one) or a folder with `.claude-plugin/marketplace.json`. For a private GitHub repository, give an access token that can read it (your own git sign-in and SSH keys work too). Its plugins appear in Discover; select Add on one to install it. Only add marketplaces you trust: their plugins are not reviewed. Names reserved for Anthropic's own marketplaces are refused unless the repository is Anthropic's.
+- A plugin can come from a folder in the marketplace, another Git repository, a zip download or an npm package. A plugin made by a command on your computer shows the command first, and Run and add runs it.
 - Under Discover, each marketplace has Check for updates (it pulls the latest catalog and updates the plugins you installed from it), Sync automatically (checks every hour while Format runs, for repositories), and Remove in its "..." menu, which also removes its plugins.
-- Add, then Upload plugin, takes a .zip of a plugin folder.
+- Add, then Upload plugin, takes a .zip or .plugin of a plugin folder.
 - Add, then Create a plugin, opens an editor: a name, a description and the plugin's files (a skill is skills/name/SKILL.md, a command is commands/name.md). A plugin made this way has Edit files in its "..." menu.
 - Add, then Create with Claude, starts a chat where Claude asks what the plugin should do, writes its files in the chat folder and, when you approve its card, adds it to Format. Ask for changes in the same chat and approve again to replace it.
 
@@ -32,11 +33,11 @@ A plugin's skills and commands appear under Skills, named after the plugin (`rel
 
 ### Skills
 
-A skill is a folder with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches, through the API or through Claude Code. Name one in a message to load it for that message: type `/` and pick it, start the message with `/name`, or write "use the name skill"; you can also pick one from the + menu. Add, Upload a skill takes a .zip of its folder or its SKILL.md; Add, Write a skill takes a name, when to use it and the instructions. Open a skill to read SKILL.md and every other file in it before you use it, and Try in chat starts a new chat with it picked. The list groups skills you added under Created by you and plugin skills under From plugins; a plugin's skill is removed with its plugin.
+A skill is a folder with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches, through the API or through Claude Code. Name one in a message to load it for that message: type `/` and pick it, start the message with `/name`, or write "use the name skill"; you can also pick one from the + menu. Add, Upload a skill takes a .zip of its folder or its SKILL.md; Add, Write a skill takes a name, when to use it and the instructions. Open a skill to read SKILL.md and every other file in it before you use it, and Try in chat starts a new chat with it picked. Add, Create with Claude starts a chat where Claude writes a skill with you, and a skill's Edit with Claude starts one that changes it; Claude saves it when you approve its card. Discover lists the skills your marketplaces offer, each added on its own (Add Anthropic's skills marketplace brings in anthropics/skills). The list groups skills under Created by you, From Anthropic and partners, From marketplaces and From plugins; a plugin's skill is removed with its plugin.
 
 ### Connectors
 
-A connector is an MCP server that gives Claude more tools. Add custom connector takes a URL or a command. For a URL, choose how you sign in:
+A connector is an MCP server that gives Claude more tools. Discover lists remote servers their makers publish, by category, each with a link to the maker's page where its URL comes from; Connect adds one and opens its sign-in page when it has one (a server that needs a key opens the custom form instead). They are not reviewed by Anthropic or Format. Connectors also reach Claude Code when Format answers through it. Add custom connector takes a URL or a command. For a URL, choose how you sign in:
 
 - Sign in when needed (the default): Format connects without credentials, and if the server asks, its row shows Sign in.
 - Sign in now: the server's sign-in page opens as soon as you add it.
