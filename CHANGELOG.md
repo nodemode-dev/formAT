@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.13.0 · 2026-10-18
+
+A chat that reads and behaves like claude.ai.
+
+- Drag files from your desktop and drop them anywhere on the chat; a card shows while they are over it. In the desktop app, Tauri's own drop handler is off so the page receives them.
+- Type `/` in an empty message to pick a skill; a message that starts with `/name` or says "use the name skill" loads that skill for the turn, through the API and through Claude Code. Chats answered through Claude Code now see Format's skills.
+- Auto is now Allow all (it always ran every tool), shown amber when on. Approval cards gain Allow all, which switches to it and lets anything already waiting run.
+- The reply is followed to the bottom while it streams, approval cards and highlighted code included; scroll up and it stays put.
+- Your messages sit on the right; edits show as a red and green diff; thinking is a quiet row instead of a box.
+- Engine: `tools.allow_waiting`; `settings.set` `permissionMode` `auto` allows waiting approvals; `skills.invoked` and `skills.invocation_blocks`.
+
 ## 0.12.0 · 2026-10-12
 
 No API key needed: Format answers through Claude Code.
