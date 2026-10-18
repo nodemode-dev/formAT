@@ -19,6 +19,7 @@ export class CustomizeView {
   private main: HTMLElement;
   private picker: HTMLInputElement;
   private rows = new Map<string, HTMLElement>();
+  private skHeads: { own: HTMLElement; plugin: HTMLElement } | null = null;
   private current: SkillDetail | null = null;
   private seq = 0;
 
@@ -75,7 +76,7 @@ export class CustomizeView {
       </div>
       <div class="ft-cz-detail" hidden>
         <button type="button" class="ft-text-btn ft-cz-back">${ui('back', 14)}<span>Customize</span></button>
-        <div class="ft-cz-detail-head"><h1 class="ft-cz-name"></h1><label class="ft-field ft-check"><input type="checkbox" class="ft-cz-on"><span>On</span></label><button type="button" class="ft-btn ft-btn-primary ft-cz-try">${ui('chat', 14)}<span>Try in chat</span></button><button type="button" class="ft-btn ft-cz-delete">Delete skill</button></div>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name"></h1><label class="ft-field ft-check ft-switch-label" title="Claude can use this skill while it is on"><input type="checkbox" role="switch" class="ft-cz-on ft-switch"><span>Enabled</span></label><button type="button" class="ft-btn ft-btn-primary ft-cz-try">${ui('chat', 14)}<span>Try in chat</span></button><button type="button" class="ft-btn ft-danger-btn ft-cz-delete" hidden>Delete? This cannot be undone</button><button type="button" class="ft-icon-btn ft-cz-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
         <p class="ft-cz-desc"></p>
         <div class="ft-cz-browser">
           <nav class="ft-cz-tree" aria-label="Files in this skill"></nav>
@@ -84,7 +85,7 @@ export class CustomizeView {
       </div>
       <div class="ft-cz-detail ft-cn-detail" hidden>
         <button type="button" class="ft-text-btn ft-cn-back">${ui('back', 14)}<span>Customize</span></button>
-        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-cn-name"></h1><span class="ft-cn-chip"></span><button type="button" class="ft-btn ft-cn-power"></button><button type="button" class="ft-btn ft-cn-delete" hidden>Remove? Claude loses its tools</button><button type="button" class="ft-icon-btn ft-cn-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-cn-name"></h1><span class="ft-cn-chip"></span><button type="button" class="ft-btn ft-cn-power"></button><button type="button" class="ft-btn ft-danger-btn ft-cn-delete" hidden>Remove? Claude loses its tools</button><button type="button" class="ft-icon-btn ft-cn-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
         <p class="ft-cz-desc ft-cn-where"></p>
         <p class="ft-cn-state"></p>
         <div class="ft-cn-perm-head"><h2 class="ft-proj-sub">Tool permissions</h2><label class="ft-cn-perm-all"><span>All tools</span><select class="ft-input ft-cn-perm" data-tool="*" aria-label="Permission for all tools"><option value="">Mixed</option><option value="allow">Always allow</option><option value="ask">Needs approval</option><option value="block">Blocked</option></select></label></div>
@@ -92,9 +93,10 @@ export class CustomizeView {
         <div class="ft-cn-tools" role="list"></div>
         <p class="ft-proj-none ft-cn-notools">No tools listed yet. Reconnect to list them.</p>
       </div>
+      <div class="ft-cz-pick" aria-hidden="true">${ui('customize', 28)}<p>Pick a skill, connector or plugin to see it here.</p></div>
       <div class="ft-cz-detail ft-pl-detail" hidden>
         <button type="button" class="ft-text-btn ft-pl-back">${ui('back', 14)}<span>Customize</span></button>
-        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-pl-name"></h1><label class="ft-field ft-check"><input type="checkbox" class="ft-pl-on"><span>On</span></label><button type="button" class="ft-btn ft-pl-delete">Remove</button></div>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-pl-name"></h1><label class="ft-field ft-check ft-switch-label" title="Turn the plugin and everything it adds on or off"><input type="checkbox" role="switch" class="ft-pl-on ft-switch"><span>Enabled</span></label><button type="button" class="ft-btn ft-danger-btn ft-pl-delete" hidden>Remove with its skills and connectors?</button><button type="button" class="ft-icon-btn ft-pl-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
         <p class="ft-cz-desc ft-pl-by"></p>
         <p class="ft-cz-desc ft-pl-desc"></p>
         <h2 class="ft-proj-sub">Skills and commands</h2>
@@ -148,7 +150,11 @@ export class CustomizeView {
     q<HTMLInputElement>(this.root, '.ft-cz-on').addEventListener('change', (e) => {
       if (this.current) void run('skill.enable', { name: this.current.name, enabled: (e.target as HTMLInputElement).checked }).catch(() => undefined);
     });
-    q(this.root, '.ft-cz-delete').addEventListener('click', (e) => void this.remove(e.currentTarget as HTMLButtonElement));
+    q(this.root, '.ft-cz-delete').addEventListener('click', () => void this.remove());
+    q(this.root, '.ft-cz-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
+      { label: 'Delete', desc: 'Remove this skill and its files from Format', icon: 'trash', disabled: !!this.current?.plugin, action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-cz-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
+      ...(this.current?.plugin ? [{ note: `From the ${this.current.plugin} plugin: remove the plugin to remove it` }] : []),
+    ], 'down'));
     this.root.addEventListener('dragover', (e) => e.preventDefault());
     this.root.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer?.files?.[0]; if (f) void this.upload(f); });
     state.on('skills', () => this.render());
@@ -200,12 +206,12 @@ export class CustomizeView {
     q<HTMLInputElement>(this.root, '.ft-pl-on').addEventListener('change', (e) => {
       if (this.plOpen) void run('plugin.enable', { name: this.plOpen, enabled: (e.target as HTMLInputElement).checked }).catch(() => undefined);
     });
-    q(this.root, '.ft-pl-delete').addEventListener('click', async (e) => {
-      const btn = e.currentTarget as HTMLButtonElement;
-      if (!this.plOpen) return;
-      if (!btn.dataset.armed) { btn.dataset.armed = '1'; btn.textContent = 'Remove with its skills and connectors?'; return; }
-      await run('plugin.delete', { name: this.plOpen }).catch(() => undefined);
+    q(this.root, '.ft-pl-delete').addEventListener('click', async () => {
+      if (this.plOpen) await run('plugin.delete', { name: this.plOpen }).catch(() => undefined);
     });
+    q(this.root, '.ft-pl-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
+      { label: 'Remove', desc: 'Uninstall the plugin with its skills and connectors', icon: 'trash', action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-pl-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
+    ], 'down'));
     q(this.root, '.ft-pl-skills').addEventListener('click', (e) => {
       const s = (e.target as HTMLElement).closest<HTMLElement>('[data-skill-link]')?.dataset.skillLink;
       if (s) void this.open(s);
@@ -224,7 +230,7 @@ export class CustomizeView {
     items.forEach((p, i) => {
       let row = this.plRows.get(p.name);
       if (!row) {
-        row = el(`<div class="ft-cz-row" role="listitem" data-pl="${esc(p.name)}"><span class="ft-cz-icon">${ui('plugin', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cz-row-meta"></span><label class="ft-cz-toggle" title="On or off"><input type="checkbox" aria-label="Plugin on"></label></div>`);
+        row = el(`<div class="ft-cz-row" role="listitem" data-pl="${esc(p.name)}"><span class="ft-cz-icon">${ui('plugin', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cz-row-meta"></span><label class="ft-cz-toggle" title="Enabled"><input type="checkbox" role="switch" class="ft-switch" aria-label="Plugin enabled"></label></div>`);
         this.plRows.set(p.name, row);
       }
       setText(q(row, '.ft-cz-row-name'), p.name);
@@ -247,12 +253,12 @@ export class CustomizeView {
   private openPlugin(name: string): void {
     this.plOpen = name;
     const del = q<HTMLButtonElement>(this.root, '.ft-pl-delete');
-    if (del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Remove'; }
+    if (!del.hidden) del.hidden = true;
     this.paintPlugin();
-    if (!this.main.hidden) this.main.hidden = true;
     if (!this.detail.hidden) this.detail.hidden = true;
     if (!this.cnDetail.hidden) this.cnDetail.hidden = true;
     if (this.plDetail.hidden) this.plDetail.hidden = false;
+    this.setDetail('plugin');
   }
 
   private paintPlugin(): void {
@@ -402,10 +408,10 @@ export class CustomizeView {
     const del = q<HTMLButtonElement>(this.root, '.ft-cn-delete');
     if (!del.hidden) del.hidden = true;
     this.paintConnector();
-    if (!this.main.hidden) this.main.hidden = true;
     if (!this.detail.hidden) this.detail.hidden = true;
     if (!this.plDetail.hidden) this.plDetail.hidden = true;
     if (this.cnDetail.hidden) this.cnDetail.hidden = false;
+    this.setDetail('connector');
   }
 
   private paintConnector(): void {
@@ -458,9 +464,14 @@ export class CustomizeView {
 
   private filterSection(box: HTMLInputElement): void {
     const words = box.value.trim().toLowerCase();
-    box.closest('.ft-cz-section')?.querySelectorAll<HTMLElement>('.ft-cz-list > .ft-cz-row').forEach((row) => {
+    const section = box.closest('.ft-cz-section');
+    section?.querySelectorAll<HTMLElement>('.ft-cz-list > .ft-cz-row').forEach((row) => {
       const show = !words || (row.textContent ?? '').toLowerCase().includes(words);
       if (row.hidden === show) row.hidden = !show;
+    });
+    section?.querySelectorAll<HTMLElement>('.ft-cz-list > .ft-cz-group').forEach((head) => {
+      const show = !!section.querySelector(`.ft-cz-list > .ft-cz-row[data-group="${head.dataset.group}"]:not([hidden])`);
+      if (head.hidden === show) head.hidden = !show;
     });
   }
 
@@ -469,6 +480,7 @@ export class CustomizeView {
     set('skills', this.state.skills.length);
     set('connectors', this.state.connectors.length);
     set('plugins', this.state.plugins.length);
+    this.setDetail(this.root.dataset.detail ?? '');
   }
 
   private async showFile(path: string): Promise<void> {
@@ -493,10 +505,17 @@ export class CustomizeView {
     const items = this.state.skills;
     const live = new Set(items.map((s) => s.name));
     for (const [n, r] of this.rows) if (!live.has(n)) { r.remove(); this.rows.delete(n); }
-    items.forEach((s, i) => {
+    const heads = this.skHeads ?? (this.skHeads = {
+      own: el(`<div class="ft-cz-group" data-group="own" role="presentation">Created by you</div>`),
+      plugin: el(`<div class="ft-cz-group" data-group="plugin" role="presentation">From plugins</div>`),
+    });
+    const seq: HTMLElement[] = [];
+    [...items.filter((s) => !s.plugin), ...items.filter((s) => s.plugin)].forEach((s) => {
+      const group = s.plugin ? 'plugin' : 'own';
+      if (!seq.some((n) => n.dataset.group === group)) seq.push(heads[group]);
       let row = this.rows.get(s.name);
       if (!row) {
-        row = el(`<div class="ft-cz-row" role="listitem" data-skill="${esc(s.name)}"><span class="ft-cz-icon">${ui('skills', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cz-row-meta"></span><label class="ft-cz-toggle" title="On or off"><input type="checkbox" aria-label="Skill on"></label></div>`);
+        row = el(`<div class="ft-cz-row" role="listitem" data-skill="${esc(s.name)}"><span class="ft-cz-icon">${ui('skills', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></button><span class="ft-cz-row-meta"></span><label class="ft-cz-toggle" title="Enabled"><input type="checkbox" role="switch" class="ft-switch" aria-label="Skill enabled"></label></div>`);
         this.rows.set(s.name, row);
       }
       setText(q(row, '.ft-cz-row-name'), s.name);
@@ -505,8 +524,11 @@ export class CustomizeView {
       const box = q<HTMLInputElement>(row, '.ft-cz-toggle input');
       if (box.checked !== s.enabled) box.checked = s.enabled;
       row.classList.toggle('is-off', !s.enabled);
-      if (this.list.children[i] !== row) this.list.insertBefore(row, this.list.children[i] ?? null);
+      if (row.dataset.group !== group) row.dataset.group = group;
+      seq.push(row);
     });
+    for (const head of Object.values(heads)) if (!seq.includes(head) && head.parentElement) head.remove();
+    seq.forEach((n, i) => { if (this.list.children[i] !== n) this.list.insertBefore(n, this.list.children[i] ?? null); });
     if (this.empty.hidden !== items.length > 0) this.empty.hidden = items.length > 0;
     this.counts();
     if (this.current) {
@@ -558,11 +580,12 @@ export class CustomizeView {
     if (tbox.dataset.v !== tree) { tbox.dataset.v = tree; tbox.innerHTML = tree; }
     void this.showFile('SKILL.md');
     const del = q<HTMLButtonElement>(this.root, '.ft-cz-delete');
-    if (del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Delete skill'; }
-    if (!this.main.hidden) this.main.hidden = true;
+    if (!del.hidden && del.dataset.for !== s.name) del.hidden = true;
+    del.dataset.for = s.name;
     if (!this.cnDetail.hidden) this.cnDetail.hidden = true;
     if (!this.plDetail.hidden) this.plDetail.hidden = true;
     if (this.detail.hidden) this.detail.hidden = false;
+    this.setDetail('skill');
   }
 
   showList(): void {
@@ -574,16 +597,25 @@ export class CustomizeView {
     if (!this.cnDetail.hidden) this.cnDetail.hidden = true;
     if (!this.plDetail.hidden) this.plDetail.hidden = true;
     if (this.main.hidden) this.main.hidden = false;
+    this.setDetail('');
   }
 
-  private async remove(btn: HTMLButtonElement): Promise<void> {
+  private setDetail(kind: string): void {
+    if ((this.root.dataset.detail ?? '') !== kind) this.root.dataset.detail = kind;
+    const pick = (list: string, attr: string, on: string | null): void => {
+      this.root.querySelectorAll<HTMLElement>(`${list} > [${attr}]`).forEach((row) => {
+        const sel = kind !== '' && row.getAttribute(attr) === on;
+        if (row.classList.contains('is-selected') !== sel) row.classList.toggle('is-selected', sel);
+        if ((row.getAttribute('aria-current') === 'true') !== sel) setAttr(row, 'aria-current', sel ? 'true' : null);
+      });
+    };
+    pick('.ft-sk-list', 'data-skill', kind === 'skill' ? this.current?.name ?? null : null);
+    pick('.ft-cn-list', 'data-cn', kind === 'connector' ? this.cnOpen : null);
+    pick('.ft-pl-list', 'data-pl', kind === 'plugin' ? this.plOpen : null);
+  }
+
+  private async remove(): Promise<void> {
     if (!this.current) return;
-    if (!btn.dataset.armed) {
-      btn.dataset.armed = '1';
-      btn.textContent = 'Delete? This cannot be undone';
-      setAttr(btn, 'aria-label', 'Confirm deleting the skill');
-      return;
-    }
     try { await run('skill.delete', { name: this.current.name }); } catch (err) { this.say(err instanceof Error ? err.message : String(err)); }
   }
 }
