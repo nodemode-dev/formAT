@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.20.0 · 2026-10-18
+
+Make your own plugins.
+
+- Add, then Create a plugin: an editor with a name, a description and the plugin's files. Plugins made here have Edit files in their "..." menu.
+- Add, then Create with Claude: a new chat where Claude writes the plugin in the chat folder and adds it to Format when you approve its card; ask for changes and approve again to replace it.
+- In the / menu a plugin's skills and commands read `/plugin:name`; type the plugin's name and a colon to narrow to it. `/plugin:name` in a message loads that skill.
+- Engine: `plugin.create`, `plugin.files`; `chat.send` `output` `plugin`; Claude's `add_plugin` tool in those chats. 109 commands.
+
 ## 0.19.0 · 2026-10-18
 
 Plugins from marketplaces.
