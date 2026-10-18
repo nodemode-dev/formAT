@@ -14,7 +14,7 @@ Turn on Memory in Settings. Claude then keeps notes in a local folder that carri
 
 ## Customize
 
-The Customize page has three sections.
+The Customize page has three sections, Skills, Connectors and Plugins, chosen in the column on its left (tabs along the top on a narrow window), each with its count, a search box and its Add actions.
 
 ### Plugins
 
@@ -22,7 +22,7 @@ A plugin bundles skills, commands and connectors for one kind of work, in the Cl
 
 ### Skills
 
-A skill is a folder with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches, through the API or through Claude Code. Name one in a message to load it for that message: start it with `/name` (type `/` to pick from the list), or write "use the name skill"; you can also pick one from the + menu. Add a skill as a .zip of its folder or as its SKILL.md, or write one on the page.
+A skill is a folder with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches, through the API or through Claude Code. Name one in a message to load it for that message: type `/` and pick it, start the message with `/name`, or write "use the name skill"; you can also pick one from the + menu. Add, Upload a skill takes a .zip of its folder or its SKILL.md; Add, Write a skill takes a name, when to use it and the instructions. Open a skill to read SKILL.md and every other file in it before you use it, and Try in chat starts a new chat with it picked.
 
 ### Connectors
 

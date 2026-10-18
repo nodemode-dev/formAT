@@ -10,7 +10,7 @@ Under the box, left to right:
 - **Microphone**: dictation (see below).
 - **Model and effort**: the model menu lists your key's models with a short description; Effort goes from Low to Max where the model supports it. Show thinking displays Claude's thinking summaries above each reply.
 - **Permission mode**: Ask, Allow all or Plan, and Allow for this chat for the open chat only (see [Tools and approvals](tools-and-approvals.md)).
-- **/** at the start of an empty message lists your skills; pick one (or type its name and press Enter) and the message starts `/name`, which loads that skill for the message.
+- **/** anywhere in a message (at the start or after a space) opens the command menu above the composer: Commands (add files, Research, create a document, spreadsheet or slides, Summarize earlier messages, Manage skills), your Skills, and each plugin's commands under its name. Keep typing to filter by name, description or plugin; Up and Down move, Enter or Tab picks, Escape closes. A skill you pick becomes a pill in the composer (click it, or Backspace at the start of the message, to remove it) and loads for that message; the sent message shows it as a chip.
 
 The reply is followed to the bottom while it streams, approval cards included. Scroll up and it stays where you are; the arrow above the composer, or sending a message, follows again. Your messages sit on the right, Claude's replies on the left. Nothing in a chat is ever wider than its column, on any screen: long commands, paths, links and code lines wrap, and an approval card's buttons wrap under its question.
 - The context meter shows how full the conversation is (hidden on screens under 480 px wide, together with the effort label; the effort is still in the model menu).
