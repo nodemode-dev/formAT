@@ -136,6 +136,11 @@ def conn() -> sqlite3.Connection:
                             c.execute("UPDATE messages SET parent_id = ? WHERE id = ?", (prev, mid))
                         prev = mid
                     c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
+            have = {r[1] for r in c.execute("PRAGMA table_info(connectors)").fetchall()}
+            if "tool_perms" not in have:
+                c.execute("ALTER TABLE connectors ADD COLUMN tool_perms TEXT NOT NULL DEFAULT '{}'")
+            if "headers" not in have:
+                c.execute("ALTER TABLE connectors ADD COLUMN headers TEXT NOT NULL DEFAULT '{}'")
             if "allow_all" not in {r[1] for r in c.execute("PRAGMA table_info(conversations)").fetchall()}:
                 c.execute("ALTER TABLE conversations ADD COLUMN allow_all INTEGER NOT NULL DEFAULT 0")
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")

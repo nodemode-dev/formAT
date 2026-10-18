@@ -4,7 +4,7 @@ import threading
 import time
 
 from app import providers
-from app.engine import claude_code, events, projects, terminal, tools
+from app.engine import claude_code, connectors, events, projects, terminal, tools
 from app.engine.cmd_account import account
 from app.engine.cmd_message import insert, messages_of, update
 from app.engine.cmd_settings import current, find_model
@@ -252,7 +252,7 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
         _set_status(conversation_id, mid, meta, tid, "waiting")
         update(mid, live, meta)
         answer = tools.wait_for_approval(conversation_id, mid, call, cancel)
-        if answer == "always":
+        if answer == "always" and not (name.startswith("mcp__") and connectors.allow_by_name(name)):
             allowed = list(current().get("toolAllow") or [])
             if name not in allowed:
                 set_setting("toolAllow", allowed + [name])

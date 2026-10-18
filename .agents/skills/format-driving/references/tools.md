@@ -327,7 +327,7 @@ One file of an installed skill as text (up to 400 KB; a binary file is named, no
 
 Adds an MCP server by URL or by command. A public https URL goes to Claude through Anthropic's MCP connector; a URL on this computer or a private network, and every command, is run by the engine, and its tools ask for approval like commands do. Then connector.connect lists its tools. Use when the person wants Claude in Format to reach another MCP server, by URL or by command.
 
-- changes state · command `connector.add` · params: `name` string, `url?` string, `command?` string, `token?` string, `env?` object
+- changes state · command `connector.add` · params: `name` string, `url?` string, `command?` string, `token?` string, `env?` object, `headers?` object
 
 ### connect_connector
 
@@ -349,9 +349,9 @@ MCP servers added to Format: name, URL or command, route (api: sent to Anthropic
 
 ### update_connector
 
-Turns a connector on or off, sets which of its tools are off, or replaces its token. Use to turn a connector or some of its tools on or off, or to replace its token.
+Disconnects or connects a connector, sets each tool's permission (Always allow runs it without a card, Needs approval asks first, Blocked hides it from Claude; a public server with a tool that needs approval is run by the engine so the card can wait), or replaces its token. Use to disconnect or connect a connector, to set a tool to Always allow, Needs approval or Blocked, or to replace its token.
 
-- changes state · command `connector.update` · params: `id` string, `enabled?` boolean, `disabledTools?` array, `token?` string
+- changes state · command `connector.update` · params: `id` string, `enabled?` boolean, `toolPermissions?` object, `disabledTools?` array, `token?` string
 
 ## Scheduled tasks
 

@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.15.0
-Last updated: 2026-10-18 · v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
+Current build version: v0.16.0
+Last updated: 2026-10-18 · v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
 
 ---
 
@@ -681,6 +681,13 @@ Each user turn gets its invoked skills' blocks after its attachments and comment
 - logged: v0.13.0 · 2026-10-18
 
 Before: chats answered through Claude Code never heard of Format's skills (the API path lists them in `prompt.system_prompt`; `_system` here did not), so "Use the dev-rules skill" in Format did nothing unless Claude Code happened to have a skill of that name itself. Now the appended system prompt lists every enabled skill with its folder and description and says to read the SKILL.md with Read first; an invoked skill's SKILL.md and folder go at the start of the turn; and the skills folder is passed with `--add-dir` so reading it needs no approval. Checked by calling `_system` and `_prompt` with a seeded skill; a full Claude Code session against a live model was not run here.
+
+### app/engine/connectors.py · tool permissions: Always allow, Needs approval, Blocked
+- refers-to: app/engine/connectors.py :: PERMS, _remote, _perms, default_perm, perm_of, route, public (permission, defaultPermission, headerNames), add (headers), update (tool_permissions), request_parts, resolve_call, permission_for, allow_by_name, Manager._key and _client (headers); app/engine/store.py :: connect (tool_perms and headers columns); app/engine/cmd_connector.py :: add (headers), update (toolPermissions); app/engine/tools.py :: decision_for (mcp__); app/engine/chat.py :: _call_tool (always on a connector tool); app/agent_guide.py :: update_connector
+- kind: rationale
+- logged: v0.16.0 · 2026-10-18
+
+claude.ai's connector page sets each tool, or a group, to Always allow, Needs approval or Blocked (claude.com/docs/connectors/getting-started). A connector now keeps a map tool to allow, ask or block in `tool_perms`; the old `disabled_tools` list still reads as block until a permission is set, and setting any permission clears it. The default keeps what each route did before: a public https server, which Anthropic's MCP connector runs with no card, defaults to allow; a local or private one, whose calls came through Format's approval cards, defaults to ask. Blocked tools are left out of every request (configs enabled false on the API route, left out of the client tools on the local one) and refused if called anyway. Always allow decides allow in `decision_for` before the mode, so it holds in Ask; Needs approval falls through to the usual rule (ask, unless Allow all, Allow for this chat or the old global toolAllow). Anthropic's MCP connector runs a server's tools on Anthropic's side, where no card can wait, so a public server with any tool on Needs approval, or with request headers (the API's connector takes only a bearer token), is routed to the engine instead, which reaches the same URL through the MCP SDK with the token and headers; with every tool on allow or block it goes back through Anthropic. Always allow on an approval card for a connector tool now sets that tool's permission on its connector rather than adding `mcp__...` to the global list. `toolPermissions` takes `*` for every listed tool. Checked: the routing rules from rows built in Python (public default api and allow; one ask local; allow and block api; headers local; a legacy disabled tool block; localhost local and ask), and through the window against a local MCP server (notes_mcp.py on the mcp 2.x `MCPServer`, which replaced FastMCP): tools default to ask; selects reach the engine; an allowed call ran with no card; a blocked call was refused with no card; a Needs approval call showed a card whose Always allow set the tool to allow on the connector and left toolAllow empty.
 
 ### app/engine/skills.py and cmd_skill.py · skill.read
 - refers-to: app/engine/skills.py :: read_file; app/engine/cmd_skill.py :: read (skill.read); app/agent_guide.py :: GUIDE (read_skill_file)

@@ -139,6 +139,13 @@ def decision_for(name: str, settings: dict, conversation_id: str | None = None) 
         return "plan"
     if name in (settings.get("toolDeny") or []):
         return "deny"
+    if name.startswith("mcp__"):
+        from app.engine import connectors
+        perm = connectors.permission_for(name)
+        if perm == "block":
+            return "deny"
+        if perm == "allow":
+            return "allow"
     if mode == "auto" or name in (settings.get("toolAllow") or []) or chat_allowed(conversation_id):
         return "allow"
     return "ask"

@@ -42,7 +42,7 @@ GUIDE: dict[str, tuple[str, str]] = {
     "connector.connect": ("connect_connector", "Use after add_connector, or when a connector shows an error, to (re)connect and list its tools."),
     "connector.delete": ("delete_connector", "Use only when the person asks to remove a connector."),
     "connector.list": ("list_connectors", "Use to see which MCP servers Format's Claude can use and whether they are connected."),
-    "connector.update": ("update_connector", "Use to turn a connector or some of its tools on or off, or to replace its token."),
+    "connector.update": ("update_connector", "Use to disconnect or connect a connector, to set a tool to Always allow, Needs approval or Blocked, or to replace its token."),
     "conversation.create": ("create_conversation", "Use when you need an empty chat to publish into before anything is said; send_message without conversationId also creates one."),
     "conversation.delete": ("delete_conversation", "Use only when the person asks to delete a chat; it cannot be undone."),
     "conversation.get": ("get_conversation", "Use to read a chat's messages, tool steps and status by its id."),

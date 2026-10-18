@@ -22,9 +22,12 @@ class ConnectorError(Exception):
         self.status = status
 
 
-def route(row: dict) -> str:
+PERMS = ("allow", "ask", "block")
+
+
+def _remote(row: dict) -> bool:
     if row["kind"] == "command":
-        return "local"
+        return False
     u = urlparse(row["url"])
     host = (u.hostname or "").lower()
     private = host in ("localhost", "") or host.endswith(".local")
@@ -33,15 +36,37 @@ def route(row: dict) -> str:
         private = private or ip.is_private or ip.is_loopback or ip.is_link_local
     except ValueError:
         pass
-    return "api" if u.scheme == "https" and not private else "local"
+    return u.scheme == "https" and not private
+
+
+def _perms(row: dict) -> dict:
+    saved = dict(json.loads(row.get("tool_perms") or "{}"))
+    for t in json.loads(row["disabled_tools"] or "[]"):
+        saved.setdefault(t, "block")
+    return saved
+
+
+def default_perm(row: dict) -> str:
+    return "allow" if _remote(row) else "ask"
+
+
+def perm_of(row: dict, tool: str) -> str:
+    return _perms(row).get(tool) or default_perm(row)
+
+
+def route(row: dict) -> str:
+    if not _remote(row) or json.loads(row.get("headers") or "{}"):
+        return "local"
+    names = [t["name"] for t in json.loads(row["tools"] or "[]")]
+    return "local" if any(perm_of(row, n) == "ask" for n in names) else "api"
 
 
 def public(row: dict) -> dict:
     tools = json.loads(row["tools"] or "[]")
-    off = set(json.loads(row["disabled_tools"] or "[]"))
     return {"id": row["id"], "name": row["name"], "kind": row["kind"], "url": row["url"], "command": row["command"], "hasToken": bool(row["token"]),
-            "enabled": bool(row["enabled"]), "route": route(row), "status": row["status"], "error": row["error"],
-            "tools": [{"name": t["name"], "description": t.get("description", ""), "enabled": t["name"] not in off} for t in tools],
+            "headerNames": sorted(json.loads(row.get("headers") or "{}")), "enabled": bool(row["enabled"]), "route": route(row), "status": row["status"], "error": row["error"],
+            "defaultPermission": default_perm(row),
+            "tools": [{"name": t["name"], "description": t.get("description", ""), "permission": perm_of(row, t["name"]), "enabled": perm_of(row, t["name"]) != "block"} for t in tools],
             "created": row["created"], "updated": row["updated"]}
 
 
@@ -60,7 +85,7 @@ def _publish() -> None:
     events.publish("connectors.changed", connectors=list_())
 
 
-def add(name: str, url: str = "", command: str = "", token: str = "", env: dict | None = None) -> dict:
+def add(name: str, url: str = "", command: str = "", token: str = "", env: dict | None = None, headers: dict | None = None) -> dict:
     name = (name or "").strip().lower()
     if not NAME.match(name):
         raise ConnectorError("a connector name is lowercase letters, digits, hyphens and underscores, up to 40")
@@ -78,17 +103,33 @@ def add(name: str, url: str = "", command: str = "", token: str = "", env: dict 
             raise ConnectorError(f"the command does not parse: {exc}") from None
     if env is not None and (not isinstance(env, dict) or any(not isinstance(k, str) or not isinstance(v, str) for k, v in env.items())):
         raise ConnectorError("env takes names and string values")
+    if headers is not None and (not isinstance(headers, dict) or any(not isinstance(k, str) or not re.fullmatch(r"[A-Za-z0-9-]{1,64}", k) or not isinstance(v, str) or "\n" in v for k, v in headers.items())):
+        raise ConnectorError("headers take names of letters, digits and hyphens, and one-line string values")
+    if headers and command:
+        raise ConnectorError("request headers are for a server reached by URL")
     cid, t = store.new_id(), store.now()
-    store.run("INSERT INTO connectors(id, name, kind, url, token, command, env, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-              (cid, name, "url" if url else "command", url, (token or "").strip(), command, json.dumps(env or {}), t, t))
+    store.run("INSERT INTO connectors(id, name, kind, url, token, command, env, headers, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              (cid, name, "url" if url else "command", url, (token or "").strip(), command, json.dumps(env or {}), json.dumps(headers or {}), t, t))
     _publish()
     return public(_row(cid))
 
 
-def update(cid: str, enabled: bool | None = None, disabled_tools: list | None = None, token: str | None = None) -> dict:
+def update(cid: str, enabled: bool | None = None, disabled_tools: list | None = None, token: str | None = None, tool_permissions: dict | None = None) -> dict:
     r = _row(cid)
     if disabled_tools is not None and (not isinstance(disabled_tools, list) or any(not isinstance(x, str) for x in disabled_tools)):
         raise ConnectorError("disabledTools takes a list of tool names")
+    if tool_permissions is not None:
+        if not isinstance(tool_permissions, dict) or any(not isinstance(k, str) or v not in PERMS for k, v in tool_permissions.items()):
+            raise ConnectorError("toolPermissions maps tool names (or * for every tool) to allow, ask or block")
+        names = [t["name"] for t in json.loads(r["tools"] or "[]")]
+        perms = _perms(r)
+        for k, v in tool_permissions.items():
+            for n in (names if k == "*" else [k]):
+                perms[n] = v
+        store.run("UPDATE connectors SET tool_perms = ?, disabled_tools = '[]' WHERE id = ?", (json.dumps(perms, sort_keys=True), r["id"]))
+        r = _row(r["id"])
+        if disabled_tools is None:
+            disabled_tools = []
     store.run("UPDATE connectors SET enabled = ?, disabled_tools = ?, token = ?, updated = ? WHERE id = ?",
               (int(r["enabled"] if enabled is None else bool(enabled)), json.dumps(sorted(set(disabled_tools))) if disabled_tools is not None else r["disabled_tools"],
                r["token"] if token is None else token.strip(), store.now(), r["id"]))
@@ -145,7 +186,7 @@ def active() -> list[dict]:
 def request_parts() -> tuple[list[dict], list[dict], list[dict]]:
     servers, toolsets, local = [], [], []
     for r in active():
-        off = set(json.loads(r["disabled_tools"] or "[]"))
+        off = {t["name"] for t in json.loads(r["tools"] or "[]") if perm_of(r, t["name"]) == "block"}
         if route(r) == "api":
             servers.append({"type": "url", "url": r["url"], "name": r["name"]} | ({"authorization_token": r["token"]} if r["token"] else {}))
             toolsets.append({"type": "mcp_toolset", "mcp_server_name": r["name"]} | ({"configs": {t: {"enabled": False} for t in sorted(off)}} if off else {}))
@@ -164,10 +205,27 @@ def resolve_call(name: str) -> tuple[dict, str] | None:
             continue
         for t in json.loads(r["tools"] or "[]"):
             if tool_name(r["name"], t["name"]) == name:
-                if t["name"] in set(json.loads(r["disabled_tools"] or "[]")):
+                if perm_of(r, t["name"]) == "block":
                     return None
                 return r, t["name"]
     return None
+
+
+def permission_for(name: str) -> str | None:
+    for r in active():
+        for t in json.loads(r["tools"] or "[]"):
+            if tool_name(r["name"], t["name"]) == name:
+                return perm_of(r, t["name"])
+    return None
+
+
+def allow_by_name(name: str) -> bool:
+    for r in active():
+        for t in json.loads(r["tools"] or "[]"):
+            if tool_name(r["name"], t["name"]) == name:
+                update(r["id"], tool_permissions={t["name"]: "allow"})
+                return True
+    return False
 
 
 def call(name: str, args: dict) -> tuple[str, bool]:
@@ -216,7 +274,7 @@ class _Manager:
             pass
 
     def _key(self, r: dict) -> str:
-        return json.dumps([r["url"], r["command"], r["token"], r["env"]])
+        return json.dumps([r["url"], r["command"], r["token"], r["env"], r.get("headers") or "{}"])
 
     async def _client(self, r: dict):
         from mcp import Client, StdioServerParameters
@@ -230,10 +288,11 @@ class _Manager:
         if r["kind"] == "command":
             parts = shlex.split(r["command"])
             target = StdioServerParameters(command=parts[0], args=parts[1:], env=json.loads(r["env"] or "{}") or None)
-        elif r["token"]:
+        elif r["token"] or json.loads(r.get("headers") or "{}"):
             import httpx2
             from mcp.client.streamable_http import streamable_http_client
-            http = await stack.enter_async_context(httpx2.AsyncClient(headers={"Authorization": f"Bearer {r['token']}"}, timeout=CALL_TIMEOUT))
+            sent = dict(json.loads(r.get("headers") or "{}")) | ({"Authorization": f"Bearer {r['token']}"} if r["token"] else {})
+            http = await stack.enter_async_context(httpx2.AsyncClient(headers=sent, timeout=CALL_TIMEOUT))
             target = streamable_http_client(r["url"], http_client=http)
         else:
             target = r["url"]
