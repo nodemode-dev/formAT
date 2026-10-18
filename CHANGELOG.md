@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.21.1 · 2026-10-18
+
+Fixes from a whole-app audit: every view at 1920, 1280, 1100, 760, 390 and 360 px had no overflow, no visible scrollbars and no errors.
+
+- Opening a chat on a slow connection moved the composer late, after the chat loaded; it now moves at the click.
+- Clicking Your or Discover under Skills or Connectors also reset Plugins to Your plugins and cleared every tab's highlight.
+- Skills Discover no longer shows "No skills to discover yet." before its skills arrive.
+- A plugin connector's status no longer shifts when its Add button goes away.
+- In Customize, a longer status message no longer pushes the list down: the message line is two lines tall, and hovering a cut-off message shows all of it.
+
 ## 0.21.0 · 2026-10-18
 
 The rest of skills, connectors and plugins.
