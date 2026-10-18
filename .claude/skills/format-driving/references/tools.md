@@ -589,6 +589,36 @@ For each provider: whether a key is set, where it comes from (format: saved in F
 
 - read-only · command `keys.status` · params: none
 
+### add_marketplace
+
+Adds a plugin marketplace: Format clones the repository (or reads the folder) and lists its plugins in Discover. Nothing is installed until plugin.install. Use when the person gives a plugin marketplace as a repository URL, owner/repo, or a folder.
+
+- changes state · command `marketplace.add` · params: `source` string
+
+### list_marketplaces
+
+The marketplaces added to Format (Git repositories or folders with .claude-plugin/marketplace.json) and the plugins each offers: name, description, version, whether it is installed from there, and whether an update is waiting. Use to see the plugin marketplaces added to Format and the plugins each offers, installed or not.
+
+- read-only · command `marketplace.list` · params: none
+
+### remove_marketplace
+
+Removes a marketplace and uninstalls the plugins installed from it, with their skills and connectors. Not undoable. Use only when the person asks to remove a marketplace; it uninstalls its plugins.
+
+- changes state · command `marketplace.remove` · params: `name` string
+
+### sync_marketplace
+
+Turns Sync automatically on or off for a marketplace added from a repository: while on, Format checks it for updates every hour while the engine runs. Use to turn a marketplace's hourly automatic update on or off.
+
+- changes state · command `marketplace.sync` · params: `name` string, `on` boolean
+
+### update_marketplace
+
+Pulls the marketplace's latest catalog and reinstalls each plugin installed from it whose version changed, keeping its on or off state and the connectors already added. Use to pull a marketplace's latest catalog and update the plugins installed from it.
+
+- changes state · command `marketplace.update` · params: `name` string
+
 ### list_models
 
 Models from the Anthropic models endpoint with the effort levels each supports (cached 10 minutes); without a working key, a built-in list marked source fallback with the reason. Use before set_setting model, to pick a model id and its effort levels.
@@ -597,9 +627,15 @@ Models from the Anthropic models endpoint with the effort levels each supports (
 
 ### add_plugin
 
-Installs a Claude plugin (a folder with .claude-plugin/plugin.json): its skills/ and commands/ become skills and its .mcp.json servers become connectors. Adding a plugin with the same name replaces it. Use to install a Claude plugin from an uploaded .zip or a folder on this computer.
+Installs a Claude plugin (a folder with .claude-plugin/plugin.json): its skills/ and commands/ become skills; its .mcp.json servers are listed on the plugin for plugin.addConnector, not added. Adding a plugin with the same name replaces it and keeps the connectors already added. Use to install a Claude plugin from an uploaded .zip or a folder on this computer.
 
 - changes state · command `plugin.add` · params: `uploadId?` string, `path?` string
+
+### add_plugin_connector
+
+Adds one of a plugin's MCP servers as a connector (a plugin adds none by itself, as on claude.ai); then connector.connect connects it. Returns the plugin with added, the new connector's id. Use when a plugin's connector shows not_added and the person wants it: adds it as a connector, then connect it.
+
+- changes state · command `plugin.addConnector` · params: `name` string, `server` string
 
 ### delete_plugin
 
@@ -615,13 +651,19 @@ Turns all of a plugin's skills and connectors on or off together. Use to turn a 
 
 ### get_plugin
 
-One plugin: its description, version, author and the skills and connectors it added. Use to see one plugin's description, version and parts.
+One plugin: its description, version, author, skills, commandSkills, servers with their state, agents, hooks and origin. Use to see one plugin's description, version and parts.
 
 - read-only · command `plugin.get` · params: `name` string
 
+### install_plugin_from_marketplace
+
+Installs one plugin a marketplace offers (marketplace.list): from a folder in the marketplace, or by cloning its github, url or git-subdir source. Its skills and commands become skills; its connectors are listed on the plugin to add. Use to install a plugin that an added marketplace offers, by marketplace and plugin name.
+
+- changes state · command `plugin.install` · params: `marketplace` string, `plugin` string
+
 ### list_plugins
 
-The plugins installed in Format: each bundles skills, commands (installed as skills) and MCP servers (installed as connectors), with whether it is on. Use to see which plugins are installed in Format and what skills and connectors each added.
+The plugins installed in Format: each bundles skills, commands (installed as skills), MCP servers (servers, each connected, not_connected or not_added) and agents, with whether it is on and where it came from (origin: upload or marketplace). Use to see which plugins are installed in Format and what skills and connectors each added.
 
 - read-only · command `plugin.list` · params: none
 

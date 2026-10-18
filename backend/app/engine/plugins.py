@@ -63,14 +63,31 @@ def _author(m: dict) -> str:
     return str(a.get("name") or "") if isinstance(a, dict) else str(a or "")
 
 
+def _server_view(st: dict, conns: dict) -> list[dict]:
+    out, ids = [], dict(st.get("serverIds") or {})
+    for server, spec in (st.get("servers") or {}).items():
+        c = conns.get(ids.get(server, ""))
+        out.append({"name": server, "kind": "url" if spec.get("url") else "command", "target": str(spec.get("url") or spec.get("command") or ""),
+                    "connectorId": c["id"] if c else "", "state": "not_added" if not c else "connected" if c["enabled"] and c["status"] == "connected" else "not_connected"})
+    for cid in st.get("connectors") or []:
+        c = conns.get(cid)
+        if c and cid not in ids.values():
+            out.append({"name": c["name"], "kind": c["kind"], "target": c["url"] or c["command"], "connectorId": cid,
+                        "state": "connected" if c["enabled"] and c["status"] == "connected" else "not_connected"})
+    return out
+
+
 def summary(folder: Path) -> dict:
     m = _manifest(folder) or {}
     st = _state(folder)
     conns = {c["id"]: c for c in connectors.list_()}
+    adir = folder / "agents"
     return {"name": folder.name, "description": str(m.get("description") or "")[:1024], "version": str(m.get("version") or ""),
             "author": _author(m), "enabled": bool(st.get("enabled", True)), "skills": list(st.get("skills") or []),
             "connectors": [{"id": cid, "name": conns[cid]["name"]} for cid in st.get("connectors") or [] if cid in conns],
-            "commands": int(st.get("commands") or 0)}
+            "commands": int(st.get("commands") or 0), "commandSkills": list(st.get("commandSkills") or []), "servers": _server_view(st, conns),
+            "agents": sorted(a.stem for a in adir.glob("*.md")) if adir.is_dir() else [],
+            "hooks": (folder / "hooks" / "hooks.json").is_file() or bool(m.get("hooks")), "origin": dict(st.get("origin") or {"kind": "upload"})}
 
 
 def list_() -> list[dict]:
@@ -81,13 +98,13 @@ def _publish() -> None:
     events.publish("plugins.changed", plugins=list_())
 
 
-def _remove_parts(folder: Path) -> None:
+def _remove_parts(folder: Path, keep_connectors: bool = False) -> None:
     st = _state(folder)
     have = {s["name"] for s in skills.list_()}
     for s in st.get("skills") or []:
         if s in have:
             skills.delete(s)
-    for cid in st.get("connectors") or []:
+    for cid in [] if keep_connectors else st.get("connectors") or []:
         try:
             connectors.delete(cid)
         except Exception:
@@ -112,7 +129,7 @@ def _servers(folder: Path, m: dict) -> dict:
     return spec if isinstance(spec, dict) else {}
 
 
-def install(src: Path) -> dict:
+def install(src: Path, origin: dict | None = None) -> dict:
     src = _find(src)
     m = _manifest(src) or {}
     name = str(m.get("name") or "").strip().lower()
@@ -123,11 +140,14 @@ def install(src: Path) -> dict:
     if sum(1 for f in src.rglob("*") if f.is_file()) > MAX_FILES:
         raise CommandError(f"A plugin holds at most {MAX_FILES} files")
     dest = root() / name
+    kept = {}
     if dest.exists():
-        _remove_parts(dest)
+        old = _state(dest)
+        kept = {"enabled": bool(old.get("enabled", True)), "connectors": list(old.get("connectors") or []), "serverIds": dict(old.get("serverIds") or {})}
+        _remove_parts(dest, keep_connectors=True)
         shutil.rmtree(dest)
     shutil.copytree(src, dest, ignore=shutil.ignore_patterns("__MACOSX", ".DS_Store", ".git", "node_modules"))
-    st = {"enabled": True, "skills": [], "connectors": [], "commands": 0}
+    st = {"enabled": True, "skills": [], "connectors": [], "commands": 0, "commandSkills": [], "servers": {}, "serverIds": {}, "origin": origin or {"kind": "upload"}} | kept
     try:
         sdir = dest / (m["skills"] if isinstance(m.get("skills"), str) else "skills")
         for sk in sorted(sdir.glob("*/SKILL.md")) if sdir.is_dir() else []:
@@ -151,28 +171,17 @@ def install(src: Path) -> dict:
             sname = f"{name}-{cmd.stem.lower()}"[:64].strip("-")
             got = skills.create_from_text(_front_md(text, sname, f"The /{cmd.stem} command from the {name} plugin: {first}"[:300]))
             st["skills"].append(got["name"])
+            st["commandSkills"].append(got["name"])
             st["commands"] += 1
-        taken = {c["name"] for c in connectors.list_()}
         for sname, spec in _servers(dest, m).items():
-            if not isinstance(spec, dict):
-                continue
-            cname = re.sub(r"[^a-z0-9_-]", "-", str(sname).lower())[:40] or name
-            if cname in taken:
-                cname = f"{name}-{cname}"[:40]
-            env = {str(k): str(v) for k, v in (spec.get("env") or {}).items()}
-            if spec.get("url"):
-                auth = str((spec.get("headers") or {}).get("Authorization") or "")
-                c = connectors.add(cname, url=str(spec["url"]), token=auth.removeprefix("Bearer ").strip())
-            elif spec.get("command"):
-                argv = [str(spec["command"])] + [str(a).replace("${CLAUDE_PLUGIN_ROOT}", str(dest)) for a in spec.get("args") or []]
-                c = connectors.add(cname, command=shlex.join(argv), env=env or None)
-            else:
-                continue
-            taken.add(cname)
-            st["connectors"].append(c["id"])
+            if isinstance(spec, dict) and (spec.get("url") or spec.get("command")):
+                st["servers"][re.sub(r"[^a-z0-9_-]", "-", str(sname).lower())[:40] or name] = spec
+        if not st["enabled"]:
+            for s in st["skills"]:
+                skills.set_enabled(s, False)
     except Exception as exc:
         _save_state(dest, st)
-        _remove_parts(dest)
+        _remove_parts(dest, keep_connectors=bool(kept))
         shutil.rmtree(dest, ignore_errors=True)
         if isinstance(exc, (skills.SkillError, connectors.ConnectorError, ValueError)):
             raise CommandError(f"The plugin was not added: {exc}") from None
@@ -201,6 +210,33 @@ def set_enabled(name: str, on: bool) -> dict:
     return summary(folder)
 
 
+def add_connector(name: str, server: str) -> dict:
+    folder = _folder(name)
+    st = _state(folder)
+    spec = (st.get("servers") or {}).get(server)
+    if not isinstance(spec, dict):
+        raise CommandError(f"The {name} plugin has no connector {server}; plugin.get lists them", 404)
+    known = {c["id"]: c for c in connectors.list_()}
+    if (st.get("serverIds") or {}).get(server) in known:
+        return summary(folder)
+    taken = {c["name"] for c in known.values()}
+    cname = server if server not in taken else f"{name}-{server}"[:40]
+    try:
+        if spec.get("url"):
+            auth = str((spec.get("headers") or {}).get("Authorization") or "")
+            c = connectors.add(cname, url=str(spec["url"]), token=auth.removeprefix("Bearer ").strip())
+        else:
+            argv = [str(spec["command"])] + [str(a).replace("${CLAUDE_PLUGIN_ROOT}", str(folder)) for a in spec.get("args") or []]
+            c = connectors.add(cname, command=shlex.join(argv), env={str(k): str(v) for k, v in (spec.get("env") or {}).items()} or None)
+    except connectors.ConnectorError as exc:
+        raise CommandError(f"The connector was not added: {exc}") from None
+    st.setdefault("serverIds", {})[server] = c["id"]
+    st.setdefault("connectors", []).append(c["id"])
+    _save_state(folder, st)
+    _publish()
+    return summary(folder) | {"added": c["id"]}
+
+
 def owner_of_skill(skill: str) -> str:
     for p in root().iterdir():
         if p.is_dir() and skill in (_state(p).get("skills") or []):
@@ -209,13 +245,13 @@ def owner_of_skill(skill: str) -> str:
 
 
 @command("plugin.list", "Plugins", mutates=False,
-         description="The plugins installed in Format: each bundles skills, commands (installed as skills) and MCP servers (installed as connectors), with whether it is on.")
+         description="The plugins installed in Format: each bundles skills, commands (installed as skills), MCP servers (servers, each connected, not_connected or not_added) and agents, with whether it is on and where it came from (origin: upload or marketplace).")
 def plugin_list() -> dict:
     return {"plugins": list_()}
 
 
 @command("plugin.get", "Open a plugin", {"name": {"type": "string", "required": True}}, mutates=False,
-         description="One plugin: its description, version, author and the skills and connectors it added.")
+         description="One plugin: its description, version, author, skills, commandSkills, servers with their state, agents, hooks and origin.")
 def plugin_get(name: str) -> dict:
     return summary(_folder(name))
 
@@ -223,7 +259,7 @@ def plugin_get(name: str) -> dict:
 @command("plugin.add", "Add a plugin",
          {"uploadId": {"type": "string", "description": "A .zip of the plugin folder, from POST /api/uploads"},
           "path": {"type": "string", "description": "Or a plugin folder on this computer"}},
-         description="Installs a Claude plugin (a folder with .claude-plugin/plugin.json): its skills/ and commands/ become skills and its .mcp.json servers become connectors. Adding a plugin with the same name replaces it.")
+         description="Installs a Claude plugin (a folder with .claude-plugin/plugin.json): its skills/ and commands/ become skills; its .mcp.json servers are listed on the plugin for plugin.addConnector, not added. Adding a plugin with the same name replaces it and keeps the connectors already added.")
 def plugin_add(uploadId: str | None = None, path: str | None = None) -> dict:
     if bool(uploadId) == bool(path):
         raise CommandError("Pass uploadId (a .zip of the plugin) or path (a folder)")
@@ -238,6 +274,12 @@ def plugin_add(uploadId: str | None = None, path: str | None = None) -> dict:
     if meta["kind"] != "zip" or not Path(meta.get("unzipped") or "").is_dir():
         raise CommandError("Add a plugin as a .zip of its folder")
     return install(Path(meta["unzipped"]))
+
+
+@command("plugin.addConnector", "Add a plugin's connector", {"name": {"type": "string", "required": True}, "server": {"type": "string", "required": True, "description": "the connector's name in the plugin, from plugin.get servers"}},
+         description="Adds one of a plugin's MCP servers as a connector (a plugin adds none by itself, as on claude.ai); then connector.connect connects it. Returns the plugin with added, the new connector's id.")
+def plugin_add_connector(name: str, server: str) -> dict:
+    return add_connector(name, server)
 
 
 @command("plugin.enable", "Turn a plugin on or off", {"name": {"type": "string", "required": True}, "enabled": {"type": "boolean", "required": True}},
