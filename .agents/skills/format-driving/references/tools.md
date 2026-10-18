@@ -65,6 +65,12 @@ Waits (up to timeout seconds, default 300) for the running reply to finish and r
 
 ## Chats
 
+### allow_all_in_conversation
+
+Turns Allow for this chat on or off. While on, every tool Claude uses in this conversation runs without an approval card, on the API and through Claude Code; Plan mode and the deny list still apply, and other chats keep the permission mode. Turning it on also allows the approvals already waiting in the chat. Use when the person wants every tool in one chat to run without approval cards, or to turn that off again.
+
+- changes state · command `conversation.allowAll` · params: `id` string, `on` boolean
+
 ### create_conversation
 
 Creates an empty conversation and returns it with its id. Use when you need an empty chat to publish into before anything is said; send_message without conversationId also creates one.

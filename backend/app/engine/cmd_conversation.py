@@ -14,6 +14,7 @@ def _get(cid: str) -> dict:
     if found is None:
         raise CommandError(f"No conversation {cid}; conversation.list gives the ids", 404)
     found["pinned"] = bool(found["pinned"])
+    found["allow_all"] = bool(found.get("allow_all"))
     return found
 
 
@@ -42,6 +43,7 @@ def list_(query: str | None = None, limit: int | None = None) -> dict:
     waiting = {w["conversationId"] for w in tools.pending()}
     for c in items:
         c["pinned"] = bool(c["pinned"])
+        c["allow_all"] = bool(c.get("allow_all"))
         c["activity"] = "waiting" if c["id"] in waiting else "running" if chat.running(c["id"]) else None
     return {"conversations": items, "count": len(items)}
 
@@ -71,6 +73,19 @@ def pin(id: str, pinned: bool) -> dict:
     store.run("UPDATE conversations SET pinned = ? WHERE id = ?", (1 if pinned else 0, id))
     conv = _get(id)
     events.publish("conversation.updated", conversation=conv)
+    return conv
+
+
+@command("conversation.allowAll", "Allow everything in this chat", {"id": ID, "on": {"type": "boolean", "required": True}},
+         description="Turns Allow for this chat on or off. While on, every tool Claude uses in this conversation runs without an approval card, on the API and through Claude Code; Plan mode and the deny list still apply, and other chats keep the permission mode. Turning it on also allows the approvals already waiting in the chat.")
+def allow_all(id: str, on: bool) -> dict:
+    _get(id)
+    store.run("UPDATE conversations SET allow_all = ? WHERE id = ?", (1 if on else 0, id))
+    conv = _get(id)
+    events.publish("conversation.updated", conversation=conv)
+    if on:
+        from app.engine import tools
+        tools.allow_waiting(id)
     return conv
 
 

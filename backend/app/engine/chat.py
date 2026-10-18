@@ -243,7 +243,7 @@ def _call_tool(conversation_id: str, mid: str, call: dict, live: list[dict], can
         chosen = got if isinstance(got, list) else [got]
         meta.setdefault("answers", {})[tid] = chosen
         return result("The person answered: " + "; ".join(str(c) for c in chosen), False, "done")
-    decision = tools.decision_for(name, current())
+    decision = tools.decision_for(name, current(), conversation_id)
     if decision == "plan":
         return result(f"Plan mode is on, so {name} is not available: describe the change or command instead, and the person will switch modes to carry it out.", True, "denied")
     if decision == "deny":

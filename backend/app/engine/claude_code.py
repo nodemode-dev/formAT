@@ -244,7 +244,7 @@ def run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: thr
             status_of(tid, "denied")
             return respond(request_id, {"behavior": "deny", "message": "Plan mode is on in Format: describe the plan and the person will switch modes to carry it out."})
         short = ALLOW_NAMES.get(name, name)
-        if mode == "auto" or short in (current().get("toolAllow") or []):
+        if mode == "auto" or short in (current().get("toolAllow") or []) or tools.chat_allowed(conversation_id):
             status_of(tid, "running")
             return respond(request_id, {"behavior": "allow", "updatedInput": inp})
         if short in (current().get("toolDeny") or []):

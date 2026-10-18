@@ -136,6 +136,8 @@ def conn() -> sqlite3.Connection:
                             c.execute("UPDATE messages SET parent_id = ? WHERE id = ?", (prev, mid))
                         prev = mid
                     c.execute("UPDATE conversations SET leaf_id = ? WHERE id = ?", (prev, cid))
+            if "allow_all" not in {r[1] for r in c.execute("PRAGMA table_info(conversations)").fetchall()}:
+                c.execute("ALTER TABLE conversations ADD COLUMN allow_all INTEGER NOT NULL DEFAULT 0")
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
             c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '8')")
             c.execute("UPDATE meta SET value = '8' WHERE key = 'schema'")

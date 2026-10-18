@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.13.0
-Last updated: 2026-10-18 · v0.13.0: skills invoked by name on both routes, Claude Code told about Format's skills, Allow all answers what is waiting
+Current build version: v0.14.0
+Last updated: 2026-10-18 · v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
 
 ---
 
@@ -681,6 +681,13 @@ Each user turn gets its invoked skills' blocks after its attachments and comment
 - logged: v0.13.0 · 2026-10-18
 
 Before: chats answered through Claude Code never heard of Format's skills (the API path lists them in `prompt.system_prompt`; `_system` here did not), so "Use the dev-rules skill" in Format did nothing unless Claude Code happened to have a skill of that name itself. Now the appended system prompt lists every enabled skill with its folder and description and says to read the SKILL.md with Read first; an invoked skill's SKILL.md and folder go at the start of the turn; and the skills folder is passed with `--add-dir` so reading it needs no approval. Checked by calling `_system` and `_prompt` with a seeded skill; a full Claude Code session against a live model was not run here.
+
+### app/engine/cmd_conversation.py, tools.py, store.py · Allow for this chat
+- refers-to: app/engine/store.py :: connect (allow_all column migration); app/engine/cmd_conversation.py :: _get, list_, allow_all (conversation.allowAll); app/engine/tools.py :: chat_allowed, decision_for (conversation_id), allow_waiting (conversation_id); app/engine/chat.py :: _call_tool; app/engine/claude_code.py :: can_use; app/agent_guide.py :: GUIDE (allow_all_in_conversation)
+- kind: rationale
+- logged: v0.14.0 · 2026-10-18
+
+The owner wanted an always-allow for one whole chat, not one kind of step (Always allow, global per tool) and not every chat (Allow all). `conversations.allow_all` (added by an in-place migration, default 0, no schema bump since nothing else reads it) is the flag; `conversation.allowAll` sets it, publishes `conversation.updated`, and when turning it on answers the approvals already waiting in that chat only. Both routes consult it after Plan and the deny list: `decision_for` takes the conversation id (the API tool loop passes it), and Claude Code's `can_use` checks `chat_allowed`. Plan still wins, so a chat cannot change files while the mode is Plan. Sub-agents inherit it because they run inside the parent's `_call_tool`. `./format agents sync` regenerated the agent references (97 commands); its diff was reviewed: only the new command's six entries.
 
 ### app/engine/tools.py and cmd_settings.py · Allow all answers what is waiting
 - refers-to: app/engine/tools.py :: allow_waiting; app/engine/cmd_settings.py :: set_ (permissionMode auto)

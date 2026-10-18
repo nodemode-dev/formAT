@@ -123,7 +123,15 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
     return out
 
 
-def decision_for(name: str, settings: dict) -> str:
+def chat_allowed(conversation_id: str | None) -> bool:
+    if not conversation_id:
+        return False
+    from app.engine import store
+    found = store.row("SELECT allow_all FROM conversations WHERE id = ?", (conversation_id,))
+    return bool(found and found.get("allow_all"))
+
+
+def decision_for(name: str, settings: dict, conversation_id: str | None = None) -> str:
     mode = settings.get("permissionMode", "ask")
     if name in READ_ONLY:
         return "allow"
@@ -131,7 +139,7 @@ def decision_for(name: str, settings: dict) -> str:
         return "plan"
     if name in (settings.get("toolDeny") or []):
         return "deny"
-    if mode == "auto" or name in (settings.get("toolAllow") or []):
+    if mode == "auto" or name in (settings.get("toolAllow") or []) or chat_allowed(conversation_id):
         return "allow"
     return "ask"
 
@@ -187,9 +195,10 @@ def pending(conversation_id: str | None = None) -> list[dict]:
             for e in items if conversation_id is None or e["conversationId"] == conversation_id]
 
 
-def allow_waiting() -> int:
+def allow_waiting(conversation_id: str | None = None) -> int:
     with _waits_lock:
-        items = [e for e in _waits.values() if e.get("kind", "approval") == "approval" and e["answer"] is None]
+        items = [e for e in _waits.values() if e.get("kind", "approval") == "approval" and e["answer"] is None
+                 and (conversation_id is None or e["conversationId"] == conversation_id)]
     for e in items:
         e["answer"] = "allow"
         e["event"].set()
