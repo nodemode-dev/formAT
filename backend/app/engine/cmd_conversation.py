@@ -15,6 +15,7 @@ def _get(cid: str) -> dict:
         raise CommandError(f"No conversation {cid}; conversation.list gives the ids", 404)
     found["pinned"] = bool(found["pinned"])
     found["allow_all"] = bool(found.get("allow_all"))
+    found["connectors_off"] = json.loads(found.get("connectors_off") or "[]")
     return found
 
 
@@ -44,6 +45,7 @@ def list_(query: str | None = None, limit: int | None = None) -> dict:
     for c in items:
         c["pinned"] = bool(c["pinned"])
         c["allow_all"] = bool(c.get("allow_all"))
+        c["connectors_off"] = json.loads(c.get("connectors_off") or "[]")
         c["activity"] = "waiting" if c["id"] in waiting else "running" if chat.running(c["id"]) else None
     return {"conversations": items, "count": len(items)}
 
@@ -86,6 +88,23 @@ def allow_all(id: str, on: bool) -> dict:
     if on:
         from app.engine import tools
         tools.allow_waiting(id)
+    return conv
+
+
+@command("conversation.setConnector", "Turn a connector on or off in this chat",
+         {"id": ID, "connector": {"type": "string", "required": True, "description": "the connector's id or name"}, "on": {"type": "boolean", "required": True}},
+         description="Turns one connector on or off for this conversation only, like the toggles under + then Connectors. Off, Claude gets none of its tools in this chat; it stays connected and on in other chats. Returns the conversation with connectors_off, the ids turned off here.")
+def set_connector(id: str, connector: str, on: bool) -> dict:
+    _get(id)
+    from app.engine import connectors
+    try:
+        cid = connectors._row(connector)["id"]
+    except connectors.ConnectorError as exc:
+        raise CommandError(str(exc), exc.status) from None
+    off = [x for x in connectors.chat_off(id) if x != cid] + ([] if on else [cid])
+    store.run("UPDATE conversations SET connectors_off = ? WHERE id = ?", (json.dumps(sorted(off)), id))
+    conv = _get(id)
+    events.publish("conversation.updated", conversation=conv)
     return conv
 
 

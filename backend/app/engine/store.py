@@ -141,8 +141,15 @@ def conn() -> sqlite3.Connection:
                 c.execute("ALTER TABLE connectors ADD COLUMN tool_perms TEXT NOT NULL DEFAULT '{}'")
             if "headers" not in have:
                 c.execute("ALTER TABLE connectors ADD COLUMN headers TEXT NOT NULL DEFAULT '{}'")
-            if "allow_all" not in {r[1] for r in c.execute("PRAGMA table_info(conversations)").fetchall()}:
+            if "auth" not in have:
+                c.execute("ALTER TABLE connectors ADD COLUMN auth TEXT NOT NULL DEFAULT 'none'")
+                c.execute("ALTER TABLE connectors ADD COLUMN oauth TEXT NOT NULL DEFAULT '{}'")
+                c.execute("ALTER TABLE connectors ADD COLUMN transport TEXT NOT NULL DEFAULT 'http'")
+            conv_cols = {r[1] for r in c.execute("PRAGMA table_info(conversations)").fetchall()}
+            if "allow_all" not in conv_cols:
                 c.execute("ALTER TABLE conversations ADD COLUMN allow_all INTEGER NOT NULL DEFAULT 0")
+            if "connectors_off" not in conv_cols:
+                c.execute("ALTER TABLE conversations ADD COLUMN connectors_off TEXT NOT NULL DEFAULT '[]'")
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
             c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '8')")
             c.execute("UPDATE meta SET value = '8' WHERE key = 'schema'")

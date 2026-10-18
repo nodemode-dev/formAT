@@ -65,7 +65,9 @@ def public(row: dict) -> dict:
     tools = json.loads(row["tools"] or "[]")
     return {"id": row["id"], "name": row["name"], "kind": row["kind"], "url": row["url"], "command": row["command"], "hasToken": bool(row["token"]),
             "headerNames": sorted(json.loads(row.get("headers") or "{}")), "enabled": bool(row["enabled"]), "route": route(row), "status": row["status"], "error": row["error"],
-            "defaultPermission": default_perm(row),
+            "defaultPermission": default_perm(row), "auth": row.get("auth") or "none", "transport": row.get("transport") or "http",
+            "oauthClient": json.loads(row.get("oauth") or "{}").get("client") or ("register" if (row.get("auth") or "none") != "none" else ""),
+            "signedIn": bool(json.loads(row.get("oauth") or "{}").get("access_token")),
             "tools": [{"name": t["name"], "description": t.get("description", ""), "permission": perm_of(row, t["name"]), "enabled": perm_of(row, t["name"]) != "block"} for t in tools],
             "created": row["created"], "updated": row["updated"]}
 
@@ -85,7 +87,17 @@ def _publish() -> None:
     events.publish("connectors.changed", connectors=list_())
 
 
-def add(name: str, url: str = "", command: str = "", token: str = "", env: dict | None = None, headers: dict | None = None) -> dict:
+AUTHS = ("none", "needed", "now")
+
+
+def add(name: str, url: str = "", command: str = "", token: str = "", env: dict | None = None, headers: dict | None = None, auth: str = "none", oauth_client: str = "register",
+        client_id: str = "", client_secret: str = "", transport: str = "") -> dict:
+    if auth not in AUTHS or oauth_client not in ("register", "own") or transport not in ("", "http", "sse"):
+        raise ConnectorError("auth is none, needed or now; oauthClient is register or own; transport is http or sse")
+    if auth != "none" and (command or token or any(k.lower() == "authorization" for k in headers or {})):
+        raise ConnectorError("sign-in is for a server reached by URL, and it uses the Authorization header itself, so leave out the token and an Authorization header")
+    if auth != "none" and oauth_client == "own" and not (client_id or "").strip():
+        raise ConnectorError("your own OAuth client needs its client ID")
     name = (name or "").strip().lower()
     if not NAME.match(name):
         raise ConnectorError("a connector name is lowercase letters, digits, hyphens and underscores, up to 40")
@@ -108,8 +120,11 @@ def add(name: str, url: str = "", command: str = "", token: str = "", env: dict 
     if headers and command:
         raise ConnectorError("request headers are for a server reached by URL")
     cid, t = store.new_id(), store.now()
-    store.run("INSERT INTO connectors(id, name, kind, url, token, command, env, headers, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-              (cid, name, "url" if url else "command", url, (token or "").strip(), command, json.dumps(env or {}), json.dumps(headers or {}), t, t))
+    client = {"client": "own", "client_id": client_id.strip(), "client_secret": (client_secret or "").strip()} if auth != "none" and oauth_client == "own" else {}
+    transport = transport or ("sse" if urlparse(url).path.rstrip("/").endswith("/sse") else "http")
+    store.run("INSERT INTO connectors(id, name, kind, url, token, command, env, headers, auth, oauth, transport, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              (cid, name, "url" if url else "command", url, (token or "").strip(), command, json.dumps(env or {}), json.dumps(headers or {}),
+               auth if url else "none", json.dumps(client), transport, t, t))
     _publish()
     return public(_row(cid))
 
@@ -135,8 +150,27 @@ def update(cid: str, enabled: bool | None = None, disabled_tools: list | None = 
                r["token"] if token is None else token.strip(), store.now(), r["id"]))
     if enabled is False or token is not None:
         MANAGER.drop(r["id"])
+    if enabled is False and r.get("auth", "none") != "none":
+        from app.engine import oauth
+        oauth.sign_out(r)
+        store.run("UPDATE connectors SET status = 'needs_auth', error = '' WHERE id = ?", (r["id"],))
     _publish()
     return public(_row(r["id"]))
+
+
+def signin(cid: str) -> dict:
+    from app.engine import oauth
+    r = _row(cid)
+    if r["kind"] != "url" or (r.get("auth") or "none") == "none":
+        raise ConnectorError(f"{r['name']} does not use sign-in; connector.connect connects it")
+    try:
+        url = oauth.begin(r)
+    except oauth.OAuthError as exc:
+        _set_status(r["id"], "needs_auth", str(exc))
+        raise ConnectorError(str(exc)) from None
+    store.run("UPDATE connectors SET enabled = 1 WHERE id = ?", (r["id"],))
+    _publish()
+    return {"connector": public(_row(r["id"])), "url": url}
 
 
 def delete(cid: str) -> None:
@@ -154,8 +188,28 @@ def _set_status(cid: str, status: str, error: str = "", tools: list | None = Non
     _publish()
 
 
+def _refused(r: dict, bearer: str) -> bool:
+    import httpx
+    try:
+        with httpx.Client(timeout=CONNECT_TIMEOUT) as http:
+            res = http.post(r["url"], json={"jsonrpc": "2.0", "id": 0, "method": "ping"}, headers={"Accept": "application/json, text/event-stream"} | json.loads(r.get("headers") or "{}")
+                            | ({"Authorization": f"Bearer {bearer}"} if bearer else {}))
+        return res.status_code == 401
+    except httpx.HTTPError:
+        return False
+
+
 def connect(cid: str) -> dict:
     r = _row(cid)
+    auth = r.get("auth") or "none"
+    if auth != "none":
+        from app.engine import oauth
+        bearer = oauth.access_token(r)
+        if (auth == "now" and not bearer) or _refused(r, bearer):
+            if bearer:
+                oauth.sign_out(r)
+            _set_status(r["id"], "needs_auth", "Sign in to use it" if not bearer else "The server no longer accepts the sign-in; sign in again")
+            return public(_row(r["id"]))
     _set_status(r["id"], "connecting")
     try:
         tools = MANAGER.run(MANAGER.list_tools(r), CONNECT_TIMEOUT)
@@ -183,12 +237,27 @@ def active() -> list[dict]:
     return [r for r in store.rows("SELECT * FROM connectors WHERE enabled = 1 ORDER BY name")]
 
 
-def request_parts() -> tuple[list[dict], list[dict], list[dict]]:
+def chat_off(conversation_id: str | None) -> list[str]:
+    if not conversation_id:
+        return []
+    found = store.row("SELECT connectors_off FROM conversations WHERE id = ?", (conversation_id,))
+    return list(json.loads((found or {}).get("connectors_off") or "[]"))
+
+
+def request_parts(chat_off_ids: list | None = None) -> tuple[list[dict], list[dict], list[dict]]:
     servers, toolsets, local = [], [], []
     for r in active():
+        if r["id"] in (chat_off_ids or ()):
+            continue
         off = {t["name"] for t in json.loads(r["tools"] or "[]") if perm_of(r, t["name"]) == "block"}
         if route(r) == "api":
-            servers.append({"type": "url", "url": r["url"], "name": r["name"]} | ({"authorization_token": r["token"]} if r["token"] else {}))
+            bearer = r["token"]
+            if (r.get("auth") or "none") != "none":
+                from app.engine import oauth
+                bearer = oauth.access_token(r)
+                if not bearer and (r["auth"] == "now" or r["status"] == "needs_auth"):
+                    continue
+            servers.append({"type": "url", "url": r["url"], "name": r["name"]} | ({"authorization_token": bearer} if bearer else {}))
             toolsets.append({"type": "mcp_toolset", "mcp_server_name": r["name"]} | ({"configs": {t: {"enabled": False} for t in sorted(off)}} if off else {}))
         elif r["status"] == "connected":
             for t in json.loads(r["tools"] or "[]"):
@@ -199,9 +268,9 @@ def request_parts() -> tuple[list[dict], list[dict], list[dict]]:
     return servers, toolsets, local
 
 
-def resolve_call(name: str) -> tuple[dict, str] | None:
+def resolve_call(name: str, chat_off_ids: list | None = None) -> tuple[dict, str] | None:
     for r in active():
-        if route(r) != "local":
+        if route(r) != "local" or r["id"] in (chat_off_ids or ()):
             continue
         for t in json.loads(r["tools"] or "[]"):
             if tool_name(r["name"], t["name"]) == name:
@@ -228,10 +297,10 @@ def allow_by_name(name: str) -> bool:
     return False
 
 
-def call(name: str, args: dict) -> tuple[str, bool]:
-    found = resolve_call(name)
+def call(name: str, args: dict, conversation_id: str | None = None) -> tuple[str, bool]:
+    found = resolve_call(name, chat_off(conversation_id))
     if found is None:
-        return f"The connector tool {name} is not available; it may be turned off or disconnected.", True
+        return f"The connector tool {name} is not available; it may be turned off for this chat, turned off or disconnected.", True
     r, tool = found
     try:
         return MANAGER.run(MANAGER.call_tool(r, tool, args), CALL_TIMEOUT)
@@ -273,8 +342,14 @@ class _Manager:
         except BaseException:
             pass
 
+    def _bearer(self, r: dict) -> str:
+        if (r.get("auth") or "none") == "none":
+            return r["token"]
+        from app.engine import oauth
+        return oauth.access_token(r)
+
     def _key(self, r: dict) -> str:
-        return json.dumps([r["url"], r["command"], r["token"], r["env"], r.get("headers") or "{}"])
+        return json.dumps([r["url"], r["command"], self._bearer(r), r["env"], r.get("headers") or "{}", r.get("transport") or "http"])
 
     async def _client(self, r: dict):
         from mcp import Client, StdioServerParameters
@@ -288,10 +363,15 @@ class _Manager:
         if r["kind"] == "command":
             parts = shlex.split(r["command"])
             target = StdioServerParameters(command=parts[0], args=parts[1:], env=json.loads(r["env"] or "{}") or None)
-        elif r["token"] or json.loads(r.get("headers") or "{}"):
+        elif (r.get("transport") or "http") == "sse":
+            from mcp.client.sse import sse_client
+            bearer = self._bearer(r)
+            target = sse_client(r["url"], headers=dict(json.loads(r.get("headers") or "{}")) | ({"Authorization": f"Bearer {bearer}"} if bearer else {}), timeout=CONNECT_TIMEOUT)
+        elif self._bearer(r) or json.loads(r.get("headers") or "{}"):
             import httpx2
             from mcp.client.streamable_http import streamable_http_client
-            sent = dict(json.loads(r.get("headers") or "{}")) | ({"Authorization": f"Bearer {r['token']}"} if r["token"] else {})
+            bearer = self._bearer(r)
+            sent = dict(json.loads(r.get("headers") or "{}")) | ({"Authorization": f"Bearer {bearer}"} if bearer else {})
             http = await stack.enter_async_context(httpx2.AsyncClient(headers=sent, timeout=CALL_TIMEOUT))
             target = streamable_http_client(r["url"], http_client=http)
         else:

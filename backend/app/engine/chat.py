@@ -37,7 +37,7 @@ def start(conversation_id: str) -> dict:
             raise RuntimeError("A reply is already running in this chat; stop it first")
         cancel = threading.Event()
         RUNS[conversation_id] = cancel
-    settings = current()
+    settings = current() | {"connectorsOff": connectors.chat_off(conversation_id)}
     model = find_model(settings["model"])
     path = messages_of(conversation_id)
     asked = (path[-1].get("meta") or {}) if path and path[-1]["role"] == "user" else {}

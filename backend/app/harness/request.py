@@ -163,7 +163,7 @@ def build(history: list[dict], model: dict, settings: dict, account: dict, accep
     used_mcp = any(b.get("type") in ("mcp_tool_use", "mcp_tool_result") for msg in req["messages"] for b in msg["content"])
     if wanted or used_mcp:
         from app.engine import connectors
-        servers = [s for s in connectors.request_parts()[0] if s["name"] in wanted]
+        servers = [s for s in connectors.request_parts(settings.get("connectorsOff"))[0] if s["name"] in wanted]
         if servers:
             req["mcp_servers"] = servers
         betas.append(connectors.MCP_BETA)

@@ -23,10 +23,21 @@ def list_() -> dict:
           "command": {"type": "string", "description": "a local MCP server to start, as a command line"},
           "token": {"type": "string", "description": "a bearer token, if the server needs one"},
           "env": {"type": "object", "description": "environment variables for a local server"},
-          "headers": {"type": "object", "description": "request headers sent to a server reached by URL; a connector with headers is run by the engine"}},
-         description="Adds an MCP server by URL or by command. A public https URL goes to Claude through Anthropic's MCP connector; a URL on this computer or a private network, and every command, is run by the engine, and its tools ask for approval like commands do. Then connector.connect lists its tools.")
-def add(name: str, url: str | None = None, command: str | None = None, token: str | None = None, env: dict | None = None, headers: dict | None = None) -> dict:
-    return _do(connectors.add, name, url or "", command or "", token or "", env, headers)
+          "headers": {"type": "object", "description": "request headers sent to a server reached by URL; a connector with headers is run by the engine"},
+          "auth": {"type": "string", "enum": ["none", "needed", "now"], "description": "for a URL: none (No sign-in), needed (Sign in when needed: connect without credentials, sign in when the server asks), now (Sign in now)"},
+          "oauthClient": {"type": "string", "enum": ["register", "own"], "description": "with sign-in: register (Format registers itself with the server) or own (your OAuth client ID and secret)"},
+          "clientId": {"type": "string"}, "clientSecret": {"type": "string", "description": "only if the server requires one"},
+          "transport": {"type": "string", "enum": ["http", "sse"], "description": "http (Streamable HTTP, the default) or sse (older servers; a URL ending in /sse picks it)"}},
+         description="Adds an MCP server by URL or by command. A public https URL goes to Claude through Anthropic's MCP connector; a URL on this computer or a private network, and every command, is run by the engine, and its tools ask for approval like commands do. With auth needed or now, connector.signin gives the server's sign-in page. Then connector.connect lists its tools.")
+def add(name: str, url: str | None = None, command: str | None = None, token: str | None = None, env: dict | None = None, headers: dict | None = None, auth: str | None = None,
+        oauthClient: str | None = None, clientId: str | None = None, clientSecret: str | None = None, transport: str | None = None) -> dict:
+    return _do(connectors.add, name, url or "", command or "", token or "", env, headers, auth or "none", oauthClient or "register", clientId or "", clientSecret or "", transport or "")
+
+
+@command("connector.signin", "Sign in to a connector", {"id": CID},
+         description="Starts the server's OAuth sign-in (discovery, client registration or your own client, PKCE) and returns url, the page to open; after you approve there, the server sends you back to Format, which stores the sign-in and connects. Disconnect signs out.")
+def signin(id: str) -> dict:
+    return _do(connectors.signin, id)
 
 
 @command("connector.update", "Change a connector",

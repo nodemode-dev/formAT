@@ -116,7 +116,7 @@ def definitions(settings: dict, model: dict, agent: bool = False) -> list[dict]:
     from app.engine import connectors, skills
     if skills.enabled():
         out.append(dict(SKILL))
-    _, toolsets, local = connectors.request_parts()
+    _, toolsets, local = connectors.request_parts(settings.get("connectorsOff"))
     out.extend(local)
     if not agent:
         out.extend(toolsets)
@@ -288,7 +288,7 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
             return browser.tool(args)
         if name.startswith("mcp__"):
             from app.engine import connectors
-            return connectors.call(name, args)
+            return connectors.call(name, args, conversation_id)
         if name == "task_list":
             items = args.get("tasks")
             if not isinstance(items, list) or not items:

@@ -1,3 +1,4 @@
+import json
 import time
 
 from app.engine import chat, events, store, tools, uploads
@@ -11,12 +12,15 @@ from app.engine.commands import CommandError, command
           "comments": {"type": "array", "items": {"type": "object"}, "description": "comments on files in the chat's folder: {path, quote, note}, up to 20"},
           "projectId": {"type": "string", "description": "with no conversationId: start the new chat inside this project"},
           "title": {"type": "string", "description": "with no conversationId: the new chat's title (default: the first line of text)"},
+          "connectorsOff": {"type": "array", "items": {"type": "string"}, "description": "with no conversationId: connector ids turned off for the new chat (the toggles under + then Connectors before the first message)"},
           "research": {"type": "boolean", "description": "Research mode for this message: Claude plans, searches and reads many sources, and writes a cited report (web tools on, high effort)"},
           "output": {"type": "string", "enum": ["doc", "sheet", "deck"], "description": "Ask for the answer as a document, spreadsheet or slide deck beside the chat (the composer's Create picker)"}},
          description="Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait.")
 def send(text: str, conversationId: str | None = None, attachments: list | None = None, comments: list | None = None, projectId: str | None = None, title: str | None = None,
-         research: bool | None = None, output: str | None = None) -> dict:
+         research: bool | None = None, output: str | None = None, connectorsOff: list | None = None) -> dict:
     notes = _comments(comments)
+    if connectorsOff is not None and (not isinstance(connectorsOff, list) or any(not isinstance(x, str) for x in connectorsOff)):
+        raise CommandError("chat.send: connectorsOff takes a list of connector ids")
     if projectId and store.row("SELECT id FROM projects WHERE id = ?", (projectId,)) is None:
         raise CommandError(f"No project {projectId}; project.list gives the ids", 404)
     if not text.strip() and not attachments and not notes:
@@ -32,9 +36,13 @@ def send(text: str, conversationId: str | None = None, attachments: list | None 
     if conversationId is None:
         title = ((title or "").strip() or text.strip().split("\n")[0] or (files[0]["name"] if files else "New chat"))[:60]
         cid, t = store.new_id(), store.now()
-        store.run("INSERT INTO conversations(id, title, project_id, created, updated) VALUES (?, ?, ?, ?, ?)", (cid, title, projectId or None, t, t))
+        known = {r["id"] for r in store.rows("SELECT id FROM connectors")}
+        off = sorted({x for x in connectorsOff or [] if x in known})
+        store.run("INSERT INTO conversations(id, title, project_id, created, updated, connectors_off) VALUES (?, ?, ?, ?, ?, ?)", (cid, title, projectId or None, t, t, json.dumps(off)))
         conv = store.row("SELECT * FROM conversations WHERE id = ?", (cid,)) or {}
         conv["pinned"] = bool(conv.get("pinned"))
+        conv["allow_all"] = bool(conv.get("allow_all"))
+        conv["connectors_off"] = off
         events.publish("conversation.created", conversation=conv)
         if projectId:
             from app.engine import projects

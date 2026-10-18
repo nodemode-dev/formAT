@@ -49,7 +49,7 @@ Deletes the last reply (if it is Claude's) and asks again with the same history 
 
 Stores the message (with its attachments and comments on the chat's files) and starts Claude's reply, which streams as message.delta events. Returns the chat id, the user message and the reply's id; read the finished reply with conversation.get or chat.wait. Use to ask Claude something in Format: omit conversationId to start a new chat, then call wait_for_reply with the conversationId it returns.
 
-- changes state · command `chat.send` · params: `text` string, `conversationId?` string, `attachments?` array, `comments?` array, `projectId?` string, `title?` string, `research?` boolean, `output?` string
+- changes state · command `chat.send` · params: `text` string, `conversationId?` string, `attachments?` array, `comments?` array, `projectId?` string, `title?` string, `connectorsOff?` array, `research?` boolean, `output?` string
 
 ### stop_reply
 
@@ -112,6 +112,12 @@ Pin chat Use when the person wants a chat kept at the top of the sidebar, or unp
 Rename chat Use when a chat's title should change.
 
 - changes state · command `conversation.rename` · params: `id` string, `title` string
+
+### set_connector_in_conversation
+
+Turns one connector on or off for this conversation only, like the toggles under + then Connectors. Off, Claude gets none of its tools in this chat; it stays connected and on in other chats. Returns the conversation with connectors_off, the ids turned off here. Use when the person wants a connector's tools kept out of one chat, or back in, without disconnecting it everywhere.
+
+- changes state · command `conversation.setConnector` · params: `id` string, `connector` string, `on` boolean
 
 ### add_message
 
@@ -325,9 +331,9 @@ One file of an installed skill as text (up to 400 KB; a binary file is named, no
 
 ### add_connector
 
-Adds an MCP server by URL or by command. A public https URL goes to Claude through Anthropic's MCP connector; a URL on this computer or a private network, and every command, is run by the engine, and its tools ask for approval like commands do. Then connector.connect lists its tools. Use when the person wants Claude in Format to reach another MCP server, by URL or by command.
+Adds an MCP server by URL or by command. A public https URL goes to Claude through Anthropic's MCP connector; a URL on this computer or a private network, and every command, is run by the engine, and its tools ask for approval like commands do. With auth needed or now, connector.signin gives the server's sign-in page. Then connector.connect lists its tools. Use when the person wants Claude in Format to reach another MCP server, by URL or by command.
 
-- changes state · command `connector.add` · params: `name` string, `url?` string, `command?` string, `token?` string, `env?` object, `headers?` object
+- changes state · command `connector.add` · params: `name` string, `url?` string, `command?` string, `token?` string, `env?` object, `headers?` object, `auth?` string, `oauthClient?` string, `clientId?` string, `clientSecret?` string, `transport?` string
 
 ### connect_connector
 
@@ -346,6 +352,12 @@ Removes a connector and closes its connection. Use only when the person asks to 
 MCP servers added to Format: name, URL or command, route (api: sent to Anthropic's MCP connector; local: run by the engine), status, and their tools with on and off. Use to see which MCP servers Format's Claude can use and whether they are connected.
 
 - read-only · command `connector.list` · params: none
+
+### sign_in_connector
+
+Starts the server's OAuth sign-in (discovery, client registration or your own client, PKCE) and returns url, the page to open; after you approve there, the server sends you back to Format, which stores the sign-in and connects. Disconnect signs out. Use when a connector added with sign-in shows needs_auth: it returns the server's sign-in page for the person to open and approve.
+
+- changes state · command `connector.signin` · params: `id` string
 
 ### update_connector
 
