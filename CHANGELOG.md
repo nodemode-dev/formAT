@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.14.1 · 2026-10-18
+
+Zero overflow.
+
+- A long command no longer makes the step, the approval card and the rest of the reply wider than the chat, and the chat never scrolls sideways. Commands, paths, links, code lines, diffs and table cells wrap; the approval question takes its own line and its buttons wrap under it.
+- On phone-width screens the app is exactly the screen's width: the composer's model and mode shrink, and the context meter and effort label are hidden under 480 px. The Outputs panel fits narrow screens.
+- The streaming caret no longer takes a line of its own under a code block, so nothing moves when a reply finishes.
+
 ## 0.14.0 · 2026-10-18
 
 Allow for this chat.
