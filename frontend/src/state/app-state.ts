@@ -131,7 +131,7 @@ export interface Settings {
 
 export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
 
-type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors' | 'plugins';
+type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors' | 'plugins' | 'marketplaces';
 
 export interface PluginSummary {
   name: string;
@@ -142,6 +142,36 @@ export interface PluginSummary {
   skills: string[];
   connectors: Array<{ id: string; name: string }>;
   commands: number;
+  commandSkills?: string[];
+  servers?: Array<{ name: string; kind: 'url' | 'command'; target: string; connectorId: string; state: 'connected' | 'not_connected' | 'not_added' }>;
+  agents?: string[];
+  hooks?: boolean;
+  origin?: { kind: 'upload' | 'marketplace'; marketplace?: string; entry?: string };
+}
+
+export interface MarketOffer {
+  name: string;
+  description: string;
+  version: string;
+  category: string;
+  author: string;
+  source: string;
+  installed: boolean;
+  installedVersion: string;
+  taken: boolean;
+  update: boolean;
+}
+
+export interface MarketplaceInfo {
+  name: string;
+  source: string;
+  kind: 'git' | 'path';
+  sync: boolean;
+  added: number;
+  checked: number;
+  error: string;
+  description: string;
+  plugins: MarketOffer[];
 }
 
 export interface ConnectorInfo {
@@ -194,6 +224,7 @@ export class AppState {
   skills: SkillSummary[] = [];
   connectors: ConnectorInfo[] = [];
   plugins: PluginSummary[] = [];
+  marketplaces: MarketplaceInfo[] = [];
   draftProject: string | null = null;
   private subs = new Map<Topic, Set<() => void>>();
 

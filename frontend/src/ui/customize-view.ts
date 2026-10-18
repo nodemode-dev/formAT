@@ -1,5 +1,5 @@
 import { run } from '../engine-client/api';
-import type { AppState, ConnectorInfo, FileInfo, PluginSummary, SkillSummary } from '../state/app-state';
+import type { AppState, ConnectorInfo, FileInfo, MarketplaceInfo, PluginSummary, SkillSummary } from '../state/app-state';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 import { renderMarkdown } from './markdown';
@@ -44,12 +44,25 @@ export class CustomizeView {
           <button type="button" role="tab" class="ft-cz-tab" data-tab="plugins" aria-selected="false">${ui('plugin', 16)}<span>Plugins</span><span class="ft-cz-count" data-count="plugins"></span></button>
         </nav>
         <section class="ft-cz-section ft-pl-section" data-sec="plugins">
-          <div class="ft-cz-section-head"><h2>${ui('plugin', 16)}<span>Your plugins</span></h2>
-            <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search plugins" aria-label="Search plugins"><button type="button" class="ft-btn ft-pl-upload">${ui('plus', 14)}<span>Upload plugin</span></button></div></div>
-          <p class="ft-set-note">A plugin bundles skills, commands and connectors for one kind of work, in the Claude plugin format (a folder with .claude-plugin/plugin.json). Add one as a .zip of its folder: its skills and commands appear under Skills and its MCP servers under Connectors, and they turn on and off together.</p>
+          <div class="ft-cz-section-head"><div class="ft-pl-views" role="tablist" aria-label="Plugins"><button type="button" role="tab" class="ft-pl-view" data-plv="yours" aria-selected="true">Your plugins</button><button type="button" role="tab" class="ft-pl-view" data-plv="discover" aria-selected="false">Discover</button></div>
+            <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search plugins" aria-label="Search plugins"><button type="button" class="ft-btn ft-pl-addmenu" data-menu-anchor>${ui('plus', 14)}<span>Add</span></button></div></div>
+          <p class="ft-set-note">A plugin bundles skills, commands, connectors and agents for one kind of work, in the Claude plugin format (a folder with .claude-plugin/plugin.json). Its skills and commands appear under Skills and turn on and off with it; its connectors are listed on its page for you to add. Add plugins from a marketplace in Discover, or upload one as a .zip.</p>
           <span class="ft-proj-msg ft-pl-msg" aria-live="polite"></span>
-          <div class="ft-cz-list ft-pl-list" role="list"></div>
-          <p class="ft-proj-none ft-pl-empty">No plugins yet.</p>
+          <div class="ft-proj-form ft-pl-mform" hidden>
+            <label class="ft-field"><span>Marketplace</span><input class="ft-input ft-pl-msource" placeholder="owner/repo, https://github.com/your-org/your-plugins, or a folder" spellcheck="false"></label>
+            <p class="ft-set-note">A marketplace is a Git repository (or a folder) with .claude-plugin/marketplace.json. Format copies its catalog and lists its plugins in Discover; nothing is installed until you add one. Only add marketplaces you trust: their plugins are not reviewed.</p>
+            <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-pl-madd">Add marketplace</button><button type="button" class="ft-btn ft-pl-mcancel">Cancel</button></div>
+          </div>
+          <div class="ft-pl-yours">
+            <div class="ft-cz-list ft-pl-list" role="list"></div>
+            <p class="ft-proj-none ft-pl-empty">No plugins yet. Find one in Discover, or upload one.</p>
+          </div>
+          <div class="ft-pl-discover" hidden>
+            <div class="ft-cz-list ft-pl-offers" role="list"></div>
+            <p class="ft-proj-none ft-pl-nooffers">No marketplaces yet. Add one with Add, then Add marketplace.</p>
+            <h3 class="ft-proj-sub ft-pl-mhead">Marketplaces</h3>
+            <div class="ft-cz-list ft-pl-markets" role="list"></div>
+          </div>
           <input type="file" class="ft-pl-picker" accept=".zip" hidden>
         </section>
         <section class="ft-cz-section" data-sec="skills">
@@ -114,12 +127,11 @@ export class CustomizeView {
         <div class="ft-cz-detail-head"><h1 class="ft-cz-name ft-pl-name"></h1><label class="ft-field ft-check ft-switch-label" title="Turn the plugin and everything it adds on or off"><input type="checkbox" role="switch" class="ft-pl-on ft-switch"><span>Enabled</span></label><button type="button" class="ft-btn ft-danger-btn ft-pl-delete" hidden>Remove with its skills and connectors?</button><button type="button" class="ft-icon-btn ft-pl-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
         <p class="ft-cz-desc ft-pl-by"></p>
         <p class="ft-cz-desc ft-pl-desc"></p>
-        <h2 class="ft-proj-sub">Skills and commands</h2>
-        <div class="ft-cz-files ft-pl-skills"></div>
-        <p class="ft-proj-none ft-pl-noskills">None.</p>
-        <h2 class="ft-proj-sub">Connectors</h2>
-        <div class="ft-cz-files ft-pl-conns"></div>
-        <p class="ft-proj-none ft-pl-noconns">None.</p>
+        <div class="ft-pl-tabs" role="tablist" aria-label="What the plugin adds">${(['skills', 'commands', 'connectors', 'agents'] as const).map((k, i) => `<button type="button" role="tab" class="ft-pl-tab" data-plt="${k}" aria-selected="${i === 0}">${k[0].toUpperCase()}${k.slice(1)}<span class="ft-cz-count" data-plcount="${k}"></span></button>`).join('')}</div>
+        <div class="ft-pl-pane" data-pane="skills"><div class="ft-cz-files ft-pl-skills"></div><p class="ft-proj-none ft-pl-noskills">No skills.</p></div>
+        <div class="ft-pl-pane" data-pane="commands" hidden><p class="ft-set-note">In chat a command loads as a skill: pick it from the / menu.</p><div class="ft-cz-files ft-pl-cmds"></div><p class="ft-proj-none ft-pl-nocmds">No commands.</p></div>
+        <div class="ft-pl-pane" data-pane="connectors" hidden><p class="ft-set-note">Adding a plugin adds none of its connectors. Add one here, then connect it; its skills load either way.</p><div class="ft-cz-list ft-pl-conns" role="list"></div><p class="ft-proj-none ft-pl-noconns">No connectors.</p></div>
+        <div class="ft-pl-pane" data-pane="agents" hidden><p class="ft-set-note ft-pl-agentnote">Agents run in Cowork and Claude Code; Format lists them but does not run them in chat.</p><div class="ft-cz-files ft-pl-agents"></div><p class="ft-proj-none ft-pl-noagents">No agents.</p></div>
       </div>
     </section>`);
     this.main = q(this.root, '.ft-cz-main');
@@ -175,10 +187,11 @@ export class CustomizeView {
     state.on('skills', () => this.render());
     this.cnDetail = q(this.root, '.ft-cn-detail');
     this.wireConnectors();
-    state.on('connectors', () => this.renderConnectors());
+    state.on('connectors', () => { this.renderConnectors(); if (this.plOpen) this.paintPlugin(); });
     this.plDetail = q(this.root, '.ft-pl-detail');
     this.wirePlugins();
-    state.on('plugins', () => this.renderPlugins());
+    state.on('plugins', () => { this.renderPlugins(); this.renderMarkets(); });
+    state.on('marketplaces', () => this.renderMarkets());
   }
 
   private plDetail: HTMLElement;
@@ -188,7 +201,70 @@ export class CustomizeView {
   private wirePlugins(): void {
     const picker = q<HTMLInputElement>(this.root, '.ft-pl-picker');
     const msg = q(this.root, '.ft-pl-msg');
-    q(this.root, '.ft-pl-upload').addEventListener('click', () => picker.click());
+    const mform = q(this.root, '.ft-pl-mform');
+    const say = (err: unknown): void => setText(msg, err instanceof Error ? err.message : String(err));
+    q(this.root, '.ft-pl-addmenu').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
+      { label: 'Add marketplace', desc: 'A Git repository or folder that lists plugins', icon: 'plugin', action: () => { if (mform.hidden) mform.hidden = false; q<HTMLInputElement>(mform, '.ft-pl-msource').focus(); } },
+      { label: 'Upload plugin', desc: 'A .zip of a plugin folder', icon: 'paperclip', action: () => picker.click() },
+    ], 'down'));
+    q(this.root, '.ft-pl-mcancel').addEventListener('click', () => { mform.hidden = true; });
+    q(this.root, '.ft-pl-madd').addEventListener('click', async () => {
+      const src = q<HTMLInputElement>(mform, '.ft-pl-msource');
+      setText(msg, `Adding ${src.value.trim()}`);
+      try {
+        const m = await run<MarketplaceInfo>('marketplace.add', { source: src.value.trim() });
+        src.value = '';
+        mform.hidden = true;
+        setText(msg, `Added the ${m.name} marketplace: ${m.plugins.length} plugin${m.plugins.length === 1 ? '' : 's'} in Discover.`);
+        this.setPluginView('discover');
+      } catch (err) { say(err); }
+    });
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-view').forEach((b) => b.addEventListener('click', () => this.setPluginView(b.dataset.plv ?? 'yours')));
+    q(this.root, '.ft-pl-offers').addEventListener('click', async (e) => {
+      const t = e.target as HTMLElement;
+      const row = t.closest<HTMLElement>('[data-offer]');
+      if (!row) return;
+      const [market, name] = (row.dataset.offer ?? '').split('\n');
+      if (t.closest('.ft-pl-get')) {
+        setText(msg, `Adding ${name} from ${market}`);
+        try {
+          const p = await run<PluginSummary>('plugin.install', { marketplace: market, plugin: name });
+          setText(msg, `Added ${p.name}: ${p.skills.length} skill${p.skills.length === 1 ? '' : 's'}${p.servers?.length ? `, ${p.servers.length} connector${p.servers.length === 1 ? '' : 's'} to add on its page` : ''}.`);
+        } catch (err) { say(err); }
+        return;
+      }
+      if (this.state.plugins.some((p) => p.name === name)) this.openPlugin(name);
+    });
+    const markets = q(this.root, '.ft-pl-markets');
+    markets.addEventListener('click', async (e) => {
+      const t = e.target as HTMLElement;
+      const row = t.closest<HTMLElement>('[data-market]');
+      const name = row?.dataset.market;
+      if (!row || !name) return;
+      if (t.closest('.ft-pl-check')) {
+        setText(msg, `Checking ${name} for updates`);
+        try {
+          const r = await run<{ updated: string[]; marketplace: MarketplaceInfo }>('marketplace.update', { name });
+          setText(msg, r.marketplace.error ? `Checked ${name}: ${r.marketplace.error}` : r.updated.length ? `Updated ${r.updated.join(', ')}.` : `${name} is up to date.`);
+        } catch (err) { say(err); }
+      } else if (t.closest('.ft-pl-mremove')) {
+        try { await run('marketplace.remove', { name }); setText(msg, `Removed the ${name} marketplace and its plugins.`); } catch (err) { say(err); }
+      } else if (t.closest('.ft-pl-mmore')) {
+        openMenu(t.closest('.ft-pl-mmore') as HTMLElement, [
+          { label: 'Remove', desc: 'Remove the marketplace and uninstall its plugins', icon: 'trash', action: () => { const del = q<HTMLButtonElement>(row, '.ft-pl-mremove'); if (del.hidden) del.hidden = false; del.focus(); } },
+        ], 'down');
+      }
+    });
+    markets.addEventListener('change', (e) => {
+      const box = (e.target as HTMLElement).closest<HTMLInputElement>('.ft-pl-sync input');
+      const name = box?.closest<HTMLElement>('[data-market]')?.dataset.market;
+      if (box && name) void run('marketplace.sync', { name, on: box.checked }).catch(say);
+    });
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-tab').forEach((b) => b.addEventListener('click', () => this.setPluginTab(b.dataset.plt ?? 'skills')));
+    q(this.root, '.ft-pl-cmds').addEventListener('click', (e) => {
+      const s = (e.target as HTMLElement).closest<HTMLElement>('[data-skill-link]')?.dataset.skillLink;
+      if (s) void this.open(s);
+    });
     picker.addEventListener('change', async () => {
       const f = picker.files?.[0];
       picker.value = '';
@@ -231,9 +307,90 @@ export class CustomizeView {
       const s = (e.target as HTMLElement).closest<HTMLElement>('[data-skill-link]')?.dataset.skillLink;
       if (s) void this.open(s);
     });
-    q(this.root, '.ft-pl-conns').addEventListener('click', (e) => {
-      const c = (e.target as HTMLElement).closest<HTMLElement>('[data-cn-link]')?.dataset.cnLink;
-      if (c) this.openConnector(c);
+    q(this.root, '.ft-pl-conns').addEventListener('click', async (e) => {
+      const t = e.target as HTMLElement;
+      const row = t.closest<HTMLElement>('[data-srv]');
+      const p = this.state.plugins.find((x) => x.name === this.plOpen);
+      const srv = p?.servers?.find((s) => s.name === row?.dataset.srv);
+      if (!p || !srv) return;
+      try {
+        if (t.closest('.ft-pl-srvadd')) {
+          const r = await run<{ added?: string }>('plugin.addConnector', { name: p.name, server: srv.name });
+          if (r.added) await run('connector.connect', { id: r.added });
+        } else if (t.closest('.ft-pl-srvconnect') && srv.connectorId) {
+          await this.powerConnector(srv.connectorId, true);
+        } else if (srv.connectorId) {
+          this.openConnector(srv.connectorId);
+        }
+      } catch (err) { say(err); }
+    });
+  }
+
+  private setPluginView(view: string): void {
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-view').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.plv === view)));
+    const yours = q(this.root, '.ft-pl-yours');
+    const disc = q(this.root, '.ft-pl-discover');
+    if (yours.hidden !== (view !== 'yours')) yours.hidden = view !== 'yours';
+    if (disc.hidden !== (view !== 'discover')) disc.hidden = view !== 'discover';
+  }
+
+  private setPluginTab(tab: string): void {
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-tab').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.plt === tab)));
+    this.root.querySelectorAll<HTMLElement>('.ft-pl-pane').forEach((pane) => { if (pane.hidden !== (pane.dataset.pane !== tab)) pane.hidden = pane.dataset.pane !== tab; });
+  }
+
+  private offerRows = new Map<string, HTMLElement>();
+  private marketRows = new Map<string, HTMLElement>();
+
+  renderMarkets(): void {
+    const box = q(this.root, '.ft-pl-offers');
+    const mine = new Map(this.state.plugins.map((p) => [p.name, p]));
+    const offers = this.state.marketplaces.flatMap((m) => m.plugins.map((o) => ({ m, o })));
+    const live = new Set(offers.map(({ m, o }) => `${m.name}\n${o.name}`));
+    for (const [k, r] of this.offerRows) if (!live.has(k)) { r.remove(); this.offerRows.delete(k); }
+    offers.forEach(({ m, o }, i) => {
+      const key = `${m.name}\n${o.name}`;
+      let row = this.offerRows.get(key);
+      if (!row) {
+        row = el(`<div class="ft-cz-row ft-pl-offer" role="listitem"><span class="ft-cz-icon">${ui('plugin', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span><span class="ft-cz-row-meta"></span></button><button type="button" class="ft-btn ft-pl-get"></button></div>`);
+        row.dataset.offer = key;
+        this.offerRows.set(key, row);
+      }
+      const have = mine.get(o.name);
+      const here = !!have && have.origin?.marketplace === m.name;
+      setText(q(row, '.ft-cz-row-name'), o.name);
+      setText(q(row, '.ft-cz-row-desc'), o.description);
+      setText(q(row, '.ft-cz-row-meta'), [m.name, o.version && `v${o.version}`, o.category].filter(Boolean).join(' · '));
+      const get = q<HTMLButtonElement>(row, '.ft-pl-get');
+      const label = here ? (o.update ? 'Update' : 'Added') : have ? 'Replace' : 'Add';
+      setText(get, label);
+      if (get.disabled !== (label === 'Added')) get.disabled = label === 'Added';
+      setAttr(get, 'title', have && !here ? `A plugin named ${o.name} is already installed; adding this one replaces it` : null);
+      if (box.children[i] !== row) box.insertBefore(row, box.children[i] ?? null);
+    });
+    const none = q(this.root, '.ft-pl-nooffers');
+    const empty = this.state.marketplaces.length === 0;
+    if (none.hidden !== !empty) none.hidden = !empty;
+    const head = q(this.root, '.ft-pl-mhead');
+    if (head.hidden !== empty) head.hidden = empty;
+    const mbox = q(this.root, '.ft-pl-markets');
+    const names = new Set(this.state.marketplaces.map((m) => m.name));
+    for (const [k, r] of this.marketRows) if (!names.has(k)) { r.remove(); this.marketRows.delete(k); }
+    this.state.marketplaces.forEach((m, i) => {
+      let row = this.marketRows.get(m.name);
+      if (!row) {
+        row = el(`<div class="ft-cz-row ft-pl-market" role="listitem"><span class="ft-cz-icon">${ui('folder', 16)}</span><span class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span></span><button type="button" class="ft-icon-btn ft-pl-mmore" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button><span class="ft-pl-mactions"><label class="ft-field ft-check ft-switch-label ft-pl-sync" title="Check for updates every hour"><input type="checkbox" role="switch" class="ft-switch"><span>Sync automatically</span></label><button type="button" class="ft-btn ft-pl-check">Check for updates</button><button type="button" class="ft-btn ft-danger-btn ft-pl-mremove" hidden>Remove with its plugins?</button></span></div>`);
+        row.dataset.market = m.name;
+        this.marketRows.set(m.name, row);
+      }
+      setText(q(row, '.ft-cz-row-name'), m.name);
+      setText(q(row, '.ft-cz-row-desc'), m.error ? `Last check failed: ${m.error}` : `${m.plugins.length} plugin${m.plugins.length === 1 ? '' : 's'} · ${m.source}`);
+      row.classList.toggle('is-error', !!m.error);
+      const sync = q(row, '.ft-pl-sync');
+      if (sync.hidden !== (m.kind !== 'git')) sync.hidden = m.kind !== 'git';
+      const box2 = q<HTMLInputElement>(sync, 'input');
+      if (box2.checked !== m.sync) box2.checked = m.sync;
+      if (mbox.children[i] !== row) mbox.insertBefore(row, mbox.children[i] ?? null);
     });
   }
 
@@ -280,20 +437,47 @@ export class CustomizeView {
     const p = this.state.plugins.find((x) => x.name === this.plOpen);
     if (!p) return;
     setText(q(this.root, '.ft-pl-name'), p.name);
-    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.commands ? `${p.commands} command${p.commands === 1 ? '' : 's'} installed as skills` : ''].filter(Boolean).join(' · '));
+    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.origin?.kind === 'marketplace' ? `from the ${p.origin.marketplace} marketplace` : 'uploaded'].filter(Boolean).join(' · '));
     setText(q(this.root, '.ft-pl-desc'), p.description);
     const on = q<HTMLInputElement>(this.root, '.ft-pl-on');
     if (on.checked !== p.enabled) on.checked = p.enabled;
-    const sk = p.skills.map((s) => `<button type="button" class="ft-chip ft-cz-file" data-skill-link="${esc(s)}">${ui('skills', 12)} ${esc(s)}</button>`).join('');
-    const sbox = q(this.root, '.ft-pl-skills');
-    if (sbox.dataset.v !== sk) { sbox.dataset.v = sk; sbox.innerHTML = sk; }
-    const cn = p.connectors.map((c) => `<button type="button" class="ft-chip ft-cz-file" data-cn-link="${esc(c.id)}">${ui('plug', 12)} ${esc(c.name)}</button>`).join('');
+    const cmds = new Set(p.commandSkills ?? []);
+    const skillNames = p.skills.filter((s) => !cmds.has(s));
+    const servers = p.servers ?? p.connectors.map((c) => ({ name: c.name, kind: 'command' as const, target: '', connectorId: c.id, state: 'not_connected' as const }));
+    const agents = p.agents ?? [];
+    const fill = (sel: string, html: string): void => { const box = q(this.root, sel); if (box.dataset.v !== html) { box.dataset.v = html; box.innerHTML = html; } };
+    const none = (sel: string, empty: boolean): void => { const n = q(this.root, sel); if (n.hidden !== !empty) n.hidden = !empty; };
+    fill('.ft-pl-skills', skillNames.map((s) => `<button type="button" class="ft-chip ft-cz-file" data-skill-link="${esc(s)}">${ui('skills', 12)} ${esc(s)}</button>`).join(''));
+    fill('.ft-pl-cmds', [...cmds].map((s) => `<button type="button" class="ft-chip ft-cz-file" data-skill-link="${esc(s)}">/${esc(s)}</button>`).join(''));
+    fill('.ft-pl-agents', agents.map((a) => `<span class="ft-chip ft-cz-file">${esc(a)}</span>`).join(''));
+    const word: Record<string, string> = { connected: 'Connected', not_connected: 'Not connected', not_added: 'Not added' };
     const cbox = q(this.root, '.ft-pl-conns');
-    if (cbox.dataset.v !== cn) { cbox.dataset.v = cn; cbox.innerHTML = cn; }
-    const ns = q(this.root, '.ft-pl-noskills');
-    if (ns.hidden !== p.skills.length > 0) ns.hidden = p.skills.length > 0;
-    const nc = q(this.root, '.ft-pl-noconns');
-    if (nc.hidden !== p.connectors.length > 0) nc.hidden = p.connectors.length > 0;
+    const ckey = servers.map((s) => s.name).join('\n');
+    if (cbox.dataset.v !== ckey) {
+      cbox.dataset.v = ckey;
+      cbox.innerHTML = servers.map((s) => `<div class="ft-cz-row ft-pl-srv" role="listitem" data-srv="${esc(s.name)}"><span class="ft-cz-icon">${ui('plug', 16)}</span><button type="button" class="ft-cz-text"><span class="ft-cz-row-name">${esc(s.name)}</span><span class="ft-cz-row-desc"></span></button><span class="ft-cn-chip"></span><button type="button" class="ft-btn ft-pl-srvadd">Add</button><button type="button" class="ft-btn ft-pl-srvconnect">Connect</button></div>`).join('');
+    }
+    servers.forEach((s0) => {
+      const row = cbox.querySelector<HTMLElement>(`[data-srv="${CSS.escape(s0.name)}"]`);
+      if (!row) return;
+      const live = this.state.connectors.find((x) => x.id === s0.connectorId);
+      const s = { ...s0, state: !live ? 'not_added' as const : live.enabled && live.status === 'connected' ? 'connected' as const : 'not_connected' as const };
+      setText(q(row, '.ft-cz-row-desc'), s.target ? `${s.kind === 'url' ? 'URL' : 'Command'}: ${s.target}` : '');
+      const chip = q(row, '.ft-cn-chip');
+      setText(chip, word[s.state] ?? s.state);
+      if (chip.dataset.s !== s.state) chip.dataset.s = s.state === 'connected' ? 'connected' : s.state;
+      const add = q<HTMLButtonElement>(row, '.ft-pl-srvadd');
+      if (add.hidden !== (s.state !== 'not_added')) add.hidden = s.state !== 'not_added';
+      const conn = q<HTMLButtonElement>(row, '.ft-pl-srvconnect');
+      if (conn.hidden !== (s.state !== 'not_connected')) conn.hidden = s.state !== 'not_connected';
+    });
+    none('.ft-pl-noskills', !skillNames.length);
+    none('.ft-pl-nocmds', !cmds.size);
+    none('.ft-pl-noconns', !servers.length);
+    none('.ft-pl-noagents', !agents.length);
+    setText(q(this.root, '.ft-pl-agentnote'), `Agents run in Cowork and Claude Code; Format lists them but does not run them in chat.${p.hooks ? ' This plugin also has hooks, kept but not run.' : ''}`);
+    const counts: Record<string, number> = { skills: skillNames.length, commands: cmds.size, connectors: servers.length, agents: agents.length };
+    for (const [k, n] of Object.entries(counts)) setText(q(this.root, `[data-plcount="${k}"]`), n ? String(n) : '');
   }
 
   private cnDetail: HTMLElement;

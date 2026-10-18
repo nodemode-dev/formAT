@@ -384,6 +384,23 @@
 .ft-cz-group { padding: var(--space-3) var(--space-1) 0; font: 500 var(--fs-12) var(--font-ui); color: var(--text-muted); }
 .ft-cz-group[hidden] { display: none; }
 .ft-cz-pick { display: none; }
+.ft-pl-views { display: flex; flex-wrap: wrap; gap: 2px; min-width: 0; }
+.ft-pl-view { height: var(--ctl-md); padding: 0 var(--space-3); border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text-secondary); font: var(--fs-13) var(--font-ui); white-space: nowrap; cursor: pointer; }
+.ft-pl-view[aria-selected="true"] { background: var(--bg-hover); color: var(--text-primary); font-weight: 500; }
+.ft-pl-yours[hidden], .ft-pl-discover[hidden], .ft-pl-mform[hidden], .ft-pl-pane[hidden], .ft-pl-mhead[hidden], .ft-pl-srv [hidden], .ft-pl-market [hidden], .ft-pl-nooffers[hidden] { display: none; }
+.ft-pl-discover { display: grid; gap: var(--space-3); min-width: 0; }
+.ft-pl-mhead { margin: var(--space-4) 0 0; }
+.ft-pl-market { grid-template-columns: 32px minmax(0, 1fr) auto; }
+.ft-pl-offer { grid-template-columns: 32px minmax(0, 1fr) auto; }
+.ft-pl-offer .ft-cz-row-meta { display: block; margin-top: 2px; white-space: normal; }
+.ft-pl-mactions { grid-column: 2 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); min-width: 0; }
+.ft-pl-mactions .ft-switch-label { min-height: 0; margin-right: auto; }
+.ft-pl-srv { grid-template-columns: 32px minmax(0, 1fr) auto auto; }
+.ft-pl-tabs { display: flex; flex-wrap: wrap; gap: var(--space-1); margin: var(--space-4) 0 var(--space-3); border-bottom: 1px solid var(--line-1); }
+.ft-pl-tab { display: inline-flex; align-items: center; height: var(--ctl-md); padding: 0 var(--space-3); border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; background: transparent; color: var(--text-secondary); font: var(--fs-13) var(--font-ui); cursor: pointer; }
+.ft-pl-tab[aria-selected="true"] { border-bottom-color: var(--accent-color); color: var(--text-primary); font-weight: 500; }
+.ft-pl-pane { display: grid; gap: var(--space-3); min-width: 0; }
+.ft-pl-pane .ft-set-note { margin: 0; }
 .ft-cz-pick p { margin: 0; font-size: var(--fs-13); }
 @media (max-width: 1099px) {
   .ft-customize[data-detail="skill"] .ft-cz-main, .ft-customize[data-detail="connector"] .ft-cz-main, .ft-customize[data-detail="plugin"] .ft-cz-main { display: none; }

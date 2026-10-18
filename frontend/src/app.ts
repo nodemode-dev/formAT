@@ -1,6 +1,6 @@
 import { run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
-import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type PluginSummary, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
+import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type ContentBlock, type FileComment, type MarketplaceInfo, type PluginSummary, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
 import { el, modKey, q, setAttr, setText, writePref } from './ui/dom';
@@ -238,6 +238,9 @@ export class App {
     const plugs = await run<{ plugins: PluginSummary[] }>('plugin.list').catch(() => ({ plugins: [] as PluginSummary[] }));
     this.state.plugins = plugs.plugins;
     this.state.emit('plugins');
+    const markets = await run<{ marketplaces: MarketplaceInfo[] }>('marketplace.list').catch(() => ({ marketplaces: [] as MarketplaceInfo[] }));
+    this.state.marketplaces = markets.marketplaces;
+    this.state.emit('marketplaces');
     void this.memoryPanel.refresh();
     list.conversations.forEach((c) => {
       this.state.conversations.set(c.id, c);
@@ -402,6 +405,9 @@ export class App {
     } else if (e.type === 'plugins.changed') {
       this.state.plugins = e.plugins as PluginSummary[];
       this.state.emit('plugins');
+    } else if (e.type === 'marketplaces.changed') {
+      this.state.marketplaces = e.marketplaces as MarketplaceInfo[];
+      this.state.emit('marketplaces');
     } else if (e.type === 'browser.frame') {
       this.browserPane.update(e as unknown as BrowserStatus);
     } else if (e.type === 'memory.changed') {
