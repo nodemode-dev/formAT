@@ -150,7 +150,7 @@ const STATE_TEXT: Record<string, string> = {
 };
 
 const diffShown = new WeakMap<HTMLElement, string>();
-const ALWAYS_WORD: Record<string, string> = { bash: 'commands', edit: 'edits', write: 'file writes', browser: 'the browser' };
+const ALWAYS_WORD: Record<string, string> = { bash: 'commands', edit: 'edits', write: 'file writes', browser: 'the browser', add_plugin: 'adding plugins' };
 
 function diffHtml(input: Record<string, unknown>): string {
   const pairs = Array.isArray(input.edits) ? (input.edits as Array<Record<string, unknown>>) : [input];
@@ -194,6 +194,7 @@ export function describe(name: string, input: Record<string, unknown>): { title:
       return input.command === 'view' ? { title: 'Checked memory', sub: path, short: 'checked memory' }
         : { title: 'Updated memory', sub: `${String(input.command ?? '')} ${path}`.trim(), short: 'updated memory' };
     }
+    case 'add_plugin': return { title: 'Added a plugin to Format', sub: String(input.folder ?? ''), short: `added the ${base(input.folder)} plugin` };
     case 'skill': return { title: 'Read a skill', sub: `${String(input.name ?? '')}${input.file ? `/${String(input.file)}` : ''}`, short: `read the ${String(input.name ?? '')} skill` };
     case 'spawn_agent': return { title: 'Ran a sub-agent', sub: String(input.title || String(input.task ?? '').split('\n')[0]), short: 'ran a sub-agent' };
     case 'task_list': {
@@ -396,7 +397,7 @@ export class ToolCard {
     }
     if (waiting) {
       const c = connectorParts(this.name);
-      setText(q(this.ask, '.ft-tool-ask-text'), this.name === 'bash' ? 'Allow Claude to run this command?' : c ? `Allow Claude to use ${c.tool} from the ${c.connector} connector?` : `Allow Claude to ${this.name} ${base(this.input.path)}?`);
+      setText(q(this.ask, '.ft-tool-ask-text'), this.name === 'bash' ? 'Allow Claude to run this command?' : this.name === 'add_plugin' ? `Allow Claude to add the ${base(this.input.folder)} plugin to Format?` : c ? `Allow Claude to use ${c.tool} from the ${c.connector} connector?` : `Allow Claude to ${this.name} ${base(this.input.path)}?`);
       const always = q(this.ask, '[data-d="always"]');
       const word = ALWAYS_WORD[this.name] ?? (c ? c.tool : '');
       setText(always, word ? `Always allow ${word}` : 'Always allow');

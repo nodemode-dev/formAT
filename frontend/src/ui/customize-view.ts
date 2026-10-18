@@ -5,7 +5,7 @@ import { ui } from './icons-ft';
 import { renderMarkdown } from './markdown';
 import { openMenu } from './menu';
 
-export interface CustomizeHooks { tryInChat(skill: string): void }
+export interface CustomizeHooks { tryInChat(skill: string): void; createPlugin(): void }
 
 export async function signIn(id: string): Promise<void> {
   const tab = window.open('', '_blank');
@@ -34,7 +34,7 @@ export class CustomizeView {
   private current: SkillDetail | null = null;
   private seq = 0;
 
-  constructor(private state: AppState, private hooks: CustomizeHooks = { tryInChat: () => undefined }) {
+  constructor(private state: AppState, private hooks: CustomizeHooks = { tryInChat: () => undefined, createPlugin: () => undefined }) {
     this.root = el(`<section class="ft-page ft-customize" data-view="customize" data-tab="skills" hidden>
       <div class="ft-cz-main">
         <header class="ft-proj-head"><h1>Customize</h1></header>
@@ -52,6 +52,15 @@ export class CustomizeView {
             <label class="ft-field"><span>Marketplace</span><input class="ft-input ft-pl-msource" placeholder="owner/repo, https://github.com/your-org/your-plugins, or a folder" spellcheck="false"></label>
             <p class="ft-set-note">A marketplace is a Git repository (or a folder) with .claude-plugin/marketplace.json. Format copies its catalog and lists its plugins in Discover; nothing is installed until you add one. Only add marketplaces you trust: their plugins are not reviewed.</p>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-pl-madd">Add marketplace</button><button type="button" class="ft-btn ft-pl-mcancel">Cancel</button></div>
+          </div>
+          <div class="ft-proj-form ft-pl-cform" hidden>
+            <h3 class="ft-proj-sub ft-pl-ctitle">Create a plugin</h3>
+            <label class="ft-field"><span>Name</span><input class="ft-input ft-pl-cname" maxlength="64" placeholder="lowercase, for example weekly-report" spellcheck="false"></label>
+            <label class="ft-field"><span>Description</span><input class="ft-input ft-pl-cdesc" placeholder="What the plugin is for"></label>
+            <p class="ft-set-note">Its files: a skill is skills/&lt;name&gt;/SKILL.md, a command is commands/&lt;name&gt;.md, MCP servers go in .mcp.json. plugin.json is written from the name and description.</p>
+            <div class="ft-pl-cfiles"></div>
+            <div class="ft-set-actions"><button type="button" class="ft-btn ft-pl-cfile">${ui('plus', 14)}<span>Add file</span></button></div>
+            <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-pl-csave">Create plugin</button><button type="button" class="ft-btn ft-pl-ccancel">Cancel</button></div>
           </div>
           <div class="ft-pl-yours">
             <div class="ft-cz-list ft-pl-list" role="list"></div>
@@ -206,7 +215,25 @@ export class CustomizeView {
     q(this.root, '.ft-pl-addmenu').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
       { label: 'Add marketplace', desc: 'A Git repository or folder that lists plugins', icon: 'plugin', action: () => { if (mform.hidden) mform.hidden = false; q<HTMLInputElement>(mform, '.ft-pl-msource').focus(); } },
       { label: 'Upload plugin', desc: 'A .zip of a plugin folder', icon: 'paperclip', action: () => picker.click() },
+      { divider: true },
+      { label: 'Create with Claude', desc: 'A chat where Claude builds the plugin with you', icon: 'chat', action: () => this.hooks.createPlugin() },
+      { label: 'Create a plugin', desc: 'Write its files here', icon: 'file', action: () => this.openEditor(null) },
     ], 'down'));
+    const cform = q(this.root, '.ft-pl-cform');
+    q(this.root, '.ft-pl-cfile').addEventListener('click', () => { const row = this.fileRow('', ''); q(cform, '.ft-pl-cfiles').appendChild(row); q<HTMLInputElement>(row, '.ft-pl-cpath').focus(); });
+    q(cform, '.ft-pl-cfiles').addEventListener('click', (e) => { const del = (e.target as HTMLElement).closest('.ft-pl-cdel'); if (del) del.closest('.ft-pl-cf')?.remove(); });
+    q(this.root, '.ft-pl-ccancel').addEventListener('click', () => { cform.hidden = true; });
+    q(this.root, '.ft-pl-csave').addEventListener('click', async () => {
+      const name = q<HTMLInputElement>(cform, '.ft-pl-cname').value.trim().toLowerCase();
+      const files = [...cform.querySelectorAll<HTMLElement>('.ft-pl-cf')].map((f) => ({ path: q<HTMLInputElement>(f, '.ft-pl-cpath').value.trim(), content: q<HTMLTextAreaElement>(f, '.ft-pl-cbody').value })).filter((f) => f.path);
+      try {
+        const p = await run<PluginSummary>('plugin.create', { name, description: q<HTMLInputElement>(cform, '.ft-pl-cdesc').value.trim(), files });
+        cform.hidden = true;
+        setText(msg, `Saved ${p.name}: ${p.skills.length} skill${p.skills.length === 1 ? '' : 's'} and commands.`);
+        this.setPluginView('yours');
+        this.openPlugin(p.name);
+      } catch (err) { say(err); }
+    });
     q(this.root, '.ft-pl-mcancel').addEventListener('click', () => { mform.hidden = true; });
     q(this.root, '.ft-pl-madd').addEventListener('click', async () => {
       const src = q<HTMLInputElement>(mform, '.ft-pl-msource');
@@ -301,6 +328,8 @@ export class CustomizeView {
       if (this.plOpen) await run('plugin.delete', { name: this.plOpen }).catch(() => undefined);
     });
     q(this.root, '.ft-pl-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
+      ...(this.state.plugins.find((x) => x.name === this.plOpen)?.origin?.kind === 'created'
+        ? [{ label: 'Edit files', desc: 'Change its description, skills and commands', icon: 'file' as const, action: () => { if (this.plOpen) void this.openEditor(this.plOpen); } }] : []),
       { label: 'Remove', desc: 'Uninstall the plugin with its skills and connectors', icon: 'trash', action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-pl-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
     ], 'down'));
     q(this.root, '.ft-pl-skills').addEventListener('click', (e) => {
@@ -324,6 +353,34 @@ export class CustomizeView {
         }
       } catch (err) { say(err); }
     });
+  }
+
+  private fileRow(path: string, content: string): HTMLElement {
+    const row = el(`<div class="ft-pl-cf"><div class="ft-pl-cf-head"><input class="ft-input ft-pl-cpath" placeholder="skills/name/SKILL.md" spellcheck="false" aria-label="File path"><button type="button" class="ft-icon-btn ft-pl-cdel" aria-label="Remove this file" title="Remove this file">${ui('close', 14)}</button></div><textarea class="ft-input ft-pl-cbody" rows="8" spellcheck="false" aria-label="File contents"></textarea></div>`);
+    q<HTMLInputElement>(row, '.ft-pl-cpath').value = path;
+    q<HTMLTextAreaElement>(row, '.ft-pl-cbody').value = content;
+    return row;
+  }
+
+  private async openEditor(name: string | null): Promise<void> {
+    const cform = q(this.root, '.ft-pl-cform');
+    const box = q(cform, '.ft-pl-cfiles');
+    const nameIn = q<HTMLInputElement>(cform, '.ft-pl-cname');
+    const p = name ? this.state.plugins.find((x) => x.name === name) : null;
+    let files = [{ path: 'skills/example/SKILL.md', content: '---\nname: example\ndescription: Say exactly when Claude should use this skill.\n---\n\nWrite the instructions Claude follows here.\n' }];
+    if (name) {
+      try { files = (await run<{ files: Array<{ path: string; content: string }> }>('plugin.files', { name })).files; } catch (err) { setText(q(this.root, '.ft-pl-msg'), err instanceof Error ? err.message : String(err)); return; }
+    }
+    setText(q(cform, '.ft-pl-ctitle'), name ? `Edit ${name}` : 'Create a plugin');
+    setText(q(cform, '.ft-pl-csave'), name ? 'Save changes' : 'Create plugin');
+    nameIn.value = name ?? '';
+    nameIn.readOnly = !!name;
+    q<HTMLInputElement>(cform, '.ft-pl-cdesc').value = p?.description ?? '';
+    box.replaceChildren(...files.map((f) => this.fileRow(f.path, f.content)));
+    if (this.plOpen) this.showList();
+    this.setPluginView('yours');
+    if (cform.hidden) cform.hidden = false;
+    (name ? q<HTMLInputElement>(cform, '.ft-pl-cdesc') : nameIn).focus();
   }
 
   private setPluginView(view: string): void {
@@ -437,7 +494,7 @@ export class CustomizeView {
     const p = this.state.plugins.find((x) => x.name === this.plOpen);
     if (!p) return;
     setText(q(this.root, '.ft-pl-name'), p.name);
-    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.origin?.kind === 'marketplace' ? `from the ${p.origin.marketplace} marketplace` : 'uploaded'].filter(Boolean).join(' · '));
+    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.origin?.kind === 'marketplace' ? `from the ${p.origin.marketplace} marketplace` : p.origin?.kind === 'created' ? 'created in Format' : 'uploaded'].filter(Boolean).join(' · '));
     setText(q(this.root, '.ft-pl-desc'), p.description);
     const on = q<HTMLInputElement>(this.root, '.ft-pl-on');
     if (on.checked !== p.enabled) on.checked = p.enabled;

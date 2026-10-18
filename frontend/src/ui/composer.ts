@@ -45,7 +45,7 @@ export class Composer {
   private attachRow: HTMLElement;
   private files: Pending[] = [];
   private research = false;
-  private output: 'doc' | 'sheet' | 'deck' | null = null;
+  private output: 'doc' | 'sheet' | 'deck' | 'plugin' | null = null;
   private draftOff = new Set<string>();
   private picker: HTMLInputElement;
   private queueRow: HTMLElement;
@@ -281,7 +281,7 @@ export class Composer {
   private slashToken(): { start: number; end: number; query: string } | null {
     const end = this.input.selectionStart ?? 0;
     if (end !== this.input.selectionEnd) return null;
-    const m = /(^|\s)\/([a-z0-9-]*)$/i.exec(this.input.value.slice(0, end));
+    const m = /(^|\s)\/([a-z0-9-]*(?::[a-z0-9-]*)?)$/i.exec(this.input.value.slice(0, end));
     return m ? { start: end - m[2].length - 1, end, query: m[2] } : null;
   }
 
@@ -300,7 +300,7 @@ export class Composer {
     ];
     const on = this.state.skills.filter((s) => s.enabled);
     for (const s of on.filter((x) => !x.plugin)) items.push({ id: `skill:${s.name}`, label: `/${s.name}`, desc: s.description, group: 'Skills', icon: 'skills', run: () => this.addPick(s.name) });
-    for (const s of on.filter((x) => x.plugin)) items.push({ id: `skill:${s.name}`, label: `/${s.name}`, desc: s.description, group: `Plugin: ${s.plugin}`, icon: 'plugin', run: () => this.addPick(s.name) });
+    for (const s of on.filter((x) => x.plugin)) items.push({ id: `skill:${s.name}`, label: `/${s.plugin}:${s.name.startsWith(`${s.plugin}-`) ? s.name.slice(`${s.plugin}-`.length) : s.name}`, desc: s.description, group: `Plugin: ${s.plugin}`, icon: 'plugin', run: () => this.addPick(s.name) });
     return items;
   }
 
@@ -344,7 +344,9 @@ export class Composer {
     for (const [name, node] of have) if (!this.picks.includes(name)) node.remove();
     for (const name of this.picks) {
       if (have.has(name)) continue;
-      const pill = el(`<button type="button" class="ft-pill ft-skill-pill" data-pick="${esc(name)}" title="This message uses the ${esc(name)} skill. Click to remove it.">${ui('skills', 14)}<span>${esc(name)}</span>${ui('close', 12)}</button>`);
+      const owner = this.state.skills.find((s) => s.name === name)?.plugin;
+      const shown = owner && name.startsWith(`${owner}-`) ? `${owner}:${name.slice(owner.length + 1)}` : name;
+      const pill = el(`<button type="button" class="ft-pill ft-skill-pill" data-pick="${esc(name)}" title="This message uses the ${esc(shown)} skill. Click to remove it.">${ui('skills', 14)}<span>${esc(shown)}</span>${ui('close', 12)}</button>`);
       this.pickRow.appendChild(pill);
     }
     this.renderRunning();
@@ -503,14 +505,21 @@ export class Composer {
     ], 'up');
   }
 
-  get outputKind(): 'doc' | 'sheet' | 'deck' | null {
+  get outputKind(): 'doc' | 'sheet' | 'deck' | 'plugin' | null {
     return this.output;
   }
 
-  setOutput(kind: 'doc' | 'sheet' | 'deck' | null): void {
+  startPlugin(): void {
+    this.setOutput('plugin');
+    this.input.value = 'Help me create a plugin that ';
+    this.autosize();
+    this.input.setSelectionRange(this.input.value.length, this.input.value.length);
+  }
+
+  setOutput(kind: 'doc' | 'sheet' | 'deck' | 'plugin' | null): void {
     this.output = kind;
     const pill = q(this.root, '.ft-output-pill');
-    setText(q(pill, 'span'), kind === 'doc' ? 'Document' : kind === 'sheet' ? 'Spreadsheet' : kind === 'deck' ? 'Slides' : '');
+    setText(q(pill, 'span'), kind === 'doc' ? 'Document' : kind === 'sheet' ? 'Spreadsheet' : kind === 'deck' ? 'Slides' : kind === 'plugin' ? 'Create a plugin' : '');
     if (pill.hidden === !!kind) pill.hidden = !kind;
     this.input.focus();
   }

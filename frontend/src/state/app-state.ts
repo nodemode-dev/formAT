@@ -146,7 +146,7 @@ export interface PluginSummary {
   servers?: Array<{ name: string; kind: 'url' | 'command'; target: string; connectorId: string; state: 'connected' | 'not_connected' | 'not_added' }>;
   agents?: string[];
   hooks?: boolean;
-  origin?: { kind: 'upload' | 'marketplace'; marketplace?: string; entry?: string };
+  origin?: { kind: 'upload' | 'marketplace' | 'created'; marketplace?: string; entry?: string; conversation?: string };
 }
 
 export interface MarketOffer {

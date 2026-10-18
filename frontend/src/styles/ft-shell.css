@@ -401,6 +401,14 @@
 .ft-pl-tab[aria-selected="true"] { border-bottom-color: var(--accent-color); color: var(--text-primary); font-weight: 500; }
 .ft-pl-pane { display: grid; gap: var(--space-3); min-width: 0; }
 .ft-pl-pane .ft-set-note { margin: 0; }
+.ft-pl-cform[hidden] { display: none; }
+.ft-pl-cform .ft-set-note { margin: 0; }
+.ft-pl-cfiles { display: grid; gap: var(--space-3); min-width: 0; }
+.ft-pl-cf { display: grid; gap: var(--space-2); min-width: 0; padding: var(--space-3); border: 1px solid var(--line-1); border-radius: var(--radius-lg); background: var(--surface-1); }
+.ft-pl-cf-head { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+.ft-pl-cf-head .ft-pl-cpath { flex: 1; min-width: 0; font-family: var(--font-mono); }
+.ft-pl-cbody { width: 100%; min-width: 0; box-sizing: border-box; resize: vertical; font: var(--fs-12)/1.5 var(--font-mono); }
+.ft-pl-ctitle { margin: 0; }
 .ft-cz-pick p { margin: 0; font-size: var(--fs-13); }
 @media (max-width: 1099px) {
   .ft-customize[data-detail="skill"] .ft-cz-main, .ft-customize[data-detail="connector"] .ft-cz-main, .ft-customize[data-detail="plugin"] .ft-cz-main { display: none; }
