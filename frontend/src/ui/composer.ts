@@ -45,7 +45,7 @@ export class Composer {
   private attachRow: HTMLElement;
   private files: Pending[] = [];
   private research = false;
-  private output: 'doc' | 'sheet' | 'deck' | 'plugin' | null = null;
+  private output: 'doc' | 'sheet' | 'deck' | 'plugin' | 'skill' | null = null;
   private draftOff = new Set<string>();
   private picker: HTMLInputElement;
   private queueRow: HTMLElement;
@@ -505,8 +505,15 @@ export class Composer {
     ], 'up');
   }
 
-  get outputKind(): 'doc' | 'sheet' | 'deck' | 'plugin' | null {
+  get outputKind(): 'doc' | 'sheet' | 'deck' | 'plugin' | 'skill' | null {
     return this.output;
+  }
+
+  startSkill(name: string): void {
+    this.setOutput('skill');
+    this.input.value = name ? `Edit the ${name} skill: ` : 'Help me create a skill that ';
+    this.autosize();
+    this.input.setSelectionRange(this.input.value.length, this.input.value.length);
   }
 
   startPlugin(): void {
@@ -516,10 +523,10 @@ export class Composer {
     this.input.setSelectionRange(this.input.value.length, this.input.value.length);
   }
 
-  setOutput(kind: 'doc' | 'sheet' | 'deck' | 'plugin' | null): void {
+  setOutput(kind: 'doc' | 'sheet' | 'deck' | 'plugin' | 'skill' | null): void {
     this.output = kind;
     const pill = q(this.root, '.ft-output-pill');
-    setText(q(pill, 'span'), kind === 'doc' ? 'Document' : kind === 'sheet' ? 'Spreadsheet' : kind === 'deck' ? 'Slides' : kind === 'plugin' ? 'Create a plugin' : '');
+    setText(q(pill, 'span'), kind === 'doc' ? 'Document' : kind === 'sheet' ? 'Spreadsheet' : kind === 'deck' ? 'Slides' : kind === 'plugin' ? 'Create a plugin' : kind === 'skill' ? 'Skill with Claude' : '');
     if (pill.hidden === !!kind) pill.hidden = !kind;
     this.input.focus();
   }

@@ -160,6 +160,7 @@ export interface MarketOffer {
   installedVersion: string;
   taken: boolean;
   update: boolean;
+  command?: string;
 }
 
 export interface MarketplaceInfo {
@@ -171,6 +172,7 @@ export interface MarketplaceInfo {
   checked: number;
   error: string;
   description: string;
+  private?: boolean;
   plugins: MarketOffer[];
 }
 
@@ -196,7 +198,7 @@ export interface ConnectorInfo {
 
 export type ToolPermission = 'allow' | 'ask' | 'block';
 
-export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number; plugin?: string }
+export interface SkillSummary { name: string; description: string; enabled: boolean; files: number; size: number; modified: number; plugin?: string; source?: { marketplace?: string; official?: boolean } }
 
 export interface ProjectSummary { id: string; name: string; description: string; instructions: string; created: number; updated: number; chats: number; files: number }
 

@@ -5,7 +5,7 @@ import { ui } from './icons-ft';
 import { renderMarkdown } from './markdown';
 import { openMenu } from './menu';
 
-export interface CustomizeHooks { tryInChat(skill: string): void; createPlugin(): void }
+export interface CustomizeHooks { tryInChat(skill: string): void; createPlugin(): void; skillChat(skill: string): void }
 
 export async function signIn(id: string): Promise<void> {
   const tab = window.open('', '_blank');
@@ -30,11 +30,11 @@ export class CustomizeView {
   private main: HTMLElement;
   private picker: HTMLInputElement;
   private rows = new Map<string, HTMLElement>();
-  private skHeads: { own: HTMLElement; plugin: HTMLElement } | null = null;
+  private skHeads: { own: HTMLElement; official: HTMLElement; market: HTMLElement; plugin: HTMLElement } | null = null;
   private current: SkillDetail | null = null;
   private seq = 0;
 
-  constructor(private state: AppState, private hooks: CustomizeHooks = { tryInChat: () => undefined, createPlugin: () => undefined }) {
+  constructor(private state: AppState, private hooks: CustomizeHooks = { tryInChat: () => undefined, createPlugin: () => undefined, skillChat: () => undefined }) {
     this.root = el(`<section class="ft-page ft-customize" data-view="customize" data-tab="skills" hidden>
       <div class="ft-cz-main">
         <header class="ft-proj-head"><h1>Customize</h1></header>
@@ -50,6 +50,7 @@ export class CustomizeView {
           <span class="ft-proj-msg ft-pl-msg" aria-live="polite"></span>
           <div class="ft-proj-form ft-pl-mform" hidden>
             <label class="ft-field"><span>Marketplace</span><input class="ft-input ft-pl-msource" placeholder="owner/repo, https://github.com/your-org/your-plugins, or a folder" spellcheck="false"></label>
+            <label class="ft-field"><span>GitHub access token (only for a private repository)</span><input class="ft-input ft-pl-mtoken" type="password" autocomplete="off" placeholder="A token that can read the repository; your git sign-in also works"></label>
             <p class="ft-set-note">A marketplace is a Git repository (or a folder) with .claude-plugin/marketplace.json. Format copies its catalog and lists its plugins in Discover; nothing is installed until you add one. Only add marketplaces you trust: their plugins are not reviewed.</p>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-pl-madd">Add marketplace</button><button type="button" class="ft-btn ft-pl-mcancel">Cancel</button></div>
           </div>
@@ -72,10 +73,10 @@ export class CustomizeView {
             <h3 class="ft-proj-sub ft-pl-mhead">Marketplaces</h3>
             <div class="ft-cz-list ft-pl-markets" role="list"></div>
           </div>
-          <input type="file" class="ft-pl-picker" accept=".zip" hidden>
+          <input type="file" class="ft-pl-picker" accept=".zip,.plugin" hidden>
         </section>
         <section class="ft-cz-section" data-sec="skills">
-          <div class="ft-cz-section-head"><h2>${ui('skills', 16)}<span>Your skills</span></h2>
+          <div class="ft-cz-section-head"><div class="ft-pl-views" role="tablist" aria-label="Skills"><button type="button" role="tab" class="ft-pl-view ft-sk-view" data-skv="yours" aria-selected="true">Your skills</button><button type="button" role="tab" class="ft-pl-view ft-sk-view" data-skv="discover" aria-selected="false">Discover</button></div>
             <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search skills" aria-label="Search skills"><button type="button" class="ft-btn ft-cz-add" data-menu-anchor>${ui('plus', 14)}<span>Add</span></button></div></div>
           <p class="ft-set-note">A skill is a folder of instructions, with a SKILL.md whose name and description tell Claude when to use it. Claude sees every skill that is on and loads one when a task matches it. Type / in a message to pick one, or open a skill to read its files and try it in a chat.</p>
           <span class="ft-proj-msg ft-cz-msg" aria-live="polite"></span>
@@ -85,12 +86,18 @@ export class CustomizeView {
             <label class="ft-field"><span>Instructions</span><textarea class="ft-input" data-f="instructions" rows="8" placeholder="What Claude should do, step by step, in Markdown"></textarea></label>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-cz-create">Save skill</button><button type="button" class="ft-btn ft-cz-cancel">Cancel</button></div>
           </div>
-          <div class="ft-cz-list ft-sk-list" role="list"></div>
-          <div class="ft-page-empty ft-cz-empty" hidden>${ui('skills', 28)}<p>No skills yet.</p></div>
+          <div class="ft-sk-yours"><div class="ft-cz-list ft-sk-list" role="list"></div>
+          <div class="ft-page-empty ft-cz-empty" hidden>${ui('skills', 28)}<p>No skills yet.</p></div></div>
+          <div class="ft-sk-discover" hidden>
+            <p class="ft-set-note">Skills the marketplaces you added offer, each added on its own without its plugin. Add marketplaces under Plugins; Anthropic's own skills are in the anthropics/skills marketplace.</p>
+            <div class="ft-set-actions ft-sk-anthropic" hidden><button type="button" class="ft-btn ft-sk-addofficial">${ui('plus', 14)}<span>Add Anthropic's skills marketplace</span></button></div>
+            <div class="ft-cz-list ft-sk-offers" role="list"></div>
+            <p class="ft-proj-none ft-sk-nooffers">No skills to discover yet.</p>
+          </div>
           <input type="file" class="ft-cz-picker" accept=".zip,.md" hidden>
         </section>
         <section class="ft-cz-section ft-cn-section" data-sec="connectors">
-          <div class="ft-cz-section-head"><h2>${ui('plug', 16)}<span>Your connectors</span></h2>
+          <div class="ft-cz-section-head"><div class="ft-pl-views" role="tablist" aria-label="Connectors"><button type="button" role="tab" class="ft-pl-view ft-cn-view" data-cnv="yours" aria-selected="true">Your connectors</button><button type="button" role="tab" class="ft-pl-view ft-cn-view" data-cnv="discover" aria-selected="false">Discover</button></div>
             <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search connectors" aria-label="Search connectors"><button type="button" class="ft-btn ft-cn-addopen">${ui('plus', 14)}<span>Add custom connector</span></button></div></div>
           <p class="ft-set-note">A connector is an MCP server that gives Claude more tools. A public https URL goes to Claude through Anthropic's MCP connector; a server on this computer or your network, or one started by a command, runs in Format's engine, and its tools ask before they run in Ask mode. Turn single tools off in a connector's page.</p>
           <span class="ft-proj-msg ft-cn-msg" aria-live="polite"></span>
@@ -107,13 +114,18 @@ export class CustomizeView {
             <label class="ft-field ft-cn-cmd" hidden><span>Command</span><input class="ft-input" data-c="command" placeholder="npx -y @modelcontextprotocol/server-filesystem ~/notes" spellcheck="false"></label>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-cn-add">Add and connect</button><button type="button" class="ft-btn ft-cn-cancel">Cancel</button></div>
           </div>
-          <div class="ft-cz-list ft-cn-list" role="list"></div>
-          <p class="ft-proj-none ft-cn-empty">No connectors yet.</p>
+          <div class="ft-cn-yours"><div class="ft-cz-list ft-cn-list" role="list"></div>
+          <p class="ft-proj-none ft-cn-empty">No connectors yet.</p></div>
+          <div class="ft-cn-discover" hidden>
+            <p class="ft-set-note">Remote MCP servers their makers publish, each with the URL from the maker's own page (Docs). They are not reviewed by Anthropic or Format: connect only services you trust.</p>
+            <div class="ft-cn-cats" role="group" aria-label="Categories"></div>
+            <div class="ft-cz-list ft-cn-dir" role="list"></div>
+          </div>
         </section>
       </div>
       <div class="ft-cz-detail" hidden>
         <button type="button" class="ft-text-btn ft-cz-back">${ui('back', 14)}<span>Customize</span></button>
-        <div class="ft-cz-detail-head"><h1 class="ft-cz-name"></h1><label class="ft-field ft-check ft-switch-label" title="Claude can use this skill while it is on"><input type="checkbox" role="switch" class="ft-cz-on ft-switch"><span>Enabled</span></label><button type="button" class="ft-btn ft-btn-primary ft-cz-try">${ui('chat', 14)}<span>Try in chat</span></button><button type="button" class="ft-btn ft-danger-btn ft-cz-delete" hidden>Delete? This cannot be undone</button><button type="button" class="ft-icon-btn ft-cz-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
+        <div class="ft-cz-detail-head"><h1 class="ft-cz-name"></h1><label class="ft-field ft-check ft-switch-label" title="Claude can use this skill while it is on"><input type="checkbox" role="switch" class="ft-cz-on ft-switch"><span>Enabled</span></label><button type="button" class="ft-btn ft-btn-primary ft-cz-try">${ui('chat', 14)}<span>Try in chat</span></button><button type="button" class="ft-btn ft-cz-edit">${ui('pencil', 14)}<span>Edit with Claude</span></button><button type="button" class="ft-btn ft-danger-btn ft-cz-delete" hidden>Delete? This cannot be undone</button><button type="button" class="ft-icon-btn ft-cz-more" data-menu-anchor aria-label="More actions" title="More actions">${ui('more', 16)}</button></div>
         <p class="ft-cz-desc"></p>
         <div class="ft-cz-browser">
           <nav class="ft-cz-tree" aria-label="Files in this skill"></nav>
@@ -153,6 +165,7 @@ export class CustomizeView {
     q(this.root, '.ft-cz-add').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
       { label: 'Upload a skill', desc: 'A .zip of a skill folder, or a SKILL.md', icon: 'paperclip', action: () => this.picker.click() },
       { label: 'Write a skill', desc: 'A name, when to use it, and the instructions', icon: 'pencil', action: () => { this.writeForm.hidden = false; q<HTMLInputElement>(this.writeForm, '[data-f=name]').focus(); } },
+      { label: 'Create with Claude', desc: 'A chat where Claude writes the skill with you', icon: 'chat', action: () => this.hooks.skillChat('') },
     ], 'down'));
     this.picker.addEventListener('change', () => { const f = this.picker.files?.[0]; this.picker.value = ''; if (f) void this.upload(f); });
     q(this.root, '.ft-cz-tabs').addEventListener('click', (e) => {
@@ -164,6 +177,23 @@ export class CustomizeView {
       if (box) this.filterSection(box);
     });
     q(this.root, '.ft-cz-try').addEventListener('click', () => { if (this.current) this.hooks.tryInChat(this.current.name); });
+    q(this.root, '.ft-cz-edit').addEventListener('click', () => { if (this.current && !this.current.plugin) this.hooks.skillChat(this.current.name); });
+    this.root.querySelectorAll<HTMLElement>('.ft-sk-view').forEach((b) => b.addEventListener('click', () => this.setSkillView(b.dataset.skv ?? 'yours')));
+    q(this.root, '.ft-sk-addofficial').addEventListener('click', async () => {
+      setText(this.msg, 'Adding the anthropics/skills marketplace');
+      try { await run('marketplace.add', { source: 'anthropics/skills' }); setText(this.msg, 'Added Anthropic\'s skills marketplace.'); void this.refreshSkillOffers(); } catch (err) { setText(this.msg, err instanceof Error ? err.message : String(err)); }
+    });
+    q(this.root, '.ft-sk-offers').addEventListener('click', async (e) => {
+      const t = e.target as HTMLElement;
+      const row = t.closest<HTMLElement>('[data-skoffer]');
+      if (!row || !t.closest('.ft-sk-get')) return;
+      const [marketplace, path] = (row.dataset.skoffer ?? '').split('\n');
+      try {
+        const s = await run<SkillSummary>('skill.installFrom', { marketplace, path });
+        setText(this.msg, `Added the ${s.name} skill.`);
+        void this.refreshSkillOffers();
+      } catch (err) { setText(this.msg, err instanceof Error ? err.message : String(err)); }
+    });
     q(this.root, '.ft-cz-tree').addEventListener('click', (e) => {
       const file = (e.target as HTMLElement).closest<HTMLElement>('[data-file]')?.dataset.file;
       if (file) void this.showFile(file);
@@ -193,14 +223,14 @@ export class CustomizeView {
     ], 'down'));
     this.root.addEventListener('dragover', (e) => e.preventDefault());
     this.root.addEventListener('drop', (e) => { e.preventDefault(); const f = e.dataTransfer?.files?.[0]; if (f) void this.upload(f); });
-    state.on('skills', () => this.render());
+    state.on('skills', () => { this.render(); if (!q(this.root, '.ft-sk-discover').hidden) this.renderSkillOffers(); });
     this.cnDetail = q(this.root, '.ft-cn-detail');
     this.wireConnectors();
-    state.on('connectors', () => { this.renderConnectors(); if (this.plOpen) this.paintPlugin(); });
+    state.on('connectors', () => { this.renderConnectors(); if (this.plOpen) this.paintPlugin(); if (this.directory.length) this.renderDirectory(); });
     this.plDetail = q(this.root, '.ft-pl-detail');
     this.wirePlugins();
     state.on('plugins', () => { this.renderPlugins(); this.renderMarkets(); });
-    state.on('marketplaces', () => this.renderMarkets());
+    state.on('marketplaces', () => { this.renderMarkets(); if (!q(this.root, '.ft-sk-discover').hidden) void this.refreshSkillOffers(); });
   }
 
   private plDetail: HTMLElement;
@@ -214,7 +244,7 @@ export class CustomizeView {
     const say = (err: unknown): void => setText(msg, err instanceof Error ? err.message : String(err));
     q(this.root, '.ft-pl-addmenu').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
       { label: 'Add marketplace', desc: 'A Git repository or folder that lists plugins', icon: 'plugin', action: () => { if (mform.hidden) mform.hidden = false; q<HTMLInputElement>(mform, '.ft-pl-msource').focus(); } },
-      { label: 'Upload plugin', desc: 'A .zip of a plugin folder', icon: 'paperclip', action: () => picker.click() },
+      { label: 'Upload plugin', desc: 'A .zip or .plugin of a plugin folder', icon: 'paperclip', action: () => picker.click() },
       { divider: true },
       { label: 'Create with Claude', desc: 'A chat where Claude builds the plugin with you', icon: 'chat', action: () => this.hooks.createPlugin() },
       { label: 'Create a plugin', desc: 'Write its files here', icon: 'file', action: () => this.openEditor(null) },
@@ -239,8 +269,10 @@ export class CustomizeView {
       const src = q<HTMLInputElement>(mform, '.ft-pl-msource');
       setText(msg, `Adding ${src.value.trim()}`);
       try {
-        const m = await run<MarketplaceInfo>('marketplace.add', { source: src.value.trim() });
+        const tok = q<HTMLInputElement>(mform, '.ft-pl-mtoken');
+        const m = await run<MarketplaceInfo>('marketplace.add', { source: src.value.trim(), ...(tok.value.trim() ? { token: tok.value.trim() } : {}) });
         src.value = '';
+        tok.value = '';
         mform.hidden = true;
         setText(msg, `Added the ${m.name} marketplace: ${m.plugins.length} plugin${m.plugins.length === 1 ? '' : 's'} in Discover.`);
         this.setPluginView('discover');
@@ -253,9 +285,16 @@ export class CustomizeView {
       if (!row) return;
       const [market, name] = (row.dataset.offer ?? '').split('\n');
       if (t.closest('.ft-pl-get')) {
+        const offer = this.state.marketplaces.find((m) => m.name === market)?.plugins.find((o) => o.name === name);
+        if (offer?.command && row.dataset.confirm !== '1') {
+          row.dataset.confirm = '1';
+          setText(q(row, '.ft-cz-row-desc'), `Adding it runs this command on this computer: ${offer.command}`);
+          setText(q(row, '.ft-pl-get'), 'Run and add');
+          return;
+        }
         setText(msg, `Adding ${name} from ${market}`);
         try {
-          const p = await run<PluginSummary>('plugin.install', { marketplace: market, plugin: name });
+          const p = await run<PluginSummary>('plugin.install', { marketplace: market, plugin: name, ...(offer?.command ? { confirm: true } : {}) });
           setText(msg, `Added ${p.name}: ${p.skills.length} skill${p.skills.length === 1 ? '' : 's'}${p.servers?.length ? `, ${p.servers.length} connector${p.servers.length === 1 ? '' : 's'} to add on its page` : ''}.`);
         } catch (err) { say(err); }
         return;
@@ -381,6 +420,102 @@ export class CustomizeView {
     this.setPluginView('yours');
     if (cform.hidden) cform.hidden = false;
     (name ? q<HTMLInputElement>(cform, '.ft-pl-cdesc') : nameIn).focus();
+  }
+
+  private directory: Array<{ name: string; url: string; transport: string; auth: string; category: string; description: string; docs: string; checked: string; added: boolean; connectorId: string }> = [];
+  private dirRows = new Map<string, HTMLElement>();
+  private dirCat = '';
+
+  private setConnectorView(view: string): void {
+    this.root.querySelectorAll<HTMLElement>('.ft-cn-view').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.cnv === view)));
+    const yours = q(this.root, '.ft-cn-yours');
+    const disc = q(this.root, '.ft-cn-discover');
+    if (yours.hidden !== (view !== 'yours')) yours.hidden = view !== 'yours';
+    if (disc.hidden !== (view !== 'discover')) disc.hidden = view !== 'discover';
+    if (view === 'discover') void this.refreshDirectory();
+  }
+
+  private async refreshDirectory(): Promise<void> {
+    try { this.directory = (await run<{ connectors: CustomizeView['directory'] }>('connector.directory')).connectors; } catch { return; }
+    this.renderDirectory();
+  }
+
+  private renderDirectory(): void {
+    const cats = [...new Set(this.directory.map((d) => d.category))].sort();
+    const cbox = q(this.root, '.ft-cn-cats');
+    const ckey = cats.join('\n');
+    if (cbox.dataset.v !== ckey) {
+      cbox.dataset.v = ckey;
+      cbox.innerHTML = ['', ...cats].map((c) => `<button type="button" class="ft-chip ft-cn-cat" data-cat="${esc(c)}" aria-pressed="false">${esc(c || 'All')}</button>`).join('');
+    }
+    cbox.querySelectorAll<HTMLElement>('.ft-cn-cat').forEach((b) => setAttr(b, 'aria-pressed', String((b.dataset.cat ?? '') === this.dirCat)));
+    const box = q(this.root, '.ft-cn-dir');
+    const urls = new Map(this.state.connectors.filter((c) => c.url).map((c) => [c.url.replace(/\/$/, ''), c]));
+    this.directory.forEach((d, i) => {
+      let row = this.dirRows.get(d.url);
+      if (!row) {
+        row = el(`<div class="ft-cz-row ft-pl-offer" role="listitem"><span class="ft-cz-icon">${ui('plug', 16)}</span><span class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span><span class="ft-cz-row-meta"></span></span><button type="button" class="ft-btn ft-cn-dirget"></button></div>`);
+        row.dataset.dir = d.url;
+        this.dirRows.set(d.url, row);
+      }
+      const have = urls.get(d.url.replace(/\/$/, ''));
+      setText(q(row, '.ft-cz-row-name'), d.name);
+      setText(q(row, '.ft-cz-row-desc'), d.description);
+      q(row, '.ft-cz-row-meta').innerHTML = `${esc(d.category)} · ${d.auth === 'oauth' ? 'Sign in' : d.auth === 'token' ? 'Needs a key' : 'No sign-in'} · <a href="${esc(d.docs)}" target="_blank" rel="noopener noreferrer">Docs</a>`;
+      const get = q<HTMLButtonElement>(row, '.ft-cn-dirget');
+      setText(get, have ? 'Added' : 'Connect');
+      if (get.disabled !== !!have) get.disabled = !!have;
+      const show = !this.dirCat || d.category === this.dirCat;
+      if (row.hidden === show) row.hidden = !show;
+      if (box.children[i] !== row) box.insertBefore(row, box.children[i] ?? null);
+    });
+  }
+
+  private skillOffers: Array<{ marketplace: string; plugin: string; name: string; description: string; path: string; official: boolean; installed: boolean; taken: boolean }> = [];
+  private skOfferRows = new Map<string, HTMLElement>();
+
+  private setSkillView(view: string): void {
+    this.root.querySelectorAll<HTMLElement>('.ft-sk-view').forEach((b) => setAttr(b, 'aria-selected', String(b.dataset.skv === view)));
+    const yours = q(this.root, '.ft-sk-yours');
+    const disc = q(this.root, '.ft-sk-discover');
+    if (yours.hidden !== (view !== 'yours')) yours.hidden = view !== 'yours';
+    if (disc.hidden !== (view !== 'discover')) disc.hidden = view !== 'discover';
+    if (view === 'discover') void this.refreshSkillOffers();
+  }
+
+  private async refreshSkillOffers(): Promise<void> {
+    try { this.skillOffers = (await run<{ skills: CustomizeView['skillOffers'] }>('skill.discover')).skills; } catch { return; }
+    this.renderSkillOffers();
+  }
+
+  private renderSkillOffers(): void {
+    const box = q(this.root, '.ft-sk-offers');
+    const mine = new Map(this.state.skills.map((s) => [s.name, s]));
+    const live = new Set(this.skillOffers.map((o) => `${o.marketplace}\n${o.path}`));
+    for (const [k, r] of this.skOfferRows) if (!live.has(k)) { r.remove(); this.skOfferRows.delete(k); }
+    this.skillOffers.forEach((o, i) => {
+      const key = `${o.marketplace}\n${o.path}`;
+      let row = this.skOfferRows.get(key);
+      if (!row) {
+        row = el(`<div class="ft-cz-row ft-pl-offer" role="listitem"><span class="ft-cz-icon">${ui('skills', 16)}</span><span class="ft-cz-text"><span class="ft-cz-row-name"></span><span class="ft-cz-row-desc"></span><span class="ft-cz-row-meta"></span></span><button type="button" class="ft-btn ft-sk-get"></button></div>`);
+        row.dataset.skoffer = key;
+        this.skOfferRows.set(key, row);
+      }
+      const have = mine.get(o.name);
+      const here = !!have && have.source?.marketplace === o.marketplace;
+      setText(q(row, '.ft-cz-row-name'), o.name);
+      setText(q(row, '.ft-cz-row-desc'), o.description);
+      setText(q(row, '.ft-cz-row-meta'), [o.official ? 'Anthropic' : o.marketplace, o.plugin].filter(Boolean).join(' · '));
+      const get = q<HTMLButtonElement>(row, '.ft-sk-get');
+      setText(get, here ? 'Added' : have ? 'Replace' : 'Add');
+      if (get.disabled !== here) get.disabled = here;
+      if (box.children[i] !== row) box.insertBefore(row, box.children[i] ?? null);
+    });
+    const none = q(this.root, '.ft-sk-nooffers');
+    if (none.hidden !== this.skillOffers.length > 0) none.hidden = this.skillOffers.length > 0;
+    const official = q(this.root, '.ft-sk-anthropic');
+    const hasOfficial = this.state.marketplaces.some((m) => /^(anthropics\/|https:\/\/github\.com\/anthropics\/)/.test(m.source));
+    if (official.hidden !== hasOfficial) official.hidden = hasOfficial;
   }
 
   private setPluginView(view: string): void {
@@ -587,6 +722,48 @@ export class CustomizeView {
         setText(msg, done.status === 'connected' ? `${c.name} is connected with ${done.tools.length} tools.` : done.status === 'needs_auth' ? `${c.name} asks you to sign in: select Sign in on its row.`
           : `${c.name} was added but did not connect: ${done.error}`);
       } catch (err) {
+        setText(msg, err instanceof Error ? err.message : String(err));
+      }
+    });
+    this.root.querySelectorAll<HTMLElement>('.ft-cn-view').forEach((b) => b.addEventListener('click', () => this.setConnectorView(b.dataset.cnv ?? 'yours')));
+    q(this.root, '.ft-cn-cats').addEventListener('click', (e) => {
+      const b = (e.target as HTMLElement).closest<HTMLElement>('.ft-cn-cat');
+      if (!b) return;
+      this.dirCat = b.dataset.cat ?? '';
+      this.renderDirectory();
+    });
+    q(this.root, '.ft-cn-dir').addEventListener('click', async (e) => {
+      const t = e.target as HTMLElement;
+      const d = this.directory.find((x) => x.url === t.closest<HTMLElement>('[data-dir]')?.dataset.dir);
+      if (!d || !t.closest('.ft-cn-dirget')) return;
+      const msg = q(this.root, '.ft-cn-msg');
+      const taken = new Set(this.state.connectors.map((c) => c.name));
+      let name = d.name.toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'connector';
+      for (let n = 2; taken.has(name); n += 1) name = `${name.slice(0, 36)}-${n}`;
+      if (d.auth === 'token') {
+        this.setConnectorView('yours');
+        if (form.hidden) form.hidden = false;
+        q<HTMLInputElement>(form, '[data-c=name]').value = name;
+        q<HTMLInputElement>(form, '[data-c=url]').value = d.url;
+        form.querySelector<HTMLInputElement>('input[name=ft-cn-auth][value=none]')?.click();
+        setText(msg, `${d.name} needs a key: add it as the access token or a request header, then Add and connect.`);
+        q<HTMLInputElement>(form, '[data-c=token]').focus();
+        return;
+      }
+      const tab = d.auth === 'oauth' ? window.open('', '_blank') : null;
+      try {
+        const c = await run<{ id: string; name: string }>('connector.add', { name, url: d.url, auth: d.auth === 'oauth' ? 'now' : 'none', ...(d.transport === 'sse' ? { transport: 'sse' } : {}) });
+        if (d.auth === 'oauth') {
+          const r = await run<{ url: string }>('connector.signin', { id: c.id });
+          if (tab) { tab.opener = null; tab.location.href = r.url; } else window.open(r.url, '_blank', 'noopener');
+          setText(msg, `Sign in to ${d.name} on the page that opened, then come back here.`);
+        } else {
+          tab?.close();
+          const done = await run<{ status: string; error: string }>('connector.connect', { id: c.id });
+          setText(msg, done.status === 'connected' ? `${d.name} is connected.` : `${d.name} was added but did not connect: ${done.error}`);
+        }
+      } catch (err) {
+        tab?.close();
         setText(msg, err instanceof Error ? err.message : String(err));
       }
     });
@@ -804,11 +981,15 @@ export class CustomizeView {
     for (const [n, r] of this.rows) if (!live.has(n)) { r.remove(); this.rows.delete(n); }
     const heads = this.skHeads ?? (this.skHeads = {
       own: el(`<div class="ft-cz-group" data-group="own" role="presentation">Created by you</div>`),
+      official: el(`<div class="ft-cz-group" data-group="official" role="presentation">From Anthropic and partners</div>`),
+      market: el(`<div class="ft-cz-group" data-group="market" role="presentation">From marketplaces</div>`),
       plugin: el(`<div class="ft-cz-group" data-group="plugin" role="presentation">From plugins</div>`),
     });
+    const groupOf = (s: SkillSummary): 'own' | 'official' | 'market' | 'plugin' => (s.plugin ? 'plugin' : s.source?.official ? 'official' : s.source?.marketplace ? 'market' : 'own');
+    const order = ['own', 'official', 'market', 'plugin'];
     const seq: HTMLElement[] = [];
-    [...items.filter((s) => !s.plugin), ...items.filter((s) => s.plugin)].forEach((s) => {
-      const group = s.plugin ? 'plugin' : 'own';
+    [...items].sort((a, b) => order.indexOf(groupOf(a)) - order.indexOf(groupOf(b))).forEach((s) => {
+      const group = groupOf(s);
       if (!seq.some((n) => n.dataset.group === group)) seq.push(heads[group]);
       let row = this.rows.get(s.name);
       if (!row) {
@@ -817,7 +998,7 @@ export class CustomizeView {
       }
       setText(q(row, '.ft-cz-row-name'), s.name);
       setText(q(row, '.ft-cz-row-desc'), s.description);
-      setText(q(row, '.ft-cz-row-meta'), `${s.plugin ? `${s.plugin} · ` : ''}${s.files} file${s.files === 1 ? '' : 's'}`);
+      setText(q(row, '.ft-cz-row-meta'), `${s.plugin ? `${s.plugin} · ` : s.source?.marketplace ? `${s.source.marketplace} · ` : ''}${s.files} file${s.files === 1 ? '' : 's'}`);
       const box = q<HTMLInputElement>(row, '.ft-cz-toggle input');
       if (box.checked !== s.enabled) box.checked = s.enabled;
       row.classList.toggle('is-off', !s.enabled);
@@ -876,6 +1057,8 @@ export class CustomizeView {
     const tbox = q(this.root, '.ft-cz-tree');
     if (tbox.dataset.v !== tree) { tbox.dataset.v = tree; tbox.innerHTML = tree; }
     void this.showFile('SKILL.md');
+    const edit = q<HTMLButtonElement>(this.root, '.ft-cz-edit');
+    if (edit.hidden !== !!s.plugin) edit.hidden = !!s.plugin;
     const del = q<HTMLButtonElement>(this.root, '.ft-cz-delete');
     if (!del.hidden && del.dataset.for !== s.name) del.hidden = true;
     del.dataset.for = s.name;

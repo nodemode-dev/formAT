@@ -111,7 +111,8 @@ export class App {
       leaveProject: () => this.setDraftProject(null),
       chatId: () => this.state.activeId ?? '',
     });
-    this.customizeView = new CustomizeView(this.state, { tryInChat: (name) => { this.newChat(); this.composer.useSkill(name); }, createPlugin: () => { this.newChat(); this.composer.startPlugin(); } });
+    this.customizeView = new CustomizeView(this.state, { tryInChat: (name) => { this.newChat(); this.composer.useSkill(name); }, createPlugin: () => { this.newChat(); this.composer.startPlugin(); },
+      skillChat: (name) => { this.newChat(); this.composer.startSkill(name); } });
     this.memoryPanel = new MemoryPanel(this.state);
     this.projectsView = new ProjectsView(this.state, {
       openChat: (id) => void this.openChat(id),
