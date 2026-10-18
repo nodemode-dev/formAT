@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.19.0 · 2026-10-18
+
+Plugins from marketplaces.
+
+- Plugins has Your plugins and Discover. Add, then Add marketplace, takes a Git repository (URL or owner/repo) or a folder with .claude-plugin/marketplace.json; Discover lists its plugins with Add.
+- Each marketplace has Check for updates (updates the plugins installed from it, keeping their connectors and on or off state), Sync automatically for repositories (hourly while Format runs), and Remove in its "..." menu, which removes its plugins too.
+- A plugin's page has Skills, Commands, Connectors and Agents tabs. Adding a plugin no longer adds its connectors: each shows Connected, Not connected or Not added, with Add or Connect.
+- Plugins come from a folder in the marketplace or from github, url and git-subdir sources; archive, npm and command sources are not installed.
+- Engine: `marketplace.list`, `marketplace.add`, `marketplace.update`, `marketplace.sync`, `marketplace.remove`, `plugin.install`, `plugin.addConnector`; plugins report `servers`, `commandSkills`, `agents`, `hooks` and `origin`. 107 commands.
+
 ## 0.18.0 · 2026-10-18
 
 Connector sign-in, and connectors per chat.
