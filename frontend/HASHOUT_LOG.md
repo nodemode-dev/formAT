@@ -877,3 +877,14 @@ Menus use `--z-menu`, the palette `--z-modal`; both live in `#overlay-root`, a d
 - logged: v0.1.0 · 2026-10-11
 
 Starting values from the owner's claude.ai screenshots (planning sidecar `UI_STUDY.md` § Measurements): the sidebar is 16.8 percent of the window, the text column about 32.5 percent, the composer about 36.5 percent, the open file panel about 41 percent. At a 1728 px wide window those shares give roughly 290, 560, 630 and 710 px; the tokens round toward the family's 4 px grid and are tuned side by side with the screenshots in v0.2.0.
+
+---
+
+## assets/format_icon.svg {#assets-format-icon}
+
+### assets/format_icon.svg · the app icon as a smiling AI chat bubble
+- refers-to: assets/format_icon.svg, format_icon.png, format_icon_macos.png; public/favicon.svg, public/splash.html; src-tauri/icons/*; assets/icon_src/
+- kind: rationale
+- logged: v0.24.0 · 2026-10-20
+
+The orange `>_` frame was the last icon outside the redrawn Form family. At the owner's direction the mark follows a chat-bubble-with-smile-and-sparkle reference but is drawn our own way: a thick ring bubble in the family paint (blue, violet, pink, amber) with a darker extruded edge and a tail at the bottom left, a raised half-moon smile in the same paint, and a white four-point sparkle with an amber glow in the ring's open gap at the top right, plus a smaller second sparkle. The ring ends are trimmed so neither sparkle touches the bubble (about 20 px clear at 1024, measured from rendered masks by assets/icon_src/clear.py). It sits on the family tile with its bloom, rim and drop shadow. The macOS .icns uses the 824 px tile inside a 1024 canvas with a 100 px margin; .ico, the PNGs and the Square*Logo set stay full bleed. Sizes 64 px and below use a heavier ring and a single larger sparkle set further out, with no smile outline. favicon.svg and the splash share a filter-free build with a rounded-rect tile. assets/icon_src/ regenerates every file (python3 gen.py, node render.mjs, python3 build.py).
