@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.24.0 · 2026-10-20
+
+A new app icon.
+
+- The orange terminal frame is gone. Format's icon is now a smiling chat bubble with a sparkle, in the form family's blue, violet, pink and amber on the dark tile, in the Dock, the taskbar, the browser tab and the starting screen.
+- On macOS the icon sits inside the standard margin with a soft shadow, like the system's own apps; small sizes use a heavier, simpler mark so it stays readable at 16 px.
+- Engine: no change.
+
 ## 0.23.0 · 2026-10-18
 
 Attachments you can see.
