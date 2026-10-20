@@ -888,3 +888,10 @@ Starting values from the owner's claude.ai screenshots (planning sidecar `UI_STU
 - logged: v0.24.0 · 2026-10-20
 
 The orange `>_` frame was the last icon outside the redrawn Form family. At the owner's direction the mark follows a chat-bubble-with-smile-and-sparkle reference but is drawn our own way: a thick ring bubble in the family paint (blue, violet, pink, amber) with a darker extruded edge and a tail at the bottom left, a raised half-moon smile in the same paint, and a white four-point sparkle with an amber glow in the ring's open gap at the top right, plus a smaller second sparkle. The ring ends are trimmed so neither sparkle touches the bubble (about 20 px clear at 1024, measured from rendered masks by assets/icon_src/clear.py). It sits on the family tile with its bloom, rim and drop shadow. The macOS .icns uses the 824 px tile inside a 1024 canvas with a 100 px margin; .ico, the PNGs and the Square*Logo set stay full bleed. Sizes 64 px and below use a heavier ring and a single larger sparkle set further out, with no smile outline. favicon.svg and the splash share a filter-free build with a rounded-rect tile. assets/icon_src/ regenerates every file (python3 gen.py, node render.mjs, python3 build.py).
+
+### assets/icon_src/compact.py · keep the bloom in the compact build
+- refers-to: assets/icon_src/compact.py :: compact; public/favicon.svg; public/splash.html
+- kind: gotcha
+- logged: v0.24.0 · 2026-10-20
+
+The compact build drops the root svg's fixed `width="1024" height="1024"` so the favicon and the splash scale to their box. The bloom rect carries the same pair, and stripping every occurrence left it with no size, so the bloom never painted. Only the first occurrence (the root element) is removed.
