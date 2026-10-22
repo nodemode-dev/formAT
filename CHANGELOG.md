@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.24.1 · 2026-10-22
+
+Checks and releases move to GitHub Actions and formcompiler.
+
+- The repository's GitHub Actions now run basic checks (frontend, backend and scripts) on main, on pull requests and on `compile_vX.Y.Z` branches.
+- Releases are built by formcompiler (`nodemode-ai/formcompiler`) and published on its release page as `format-vX.Y.Z`.
+- The updater now reads formcompiler's `format-updates` feed.
+- Engine: no change. There is no change to the app itself.
+
 ## 0.24.0 · 2026-10-20
 
 A new app icon.
