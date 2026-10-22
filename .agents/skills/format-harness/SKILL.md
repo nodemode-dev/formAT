@@ -52,7 +52,7 @@ These come from the owner and hold for every change. The reasons matter, because
 - **Near-zero comments.** Rationale goes in `frontend/HASHOUT_LOG.md` or `backend/HASHOUT_LOG.md`, in the same change. Read the log for a side before editing it.
 - **No self-written tests.** Verification is by running the app (scratch scripts outside the repo, the mock API), not by adding test files to the repo.
 - **Engine first.** A feature is a command; the window, CLI and MCP only dispatch it.
-- **Versions `v*.*.*`, Conventional Commits** as `nodemode-ai` with the session trailers (see `release-keeper`).
+- **Versions `v*.*.*`, Conventional Commits** as `nodemode-ai` with no session trailers (see `release-keeper`).
 
 ## Using Format from here
 

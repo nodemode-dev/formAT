@@ -42,7 +42,7 @@
       "files": [],
       "expected_behavior": [
         "release-keeper bumps the version in backend/app/__init__.py, frontend/src/version.ts, frontend/package.json and both package-lock fields to the same value",
-        "Commits are authored as nodemode-ai with Conventional Commit subjects and end with the session trailers; an annotated tag v[x.y.z] is on HEAD",
+        "Commits are authored as nodemode-ai with Conventional Commit subjects and carry no session trailers; a compile_v[x.y.z] branch is cut from HEAD",
         "CHANGELOG has the new entry and the parity tracker still has exactly two rows"
       ]
     }

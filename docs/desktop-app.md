@@ -10,7 +10,7 @@ Format runs as a desktop app on macOS, Windows and Linux. The app is the same Fo
 | Windows | `Format_<version>_x64-setup.exe` or the `.msi` |
 | Linux | `Format_<version>_amd64.deb`, `Format-<version>-1.x86_64.rpm` or `Format_<version>_amd64.AppImage` |
 
-The files come from the desktop build on GitHub (pushing a `v*.*.*` tag builds all four platforms; Actions, desktop, lists them under Artifacts and the draft release), or from building it yourself (below).
+The files come from the release page of formcompiler (`nodemode-ai/formcompiler`), which builds macOS, Linux and Windows bundles from a `compile_vX.Y.Z` branch of this repository and publishes them as `format-vX.Y.Z`, or from building it yourself (below).
 
 ### macOS: the first launch
 

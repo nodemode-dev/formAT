@@ -26,7 +26,9 @@ Conventional Commits, authored as nodemode-ai:
 git -c user.name=nodemode-ai -c user.email=mackin@nodemode.ai commit -m "feat(engine): ..." -m "body"
 ```
 
-Usually three per release: `feat(engine)`, `feat(window)` and `chore(release): vX.Y.Z`, then `git tag vX.Y.Z`. See [`BRANCHING.md`](../../BRANCHING.md).
+Usually three per release: `feat(engine)`, `feat(window)` and `chore(release): vX.Y.Z`. See [`BRANCHING.md`](../../BRANCHING.md). Every commit has one author and committer, `nodemode-ai <mackin@nodemode.ai>`, and no `Co-Authored-By` or `Claude-Session` trailers.
+
+**Releases.** Format builds nothing in this repository. After the version bump lands on main, push a branch `compile_vX.Y.Z` cut from that commit. CI runs on it, and formcompiler (`nodemode-ai/formcompiler`) picks it up on its next 8-hourly watch run, or at once when its watch is run by hand. It builds macOS, Linux and Windows bundles and opens a draft release `format-vX.Y.Z` on formcompiler's release page. Review the draft, then publish it there.
 
 ## Hand-back
 

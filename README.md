@@ -30,7 +30,7 @@ Mod is Cmd on macOS and Ctrl elsewhere. Inside the terminal the shell keeps its 
 
 ## Desktop app
 
-Format is also a desktop app for macOS, Windows and Linux (Tauri 2, with the engine frozen inside): open it and it runs, no Python or Node needed. Get the bundles from the desktop workflow on GitHub, or build your own on macOS or Linux with one command in this folder, `./build_app` (on macOS it also installs Format.app in Applications). See [docs/desktop-app.md](docs/desktop-app.md).
+Format is also a desktop app for macOS, Windows and Linux (Tauri 2, with the engine frozen inside): open it and it runs, no Python or Node needed. Get the bundles from the release page of formcompiler (`nodemode-ai/formcompiler`), or build your own on macOS or Linux with one command in this folder, `./build_app` (on macOS it also installs Format.app in Applications). See [docs/desktop-app.md](docs/desktop-app.md).
 
 ## Quick start
 
