@@ -1,5 +1,5 @@
 <h1 align="center">Format</h1>
-<p align="center"><b>A.T, the Agentic Terminal: the claude.ai way of working, on your own Claude API key, in the form family's Studio Dark design.</b></p>
+<p align="center"><b>A.T, the Agentic Terminal: chats, artifacts, projects and real terminals on your own Claude API key, in the form family's Studio Dark design.</b></p>
 <p align="center">
 <img src="https://img.shields.io/badge/version-0.24.1-f97316" alt="version 0.24.1">
 <img src="https://img.shields.io/badge/node-22-339933" alt="node 22">
@@ -9,7 +9,7 @@
 
 ## What it is
 
-Format is the form family's chat and agent workspace for the Claude API. It follows claude.ai's layout and flow (a sidebar that folds to a mini rail, a centred conversation, a composer with the + menu, model and effort, a collapsible side panel for artifacts and files, a real terminal) and wears the family's design. The Anthropic API is its main engine; OpenAI and Cursor plug in behind the same provider adapter. Every action is one engine command, reachable the same way from the window, the CLI, the terminal and an MCP server for Claude Code, Codex and Cursor.
+Format is the form family's chat and agent workspace for the Claude API. It has a sidebar that folds to a mini rail, a centred conversation, a composer with the + menu, model and effort, a collapsible side panel for artifacts and files, and a real terminal, and wears the family's design. The Anthropic API is its main engine; OpenAI and Cursor plug in behind the same provider adapter. Every action is one engine command, reachable the same way from the window, the CLI, the terminal and an MCP server for Claude Code, Codex and Cursor.
 
 Format is not affiliated with Anthropic and uses none of its logos, fonts or styles.
 
