@@ -5,6 +5,7 @@ ft_rust_env
 py="$(ft_venv_python)"
 ft_say "installing PyInstaller, the built-in browser package and local dictation into the engine venv"
 "$py" -m pip install -r "$FORMAT_ROOT/backend/requirements_desktop.txt"
+"$FORMAT_ROOT/setup/build_lgpl_av" "$py"
 if ! command -v cargo >/dev/null 2>&1; then
   ft_say "Rust is not installed. Install it from https://rustup.rs then run ./build_app from the Format folder (it installs Rust for you)"
   exit 1

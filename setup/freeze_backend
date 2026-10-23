@@ -9,14 +9,17 @@ triple="$(ft_target_triple)" || ft_die "rustc not found; install Rust or set FOR
 cd "$FORMAT_ROOT/backend"
 optional=()
 ft_has playwright && optional+=(--collect-all playwright)
-ft_has faster_whisper && optional+=(--collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all tokenizers)
+if ft_has faster_whisper; then
+  "$py" "$FORMAT_ROOT/setup/check_lgpl_av.py" "${LGPL_FFMPEG_PREFIX:-$FORMAT_ROOT/backend/.lgpl-ffmpeg}" || ft_die "voice needs PyAV built against an LGPL FFmpeg; run setup/build_lgpl_av"
+  optional+=(--collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all tokenizers)
+fi
 ft_has ptyprocess && optional+=(--collect-submodules ptyprocess)
 rm -rf build/pyinstaller dist-engine
 "$py" -m PyInstaller --noconfirm --clean --onefile --name format-engine \
   --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller --paths "$FORMAT_ROOT/backend" \
   --add-data "$FORMAT_ROOT/frontend/dist:frontend_dist" \
   --collect-submodules app --collect-submodules uvicorn --collect-submodules websockets --collect-submodules anthropic \
-  --collect-submodules mcp.server --collect-submodules mcp.client --collect-submodules mcp.shared --hidden-import mcp.types --exclude-module mcp.cli --collect-data certifi --collect-data docx --collect-data pptx --collect-all reportlab --collect-submodules openpyxl \
+  --collect-submodules mcp.server --collect-submodules mcp.client --collect-submodules mcp.shared --hidden-import mcp.types --exclude-module mcp.cli --collect-data certifi --collect-data docx --collect-data pptx --collect-submodules reportlab --collect-submodules openpyxl \
   --hidden-import segno --hidden-import multipart --hidden-import python_multipart \
   "${optional[@]}" \
   --exclude-module tkinter \

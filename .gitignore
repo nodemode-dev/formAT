@@ -2,6 +2,7 @@ node_modules/
 frontend/dist/
 backend/venv/
 backend/build/
+backend/.lgpl-ffmpeg/
 backend/dist-engine/
 backend/data/
 __pycache__/
