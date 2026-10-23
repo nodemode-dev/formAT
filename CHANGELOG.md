@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.2 · 2026-10-23
+
+The README, the desktop bundle's description and the agent notes describe Format by its features instead of as claude.ai's layout; the trademark notice is unchanged. No change to the app itself.
+
 ## 0.24.1 · 2026-10-22
 
 Checks and releases move to GitHub Actions and formcompiler.
