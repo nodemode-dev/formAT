@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.24.3 · 2026-10-23
+
+- Local dictation in the desktop app uses PyAV 18.1.0 built against an LGPL FFmpeg 8.0.3 instead of the PyPI wheel, which carries GPL codecs; `av` is pinned, which also fixes dictation on installs that had picked up `av` 19.
+- The desktop engine leaves out reportlab's font folder, and the installers carry LICENSE and NOTICE.md.
+- NOTICE.md lists everything the desktop release bundles: faster-whisper, CTranslate2, onnxruntime, PyAV and its FFmpeg (with the source offer), Playwright's driver, KaTeX's fonts, certifi, the Pillow libraries and the desktop shell crates.
+
 ## 0.24.2 · 2026-10-23
 
 The README, the desktop bundle's description and the agent notes describe Format by its features instead of as claude.ai's layout; the trademark notice is unchanged. No change to the app itself.
