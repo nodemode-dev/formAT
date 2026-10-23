@@ -1,6 +1,6 @@
 # Format
 
-A.T, the Agentic Terminal: a chat and agent workspace on the Claude API with claude.ai's layout and flow, in the form family's Studio Dark design. Vanilla TypeScript and Vite frontend, Python and FastAPI engine, a Rust crate on wgpu where needed, and a Tauri 2 desktop shell (from v0.11.0) in `src-tauri/` that runs the engine frozen by PyInstaller (`backend/format_engine.py`, `setup/freeze_backend`) as a sidecar, built end to end by the root `./build_app`; see `.docs/wiki/Desktop.md`.
+A.T, the Agentic Terminal: a chat and agent workspace on the Claude API, in the form family's Studio Dark design. Vanilla TypeScript and Vite frontend, Python and FastAPI engine, a Rust crate on wgpu where needed, and a Tauri 2 desktop shell (from v0.11.0) in `src-tauri/` that runs the engine frozen by PyInstaller (`backend/format_engine.py`, `setup/freeze_backend`) as a sidecar, built end to end by the root `./build_app`; see `.docs/wiki/Desktop.md`.
 
 ## Repo layout notes
 
@@ -21,6 +21,12 @@ A.T, the Agentic Terminal: a chat and agent workspace on the Claude API with cla
 ## Laws
 
 Single-region hand edits only (no sed, patch, git apply or scripted edits), zero DOM flash or re-render (verify under 4x CPU and slow network), no visible scrollbars anywhere, no emoji, no em dash in markdown, no icon-library dependencies, z-index only through tokens, near-zero comments with rationale in the HASHOUT logs, `v*.*.*` versions, Conventional Commits as `nodemode-ai <mackin@nodemode.ai>`.
+
+## Trademarks, copyright and licences
+
+- Claude, claude.ai and Anthropic are Anthropic's trademarks. Use them only to say Format runs on the Claude API with the person's own key, never to describe Format as a copy of claude.ai ("the claude.ai way", "claude.ai's layout"), and never use Anthropic's logo, wordmark, fonts or stylesheets. The notice in `README.md` and `NOTICE.md` stays.
+- Never copy vendor help or documentation text, and never import or trace vendor icons.
+- Every new dependency, binary, model, font or data file gets a row in `NOTICE.md` before it is used. GPL stays outside the distributed bundle, AGPL nowhere, LGPL dynamically linked and replaceable, MPL files unedited; CC BY credited, CC BY-SA only unmodified, CC NC and ND never.
 
 ## Commits
 
