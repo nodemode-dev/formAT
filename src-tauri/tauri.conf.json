@@ -33,6 +33,7 @@
     "longDescription": "Format is a chat and agent workspace on the Claude API: chats, tools with approvals, artifacts, documents and slides, projects, memory, skills, plugins, connectors, a built-in browser, scheduled tasks and real terminals, on your own API key.",
     "copyright": "Copyright 2026 nodemode-ai.",
     "externalBin": ["binaries/format-engine"],
+    "resources": { "../LICENSE": "LICENSE", "../NOTICE.md": "NOTICE.md" },
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"],
     "macOS": {
       "minimumSystemVersion": "12.0",
