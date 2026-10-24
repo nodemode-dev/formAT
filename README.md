@@ -117,4 +117,4 @@ Single-region hand edits only, zero DOM flash or re-render (checked under 4x CPU
 
 ## Licence
 
-Apache-2.0. See `LICENSE` and `NOTICE.md`.
+Apache-2.0. Copyright 2026 NodeAgentc, Inc. See `LICENSE` and `NOTICE.md`.

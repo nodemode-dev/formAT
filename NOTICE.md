@@ -1,6 +1,6 @@
 # NOTICE
 
-Format · Copyright 2026 nodemode-ai · Licensed under the Apache License, Version 2.0 (see `LICENSE`).
+Format · Copyright 2026 NodeAgentc, Inc. · Licensed under the Apache License, Version 2.0 (see `LICENSE`).
 
 ## Vendored from the form family
 
