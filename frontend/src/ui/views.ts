@@ -160,6 +160,7 @@ export class SettingsView {
       </section>
       <section class="ft-set-section" id="ft-set-about" aria-labelledby="ft-set-about-h">
         <h2 id="ft-set-about-h">${ui('settings', 16)}<span>About</span></h2>
+        <p class="ft-set-note" translate="no">by nodemode.ai</p>
         <dl class="ft-facts">
           <div><dt>Version</dt><dd data-k="version">checking</dd></div>
           <div><dt>Data folder</dt><dd data-k="dataDir">checking</dd></div>

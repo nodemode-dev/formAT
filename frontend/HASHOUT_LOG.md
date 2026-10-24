@@ -252,6 +252,13 @@ Chromium-based browsers and Safari have speech recognition built in (`SpeechReco
 - logged: v0.10.5 · 2026-10-12
 
 From v0.10.5 the account's Dictation engine decides. Browser uses the built-in recognizer. Scribe, local or openai always record and send that engine as the preferred one (the engine still falls through to the others on failure). Automatic asks `/api/voice` (cached 15 seconds) and records whenever Format has any engine set up, because Scribe v2 and Whisper large-v3-turbo are more accurate than the browser's recognizer and keep the audio away from the browser vendor; it uses the browser only when Format has none. The microphone's tooltip names the engine while recording. Saving a key refreshes Settings, About's dictation line, which was otherwise filled only at load.
+### src/ui/views.ts · About credit
+- refers-to: src/ui/views.ts :: SettingsView (the About section)
+- kind: rationale
+- logged: v0.24.4 · 2026-10-24
+
+Format's Home has no credit line, so by the owner's choice the credit "by nodemode.ai" is the first line of Settings > About, an `ft-set-note` under the heading. It is part of the Settings template, built once with the view, so it is there before the section is ever shown and nothing below it moves later. It is marked translate="no": the owner's domain reads the same in every language.
+
 ### src/ui/views.ts · API keys
 - refers-to: src/ui/views.ts :: SettingsView
 - kind: explainer
