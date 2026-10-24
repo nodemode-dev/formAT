@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.24.4 · 2026-10-24
+
+- The copyright holder in LICENSE, NOTICE.md and the README is NodeAgentc, Inc.
+- Settings > About carries the credit "by nodemode.ai".
+
 ## 0.24.3 · 2026-10-23
 
 - Local dictation in the desktop app uses PyAV 18.1.0 built against an LGPL FFmpeg 8.0.3 instead of the PyPI wheel, which carries GPL codecs; `av` is pinned, which also fixes dictation on installs that had picked up `av` 19.
