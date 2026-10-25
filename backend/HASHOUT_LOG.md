@@ -772,3 +772,16 @@ Setting `permissionMode` to `auto` (the window's Allow all) also answers every a
 - logged: v0.1.0 · 2026-10-11
 
 Named `stream`, not `events`: `app/routers/__init__.py` also imports `app.engine.events`, and a sibling module named `events` was shadowed by it, so the router list picked up the engine module and the engine failed to start.
+
+## app/core/local_guard.py {#app-core-local-guard}
+
+### app/core/local_guard.py, main.py · only this computer's own window and agents reach the engine
+- refers-to: app/core/local_guard.py (LocalGuard, new); app/main.py (the middleware, after CORS)
+- kind: fix
+- logged: v0.24.6 · 2026-10-25
+
+The family stabilization plan's Phase 3a (`FAMILY_DEV_PLAN.md` v0.4.2, formai_dev sidecar), ledger FB-031, raised from S1 to S0 once reproduced. The engine had CORS only. CORS decides what a page may read, not what runs, and it does not apply to websockets at all. Reproduced on the engine before the change: a DNS-rebinding page (a hostile name resolving to 127.0.0.1, so its requests carry that name as Host and are same-origin to the browser) called `terminal.list` and read every terminal's id; a page on any origin then attached to `WS /api/terminal/{id}` and typed into the shell, which ran `echo PWNED_$((6*7))` and answered PWNED_42. That is a shell for any web page while Format runs.
+
+LocalGuard, a pure ASGI middleware in front of every route, websocket and `/mcp` (the design of formpdf 0.56.3's and formcel 0.40.2's), refuses a Host that is not 127.0.0.1, localhost or ::1, and an Origin that is neither in `config.cors_origins()` (the dev window and preview on 5490 and 5491 as localhost and 127.0.0.1, and the Tauri origins) nor exactly the engine's own origin, compared on parsed scheme, host and port. The desktop window loads from `http://127.0.0.1:<port>/` with a port chosen at launch, so "own origin" follows the request's Host. Requests with no Origin (`./format cli`, `mcp_stdio.py`, outside agents over HTTP) pass once the Host is local; outside agents still meet `agents.require`. Refusals answer 403, websockets close 4403 before accept, which the terminal dock already treats as a refused attach.
+
+Checked on the engine: rebinding `terminal.list`, an `evil.example` Origin and a `null` Origin answer 403; the terminal websocket refuses `evil.example` and `localhost.evil.com` and runs commands for the engine's own origin, the dev origin and no Origin; the engine's own origin, `localhost:5490`, `tauri://localhost`, no Origin and MCP `initialize` answer 200. The built window served by the engine (FORMAT_SERVE_DIST, the desktop path) in Chromium at 1440 by 900, 4x CPU, 150 ms latency and about 1.6 Mbps, hard reload, three runs: layout shift 0, no page or console error, no failed request, `/api/events` accepted, 162 requests answered and none refused.

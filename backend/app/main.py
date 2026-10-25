@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.routing import Route
 
 from app.core import config
+from app.core.local_guard import LocalGuard
 from app.routers import ROUTERS, mcp_http, shutdown, startup
 
 
@@ -21,6 +22,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=config.APP_NAME, version=config.VERSION, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=config.cors_origins(), allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(LocalGuard, origins=config.cors_origins())
 for router in ROUTERS:
     app.include_router(router)
 app.router.routes.append(Route("/mcp", endpoint=mcp_http.Endpoint(), methods=["GET", "POST", "DELETE"]))
