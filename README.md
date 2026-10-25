@@ -1,7 +1,7 @@
 <h1 align="center">Format</h1>
 <p align="center"><b>A.T, the Agentic Terminal: chats, artifacts, projects and real terminals on your own Claude API key, in the form family's Studio Dark design.</b></p>
 <p align="center">
-<img src="https://img.shields.io/badge/version-0.24.5-f97316" alt="version 0.24.5">
+<img src="https://img.shields.io/badge/version-0.24.6-f97316" alt="version 0.24.6">
 <img src="https://img.shields.io/badge/node-22-339933" alt="node 22">
 <img src="https://img.shields.io/badge/python-3.12-3776AB" alt="python 3.12">
 <img src="https://img.shields.io/badge/license-Apache--2.0-lightgrey" alt="Apache 2.0 license">

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.6 · 2026-10-25
+
+- The engine answers only this computer's own Format window and agents. A web page open in a browser can no longer reach Format's terminals, chats or files.
+
 ## 0.24.5 · 2026-10-25
 
 - The window installs with no known vulnerable dependency: markdown-it 15.0.3 (a slow parse of some inline HTML and link definitions) and Vite 8.3.5 for the dev server.
