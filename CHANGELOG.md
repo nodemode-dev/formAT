@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.7 · 2026-10-25
+
+- A web page can no longer reach the engine through an image or a link.
+
 ## 0.24.6 · 2026-10-25
 
 - The engine answers only this computer's own Format window and agents. A web page open in a browser can no longer reach Format's terminals, chats or files.
