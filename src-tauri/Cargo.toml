@@ -1,6 +1,6 @@
 [package]
 name = "format"
-version = "0.24.4"
+version = "0.24.5"
 description = "Format desktop shell"
 authors = ["nodemode-ai"]
 license = "Apache-2.0"

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.5 · 2026-10-25
+
+- The window installs with no known vulnerable dependency: markdown-it 15.0.3 (a slow parse of some inline HTML and link definitions) and Vite 8.3.5 for the dev server.
+
 ## 0.24.4 · 2026-10-24
 
 - The copyright holder in LICENSE, NOTICE.md and the README is NodeAgentc, Inc.
