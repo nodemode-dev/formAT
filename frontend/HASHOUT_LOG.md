@@ -902,3 +902,12 @@ The orange `>_` frame was the last icon outside the redrawn Form family. At the 
 - logged: v0.24.0 · 2026-10-20
 
 The compact build drops the root svg's fixed `width="1024" height="1024"` so the favicon and the splash scale to their box. The bloom rect carries the same pair, and stripping every occurrence left it with no size, so the bloom never painted. Only the first occurrence (the root element) is removed.
+
+## package.json · dependency pins {#package-json}
+
+### package.json · markdown-it 15.0.3 and Vite 8.3.5, zero npm audit findings
+- refers-to: package.json :: `dependencies.markdown-it`, `devDependencies.vite`; package-lock.json (written by `npm install`, not by hand)
+- kind: rationale
+- logged: v0.24.5 · 2026-10-25
+
+Family rule from `FAMILY_DEV_PLAN.md` v0.4.x Phase 2b (formai_dev sidecar): every frontend installs with zero `npm audit` findings. Two were open. markdown-it 15.0.2 is in the shipped bundle (`src/ui/markdown.ts`) and carries a quadratic-time parse of inline HTML and of multi-line link reference definitions; 15.0.3 fixes both (ledger FB-002). Vite 8.3.0 brings a `launch-editor` with two command-injection advisories in the dev server (ledger FB-004); 8.3.5 clears them. Checked in the running window against the engine, Chromium at 1440 by 900, 4x CPU, 150 ms latency and about 1.6 Mbps, hard reload: layout shift 0, no page or console error; `renderMarkdown` imported in that page renders a heading, emphasis, escaped inline HTML, a reference link, a fenced block with its copy head, a list and KaTeX as before, and a 20000-tag input finishes inside 194 ms under the throttle.
