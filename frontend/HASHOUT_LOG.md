@@ -921,3 +921,12 @@ Family rule from `FAMILY_DEV_PLAN.md` v0.4.x Phase 2b (formai_dev sidecar): ever
 - logged: 0.25.0 · 2026-10-26
 
 FAMILY_TEST_PLAN section 4, F7: the built window (`npm run build`, `frontend/dist`) is served by the engine and opened in Chromium (Playwright 1.63.0, development only) at 4x CPU slowdown and 150 ms latency at about 1.6 Mbps. It must have a title, no request refused (403) or failed or answered 4xx or 5xx, no console or page error, and layout shift 0 after load, network idle and a 3 s settle. The engine starts on a free port with a temporary data folder and HOME, `FORMAT_SERVE_DIST=1` and `FORMAT_DIST` pointing at the build (the engine serves nothing from dist otherwise), and every `FORMAT_` variable of the caller cleared. The three provider keys are set to empty strings: the engine reads `backend/.env` only for keys absent from the environment, so an empty value keeps both the file and the caller's keys out, no provider is configured, and the page can reach no model provider or other network host. Pages: `/` (the window) and `/splash.html` (the desktop splash window, a separate document in `public/`). `IGNORED_REQUESTS` is empty: the window with no provider and an empty data folder makes no request that fails by design.
+
+### public/splash.html · the mark no longer jumps when the line under it arrives
+- refers-to: public/splash.html :: body, svg, p
+- kind: fix
+- logged: 0.25.0 · 2026-10-26 · ledger FB-119 (S3)
+
+The splash was a flex column of the mark, a 16 px gap and the line "Starting the Format engine", centred as a stack. The mark is a large inline SVG, so Chromium sometimes painted once after it and before the `p` was parsed: the mark was centred alone at y 418 and moved up 16 px to y 402 when the line arrived (layout shift 4.39e-5, node SVG, seen in 4 of 30 loads at 4x CPU on a loaded machine, 0 of 30 after). The mark and the line are now absolutely placed (`top: calc(50% - 48px)` for the mark, `calc(50% + 32px)` for the line) at the spots the centred stack reached with a one-line caption, so nothing depends on the line being in the document yet and the look is the same to within a pixel. The F7 script now names the shifting nodes in its failure.
+
+A run that failed once with `Page.goto: Page crashed` (renderer gone, a 386 s run with the machine's load average near 19) is the browser dying under memory pressure, not a request or a shift; it is not retried or ignored in the test.
