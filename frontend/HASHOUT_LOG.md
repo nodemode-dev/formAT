@@ -76,6 +76,7 @@ frontend/
 - [Chat feel: drop, skills, Allow all, follow, sides](#src-chat-feel)
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
+- [tests/window](#tests-window)
 
 ---
 
@@ -911,3 +912,12 @@ The compact build drops the root svg's fixed `width="1024" height="1024"` so the
 - logged: v0.24.5 · 2026-10-25
 
 Family rule from `FAMILY_DEV_PLAN.md` v0.4.x Phase 2b (formai_dev sidecar): every frontend installs with zero `npm audit` findings. Two were open. markdown-it 15.0.2 is in the shipped bundle (`src/ui/markdown.ts`) and carries a quadratic-time parse of inline HTML and of multi-line link reference definitions; 15.0.3 fixes both (ledger FB-002). Vite 8.3.0 brings a `launch-editor` with two command-injection advisories in the dev server (ledger FB-004); 8.3.5 clears them. Checked in the running window against the engine, Chromium at 1440 by 900, 4x CPU, 150 ms latency and about 1.6 Mbps, hard reload: layout shift 0, no page or console error; `renderMarkdown` imported in that page renders a heading, emphasis, escaped inline HTML, a reference link, a fenced block with its copy head, a list and KaTeX as before, and a 20000-tag input finishes inside 194 ms under the throttle.
+
+## tests/window {#tests-window}
+
+### test_window.py · F7, the window smoke
+- refers-to: tests/window/test_window.py :: ENGINE_ENV, PAGES, IGNORED_REQUESTS
+- kind: decision
+- logged: 0.25.0 · 2026-10-26
+
+FAMILY_TEST_PLAN section 4, F7: the built window (`npm run build`, `frontend/dist`) is served by the engine and opened in Chromium (Playwright 1.63.0, development only) at 4x CPU slowdown and 150 ms latency at about 1.6 Mbps. It must have a title, no request refused (403) or failed or answered 4xx or 5xx, no console or page error, and layout shift 0 after load, network idle and a 3 s settle. The engine starts on a free port with a temporary data folder and HOME, `FORMAT_SERVE_DIST=1` and `FORMAT_DIST` pointing at the build (the engine serves nothing from dist otherwise), and every `FORMAT_` variable of the caller cleared. The three provider keys are set to empty strings: the engine reads `backend/.env` only for keys absent from the environment, so an empty value keeps both the file and the caller's keys out, no provider is configured, and the page can reach no model provider or other network host. Pages: `/` (the window) and `/splash.html` (the desktop splash window, a separate document in `public/`). `IGNORED_REQUESTS` is empty: the window with no provider and an empty data folder makes no request that fails by design.

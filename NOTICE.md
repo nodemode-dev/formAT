@@ -14,6 +14,7 @@ Format · Copyright 2026 NodeAgentc, Inc. · Licensed under the Apache License, 
 | JetBrains Mono (`@fontsource/jetbrains-mono`) | OFL-1.1 | frontend fonts |
 | Vite, TypeScript | MIT, Apache-2.0 | frontend build only |
 | pytest 9.1.1 (`backend/requirements-test.txt`) | MIT | the test suite in `backend/tests` and CI only, never shipped; it also uses httpx, listed below |
+| Playwright for Python 1.63.0 | Apache-2.0 | the window smoke in `frontend/tests/window` and CI only, never installed in the app |
 | xterm.js (`@xterm/xterm`, `@xterm/addon-fit`) | MIT | terminal dock |
 | ptyprocess | ISC | engine terminals on macOS and Linux |
 | pywinpty | MIT | engine terminals on Windows |
