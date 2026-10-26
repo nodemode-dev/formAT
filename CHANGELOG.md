@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.0 · 2026-10-26
+
+- A test opens the built window in a browser under a slow processor and network and checks that it loads with no layout shift, no error and no refused or failed request; it runs on every change.
+- The desktop splash window's mark no longer moves up a few pixels when its line of text appears.
+
 ## 0.24.9 · 2026-10-26
 
 - A test suite checks the engine's guard, its MCP server and relay, the request it sends to the API, chat branches, edits and retries, tool approvals, artifact pages and share links, the other-devices gate, commands from the window, the command line and MCP, and opening older databases; it runs on every change. Nothing in the app changes.
