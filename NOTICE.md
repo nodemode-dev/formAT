@@ -13,6 +13,7 @@ Format · Copyright 2026 NodeAgentc, Inc. · Licensed under the Apache License, 
 | Inter (`@fontsource/inter`) | OFL-1.1 | frontend fonts |
 | JetBrains Mono (`@fontsource/jetbrains-mono`) | OFL-1.1 | frontend fonts |
 | Vite, TypeScript | MIT, Apache-2.0 | frontend build only |
+| pytest 9.1.1 (`backend/requirements-test.txt`) | MIT | the test suite in `backend/tests` and CI only, never shipped; it also uses httpx, listed below |
 | xterm.js (`@xterm/xterm`, `@xterm/addon-fit`) | MIT | terminal dock |
 | ptyprocess | ISC | engine terminals on macOS and Linux |
 | pywinpty | MIT | engine terminals on Windows |
