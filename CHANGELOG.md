@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.8 · 2026-10-26
+
+- The desktop release build keeps its symbols, since macOS builds fail on a stripped binary.
+
 ## 0.24.7 · 2026-10-25
 
 - A web page can no longer reach the engine through an image or a link.
