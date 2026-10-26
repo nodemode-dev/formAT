@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.24.9 · 2026-10-26
+
+- A test suite checks the engine's guard, its MCP server and relay, the request it sends to the API, chat branches, edits and retries, tool approvals, artifact pages and share links, the other-devices gate, commands from the window, the command line and MCP, and opening older databases; it runs on every change. Nothing in the app changes.
+
 ## 0.24.8 · 2026-10-26
 
 - The desktop release build keeps its symbols, since macOS builds fail on a stripped binary.
