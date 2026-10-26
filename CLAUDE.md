@@ -20,7 +20,7 @@ A.T, the Agentic Terminal: a chat and agent workspace on the Claude API, in the 
 
 ## Laws
 
-Single-region hand edits only (no sed, patch, git apply or scripted edits), zero DOM flash or re-render (verify under 4x CPU and slow network), no visible scrollbars anywhere, no emoji, no em dash in markdown, no icon-library dependencies, z-index only through tokens, near-zero comments with rationale in the HASHOUT logs, `v*.*.*` versions, Conventional Commits as `nodemode-ai <mackin@nodemode.ai>`.
+Tests live in `tests/` folders and run in CI; write only tests this plan or its successor names (the plan is `FAMILY_TEST_PLAN.md` in the formai_dev sidecar; for Format the tests observe it and change none of its shapes; `cd backend && python -m pytest tests` runs them). Single-region hand edits only (no sed, patch, git apply or scripted edits), zero DOM flash or re-render (verify under 4x CPU and slow network), no visible scrollbars anywhere, no emoji, no em dash in markdown, no icon-library dependencies, z-index only through tokens, near-zero comments with rationale in the HASHOUT logs, `v*.*.*` versions, Conventional Commits as `nodemode-ai <mackin@nodemode.ai>`.
 
 ## Trademarks, copyright and licences
 

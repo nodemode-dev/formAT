@@ -7,7 +7,7 @@ Instructions for coding agents (Codex, Cursor, Claude Code) working in this repo
 - Read `frontend/HASHOUT_LOG.md` or `backend/HASHOUT_LOG.md` before editing that side, and update it in the same change.
 - Edit existing files with single-region hand edits; no scripted or patch-applied edits.
 - No visible scrollbars, no layout shift, no re-render of a live container; z-index from `--z-*` tokens only.
-- No emoji; no em dash in markdown; no new tests unless the owner asks.
+- No emoji; no em dash in markdown; tests only as FAMILY_TEST_PLAN names them, in `backend/tests`, run in CI, observing Format without changing its shapes.
 - Commits: Conventional Commits, author `nodemode-ai <mackin@nodemode.ai>`.
 
 ## Skills

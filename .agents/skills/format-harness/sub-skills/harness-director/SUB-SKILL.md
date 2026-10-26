@@ -28,7 +28,7 @@ None. Read `references/architecture.md` once per session before routing a build 
 - The earlier checks still pass.
 - Each touched side's HASHOUT log has an entry with refers-to, kind and logged lines.
 - If a command was added, renamed or re-described: `./format agents sync` ran and its output is clean.
-- No rule slip: no scripted edits of repo files, no emoji, no em dash in markdown, no raw z-index, no new test files.
+- No rule slip: no scripted edits of repo files, no emoji, no em dash in markdown, no raw z-index, no test files beyond those FAMILY_TEST_PLAN names in `backend/tests`.
 
 ## Hands back
 

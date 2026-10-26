@@ -50,7 +50,7 @@ These come from the owner and hold for every change. The reasons matter, because
 - **Tokens only.** Colours and z-index come from tokens (`--z-*`); no raw z-index, no raw colours in Format's own sheets.
 - **No emoji, no em dash in markdown, no icon libraries** (inline currentColor SVG from `icons-ft.ts`).
 - **Near-zero comments.** Rationale goes in `frontend/HASHOUT_LOG.md` or `backend/HASHOUT_LOG.md`, in the same change. Read the log for a side before editing it.
-- **No self-written tests.** Verification is by running the app (scratch scripts outside the repo, the mock API), not by adding test files to the repo.
+- **Tests only as the family plan names them.** `backend/tests` holds the suite FAMILY_TEST_PLAN names (it observes Format and changes none of its shapes) and CI runs it; add no other test files. Other verification is by running the app (scratch scripts outside the repo, the mock API).
 - **Engine first.** A feature is a command; the window, CLI and MCP only dispatch it.
 - **Versions `v*.*.*`, Conventional Commits** as `nodemode-ai` with no session trailers (see `release-keeper`).
 
