@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.25.1 · 2026-10-30
+
+- The Windows desktop build passes its arguments on: `.\format.bat desktop build --config <file>` reaches `tauri build`, so the Windows installer carries the updater settings and signature like the macOS and Linux bundles.
+- The Windows build of the LGPL FFmpeg behind local dictation runs as a script of its own in MSYS2, uses Visual Studio's linker rather than MSYS2's `link`, syncs pacman's package list first, and stops with an error at the first step that fails. The configure line is unchanged.
+- Batch files check out with Windows line endings (`.gitattributes`).
+
 ## 0.25.0 · 2026-10-26
 
 - A test opens the built window in a browser under a slow processor and network and checks that it loads with no layout shift, no error and no refused or failed request; it runs on every change.
