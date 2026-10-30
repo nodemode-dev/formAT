@@ -46,7 +46,7 @@ Format · Copyright 2026 NodeAgentc, Inc. · Licensed under the Apache License, 
 
 ## FFmpeg source offer
 
-The FFmpeg libraries in Format's desktop release are the unmodified 8.0.3 release named above, built by `setup/build_lgpl_av` (Linux and macOS) or `setup/build_lgpl_av.bat` (Windows) with the configure line written there. Every GitHub release of Format attaches that exact source tarball beside the bundles (`setup/ffmpeg_source`). The libraries stay separate shared files inside the frozen engine, and Format's own source and build scripts are public, so a person can build the engine against their own FFmpeg (set `LGPL_FFMPEG_PREFIX` to it before `setup/build_lgpl_av` and `./build_app`).
+The FFmpeg libraries in Format's desktop release are the unmodified 8.0.3 release named above, built by `setup/build_lgpl_av` (Linux and macOS) or `setup/build_lgpl_av.bat` (Windows, which runs `setup/build_lgpl_ffmpeg_msys2` in MSYS2 with Visual Studio's compiler) with the configure line written there. Every GitHub release of Format attaches that exact source tarball beside the bundles (`setup/ffmpeg_source`). The libraries stay separate shared files inside the frozen engine, and Format's own source and build scripts are public, so a person can build the engine against their own FFmpeg (set `LGPL_FFMPEG_PREFIX` to it before `setup/build_lgpl_av` and `./build_app`).
 
 ## Desktop shell: crates under other licences
 

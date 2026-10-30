@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+set -euo pipefail
+say() { printf '[lgpl-av] %s\n' "$*"; }
+for v in FFMPEG_VERSION FFMPEG_SHA256 LGPL_FFMPEG_PREFIX LGPL_FFMPEG_WORK LGPL_MSVC_BIN; do
+  [ -n "${!v:-}" ] || { say "$v is not set; run setup\\build_lgpl_av.bat instead of this script"; exit 1; }
+done
+pacman -Sy --noconfirm --needed make diffutils nasm pkgconf
+msvc="$(cygpath -u "$LGPL_MSVC_BIN")"
+export PATH="$msvc:$PATH"
+banner="$(link 2>&1 || true)"
+case "$banner" in
+  *Microsoft*) ;;
+  *) say "link on PATH is not MSVC's linker: $(command -v link)"; exit 1 ;;
+esac
+for tool in cl nasm make pkg-config curl tar sha256sum; do
+  command -v "$tool" >/dev/null || { say "$tool was not found"; exit 1; }
+done
+work="$(cygpath -u "$LGPL_FFMPEG_WORK")"
+mkdir -p "$work"
+cd "$work"
+f="ffmpeg-$FFMPEG_VERSION.tar.xz"
+[ -f "$f" ] || curl -fL --retry 3 -o "$f" "https://ffmpeg.org/releases/$f"
+sum="$(sha256sum "$f" | cut -d' ' -f1)"
+[ "$sum" = "$FFMPEG_SHA256" ] || { rm -f "$f"; say "checksum mismatch for $f"; exit 1; }
+rm -rf src
+mkdir src
+tar -xJf "$f" -C src --strip-components 1
+cd src
+say "building FFmpeg $FFMPEG_VERSION (LGPL, shared, MSVC) into $LGPL_FFMPEG_PREFIX"
+./configure --toolchain=msvc --prefix="$(cygpath -m "$LGPL_FFMPEG_PREFIX")" --enable-shared --disable-static --disable-gpl --disable-nonfree --disable-version3 --disable-programs --disable-doc --disable-debug --disable-autodetect --disable-network >/dev/null || {
+  tail -n 40 ffbuild/config.log >&2 || true
+  say "FFmpeg's configure failed"
+  exit 1
+}
+make -j"$(nproc)" >/dev/null
+make install >/dev/null
