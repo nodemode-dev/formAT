@@ -70,7 +70,7 @@ On Windows run `.\format.bat` from this folder, never a bare `format`: outside t
 | `./format install-desktop` | PyInstaller, the browser and dictation packages, and the Rust and Tauri checks for the desktop app |
 | `./format freeze` | freeze the engine into the desktop app's sidecar (`src-tauri/binaries`) |
 | `./build_app` | build the desktop app start to finish on macOS or Linux: tools, Rust, packages, the frozen engine, the bundle, and on macOS the install in Applications |
-| `./format desktop dev`, `./format desktop build` | run the desktop app, or build it (`build` is `./build_app`; on Windows `.\format.bat desktop build` bundles .msi and setup.exe) |
+| `./format desktop dev`, `./format desktop build` | run the desktop app, or build it (`build` is `./build_app`; on Windows `.\format.bat desktop build` bundles .msi and setup.exe and passes any further arguments, such as `--config <file>`, to `tauri build`) |
 | `./format cli chat.send text="..."` then `chat.wait conversationId=...` | chat from the terminal or an agent |
 | `./format backend`, `./format frontend` | one side only |
 | `./format build`, `./format serve` | build the window, serve it from the engine |

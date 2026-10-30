@@ -9,10 +9,7 @@ if /i "%CMD%"=="dev" goto boot
 if /i "%CMD%"=="install" ( call setup\install_all.bat & goto :eof )
 if /i "%CMD%"=="install-desktop" ( call setup\install_desktop.bat & goto :eof )
 if /i "%CMD%"=="freeze" ( call setup\freeze_backend.bat & goto :eof )
-if /i "%CMD%"=="desktop" (
-  if /i "%~1"=="build" ( call setup\desktop_build.bat ) else ( call setup\desktop_dev.bat )
-  goto :eof
-)
+if /i "%CMD%"=="desktop" goto desktop
 if /i "%CMD%"=="backend" ( call backend\boot_backend.bat & goto :eof )
 if /i "%CMD%"=="frontend" ( call frontend\boot_frontend.bat & goto :eof )
 if /i "%CMD%"=="cli" goto cli
@@ -25,6 +22,10 @@ exit /b 2
 :boot
 start "format engine" cmd /c backend\boot_backend.bat
 call frontend\boot_frontend.bat
+goto :eof
+:desktop
+if /i not "%~1"=="build" ( call setup\desktop_dev.bat & goto :eof )
+call setup\desktop_build.bat %2 %3 %4 %5 %6 %7 %8 %9
 goto :eof
 :cli
 set "PY=python"
