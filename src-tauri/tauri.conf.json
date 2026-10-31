@@ -41,7 +41,9 @@
       "entitlements": "entitlements.plist"
     },
     "linux": {
-      "deb": { "section": "devel" }
+      "deb": { "section": "devel", "recommends": ["gstreamer1.0-plugins-base", "gstreamer1.0-plugins-good", "gstreamer1.0-libav"] },
+      "rpm": { "recommends": ["gstreamer1-plugins-base", "gstreamer1-plugins-good"] },
+      "appimage": { "bundleMediaFramework": true }
     },
     "createUpdaterArtifacts": false
   },
