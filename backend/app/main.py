@@ -1,4 +1,5 @@
 import logging
+import mimetypes
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
@@ -10,6 +11,10 @@ from starlette.routing import Route
 from app.core import config
 from app.core.local_guard import LocalGuard
 from app.routers import ROUTERS, mcp_http, shutdown, startup
+
+mimetypes.add_type("text/javascript", ".js")
+mimetypes.add_type("text/javascript", ".mjs")
+mimetypes.add_type("text/css", ".css")
 
 
 @asynccontextmanager

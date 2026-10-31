@@ -86,6 +86,7 @@ backend/
 - [app/engine/cmd_settings.py](#app-engine-cmd-settings)
 - [Skills invoked by name and Allow all](#skills-invoked)
 - [app/routers/stream.py](#app-routers-stream)
+- [app/main.py](#app-main)
 - [tests](#tests)
 
 ---
@@ -813,6 +814,15 @@ The family agent-stack standard, rule G4 (`AGENT_STACK_STANDARD.md` v0.2.0, owne
 Browsers label every request with `Sec-Fetch-Site`, and only a page on another site gets `cross-site`. So a request with no Origin is now refused when that header says `cross-site` (trimmed, case-insensitive). A request that carries an Origin is still decided by the Origin rule alone, and `same-site` is kept on purpose: a dev window on `localhost:5490` loading straight from `localhost:8490` is same-site, and no outside page can be same-site with localhost. `./format cli`, `mcp_stdio.py` and Claude Code's MCP client send neither header and pass as before.
 
 Checked against the running engine: no Origin with `cross-site` 403; `same-site`, `same-origin`, `none`, no header at all, and `cross-site` with the allowed dev Origin 200; foreign Host and an `evil.example` Origin still 403. In Chromium, a page served from `http://127.0.0.2:9901` with an `<img>` and a clicked link pointing at `/api/health` got 403 for both, shown in the engine log. The built window served by the engine (FORMAT_SERVE_DIST) in Chromium at 4x CPU, 150 ms latency and about 1.6 Mbps, two shift runs and one throttle run: layout shift 0, no errors, 0 refusals from the window in about 166 requests. `/mcp` `initialize` with no Origin 200; `mcp_stdio.py` initializes and lists 113 tools.
+
+## app/main.py {#app-main}
+
+### app/main.py · .js, .mjs and .css keep their types on Windows (v0.25.2)
+- refers-to: app/main.py :: the three mimetypes.add_type calls after the last import
+- kind: rationale
+- logged: v0.25.2 · 2026-10-31
+
+Python's `mimetypes` takes file types from the Windows registry (`HKEY_CLASSES_ROOT\.js`, value `Content Type`) over its own table, and some installers and editors set `.js` to `text/plain`. On those PCs the engine served the built window's scripts as `text/plain`, WebView2 refused every module script under strict MIME checking, and the desktop window stayed blank; macOS, Linux, dev mode (Vite serves the page) and Windows PCs with the default value never showed it. The three calls pin `.js` and `.mjs` to `text/javascript` and `.css` to `text/css`, which covers `StaticFiles`, `FileResponse` and any direct `guess_type`. They sit after the last import, not above the imports: a module that re-reads the registry while importing cannot undo them, and no import follows a statement (E402). They look redundant off Windows; keep them. Repro on a Windows PC: `reg add "HKCU\Software\Classes\.js" /v "Content Type" /d "text/plain" /f`, then launch the rebuilt app; restore with `/d "text/javascript"`. Checked here: with the table poisoned to `text/plain` for js, mjs and css through `mimetypes.init(files=...)`, the three calls return `text/javascript`, `text/javascript` and `text/css`; `py_compile` passes. Not yet run on a Windows PC.
 
 ## tests {#tests}
 
