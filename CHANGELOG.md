@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.2 · 2026-10-31
+
+- The Windows desktop app no longer opens to a blank window on PCs where an installer set the `.js` file type to `text/plain` in the registry: the engine now serves scripts and stylesheets with their real types.
+- On Linux, the .deb and .rpm recommend GStreamer's base, good and libav plugins and the AppImage carries the base and good ones, so video and audio previews play on a fresh install.
+
 ## 0.25.1 · 2026-10-30
 
 - The Windows desktop build passes its arguments on: `.\format.bat desktop build --config <file>` reaches `tauri build`, so the Windows installer carries the updater settings and signature like the macOS and Linux bundles.
