@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Format",
+  "productName": "FormAT",
   "mainBinaryName": "format",
   "version": "0.25.2",
   "identifier": "ai.nodemode.format",
@@ -11,7 +11,7 @@
     "windows": [
       {
         "label": "splash",
-        "title": "Format",
+        "title": "FormAT",
         "url": "splash.html",
         "width": 360,
         "height": 180,
