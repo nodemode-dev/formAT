@@ -24,9 +24,9 @@
 </p>
 
 <p align="center">
-  <img src="docs/images/format-hero.png" alt="FormAT showing a chat with a table and Python code on the left and a published dashboard artifact with a bar chart on the right" width="100%">
+  <img src="docs/images/format-hero.jpg" alt="FormAT with a chat in the middle describing an aurora page, the sidebar with projects and recent chats, and the Northern Light artifact preview on the right" width="100%">
   <br>
-  <sub>A chat in a project, with the dashboard Claude published open beside it.</sub>
+  <sub>A chat about an aurora page, with the Northern Light artifact open beside it.</sub>
 </p>
 
 <p align="center">
