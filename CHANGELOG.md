@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.25.3 · 2026-11-03
+
+- The app has a new unified icon on the desktop, the web favicon and the splash, and the compiled desktop app is named FormAT.
+- The repository lists @gbarnai as a co-owner in `.github/CODEOWNERS`.
+
 ## 0.25.2 · 2026-10-31
 
 - The Windows desktop app no longer opens to a blank window on PCs where an installer set the `.js` file type to `text/plain` in the registry: the engine now serves scripts and stylesheets with their real types.
