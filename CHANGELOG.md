@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.25.4 · 2026-11-03
+
+- The README is rewritten to the Form family layout with real screenshots in `docs/images/`.
+
 ## 0.25.3 · 2026-11-03
 
 - The app has a new unified icon on the desktop, the web favicon and the splash, and the compiled desktop app is named FormAT.
