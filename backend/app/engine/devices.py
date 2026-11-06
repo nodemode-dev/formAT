@@ -101,7 +101,7 @@ class Gate:
             return await self.api(scope, receive, send)
         path = scope.get("path") or "/"
         secret = _secret()
-        if path.startswith("/s/") or path == "/favicon.svg":
+        if path.startswith("/s/") or path in ("/favicon.svg", "/favicon.png"):
             return await self.inner(scope, receive, send)
         if scope["type"] == "http" and path == "/pair":
             q = dict(p.split("=", 1) for p in (scope.get("query_string") or b"").decode().split("&") if "=" in p)
