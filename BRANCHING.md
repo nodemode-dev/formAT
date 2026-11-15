@@ -20,7 +20,7 @@ Format has been built on `main` so far, one release at a time, with each release
 
 ## Tags
 
-**Releases.** Format builds nothing in this repository. After the version bump lands on main, push a branch `compile_vX.Y.Z` cut from that commit. CI runs on it, and formcompiler (`nodemode-ai/formcompiler`) picks it up on its next 8-hourly watch run, or at once when its watch is run by hand. It builds macOS, Linux and Windows bundles and opens a draft release `format-vX.Y.Z` on formcompiler's release page. Review the draft, then publish it there. The compile branch is kept as the record of what was built. Patch releases (`vX.Y.Z+1`) carry fixes only; minor releases carry a DEV_PLAN phase or part of one.
+**Releases.** Format builds nothing in this repository. After the version bump lands on main, push a branch `compile_vX.Y.Z` cut from that commit. CI runs on it, and formcompiler (`nodemode-dev/formcompiler`) picks it up on its next 8-hourly watch run, or at once when its watch is run by hand. It builds macOS, Linux and Windows bundles and opens a draft release `format-vX.Y.Z` on formcompiler's release page. Review the draft, then publish it there. The compile branch is kept as the record of what was built. Patch releases (`vX.Y.Z+1`) carry fixes only; minor releases carry a DEV_PLAN phase or part of one.
 
 ## Authorship
 

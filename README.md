@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 0.26.0" src="https://img.shields.io/badge/version-0.26.0-eef0f4?style=flat-square">
+  <img alt="version 0.26.1" src="https://img.shields.io/badge/version-0.26.1-eef0f4?style=flat-square">
   <img alt="TypeScript and Vite" src="https://img.shields.io/badge/TypeScript-Vite-3178c6?style=flat-square&logo=typescript&logoColor=white">
   <img alt="Python and FastAPI" src="https://img.shields.io/badge/Python-FastAPI-009688?style=flat-square">
   <img alt="macOS, Windows and Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
@@ -120,8 +120,8 @@ Prefer it in your browser, or want to contribute? Run the web UI straight from t
 **Requires:** Node 20.19 or newer (22 recommended), Python 3.12 or newer, git. ffmpeg on the PATH for video and audio.
 
 ```sh
-git clone git@github.com:nodemode-dev/format.git
-cd format
+git clone git@github.com:nodemode-dev/formAT.git
+cd formAT
 ./format_oc_install   # engine venv, frontend packages, backend/.env from the example
 ./format              # engine on 127.0.0.1:8490, web UI at http://localhost:5490
 ```
@@ -141,7 +141,7 @@ Add `ANTHROPIC_API_KEY` in `backend/.env` or in Settings. No key? If Claude Code
 > [!IMPORTANT]
 > **Status:** active, pre-1.0. The native renderer is optional and off by default, and the window's terminal stays the browser one. See [`CHANGELOG.md`](CHANGELOG.md).
 
-**Contributing:** branch from `main`, keep changes to source here, and leave packaging and releases to FormCompiler. See [`BRANCHING.md`](BRANCHING.md) and [`AGENTS.md`](AGENTS.md).
+**Contributing:** branch from `main`, keep changes to source here, and leave packaging and releases to FormCompiler. See [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`BRANCHING.md`](BRANCHING.md) and [`AGENTS.md`](AGENTS.md). Report security issues privately as [`SECURITY.md`](SECURITY.md) describes.
 
 ## Repository
 
@@ -152,7 +152,7 @@ Add `ANTHROPIC_API_KEY` in `backend/.env` or in Settings. No key? If Claude Code
 | `setup/` | install, boot, build, serve, doctor and the CLI |
 | `src-tauri/` | the Tauri 2 desktop shell |
 
-Docs: [`docs/`](docs/README.md) · Wiki: [`.docs/wiki`](.docs/wiki/Home.md) · Agents: [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md) · Contributing: [`BRANCHING.md`](BRANCHING.md)
+Docs: [`docs/`](docs/README.md) · Wiki: [`.docs/wiki`](.docs/wiki/Home.md) · Agents: [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md) · Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`SECURITY.md`](SECURITY.md), [`BRANCHING.md`](BRANCHING.md)
 
 ---
 

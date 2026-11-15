@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.26.1 · 2026-11-15
+
+- The Orrery's credits are complete: the file that comes with the Orrery page (CREDITS.md in Outputs) and `NOTICE.md` now give, for each of the 26 NASA surface maps, the credit line and the source page as NASA Science states them, what the page says the map is, and the terms. They also say plainly that not every map is a photograph: Venus is a radar map with gaps filled in, and the Saturn, Neptune and Titan textures are artists' or concept textures. If your sidebar already holds the Orrery chat it keeps the earlier credits file; delete the chat and choose Help, Demos to bring it back with the new one.
+- `NOTICE.md` also records that the Sun, Mercury, Uranus, the rings and Earth's clouds in the Orrery are drawn by the page's own code and are FormAT's own work under the Apache License 2.0.
+- The repository has a code of conduct (`CODE_OF_CONDUCT.md`), a contributing guide (`CONTRIBUTING.md`) and a security policy (`SECURITY.md`), which says how to report a vulnerability privately. The README links them.
+- The README's clone line names the repository as it is, `formAT`, and the docs and the release skill give formcompiler's address as `nodemode-dev/formcompiler`.
+
 ## 0.26.0 · 2026-11-15
 
 - FormAT has menus: File, Edit, View, Go, Window and Help, in the window's top bar on Windows, Linux and in a browser, and in the system menu bar on macOS. Every command is there with its shortcut, and F10 or Alt with a menu's first letter opens the bar from the keyboard. New shortcuts: Mod+, for Settings and Alt+Mod+H for Home; the icon and name at the top of the sidebar also go Home.
