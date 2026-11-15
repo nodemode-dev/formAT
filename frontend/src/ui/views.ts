@@ -1,5 +1,6 @@
 import { run } from '../engine-client/api';
 import type { AppState, ArtifactSummary, KeyStatus, VoiceEngines } from '../state/app-state';
+import { askDeleteArtifact } from './confirm';
 import { el, esc, modKey, q, setText } from './dom';
 import { ui } from './icons-ft';
 import { openMenu } from './menu';
@@ -47,8 +48,12 @@ export class ArtifactsView {
       { label: 'Open', icon: 'artifacts', action: () => this.open(a) },
       { label: 'Go to the chat', icon: 'chat', action: () => this.openChat(a.conversationId) },
       { divider: true },
-      { label: 'Delete', icon: 'trash', action: () => void run('artifact.delete', { id: a.id }).catch(() => undefined) },
+      { label: 'Delete', icon: 'trash', action: () => void this.remove(a) },
     ], 'down');
+  }
+
+  private async remove(a: ArtifactSummary): Promise<void> {
+    if (await askDeleteArtifact(a.title)) await run('artifact.delete', { id: a.id }).catch(() => undefined);
   }
 
   async refresh(): Promise<void> {
@@ -73,6 +78,8 @@ export interface InfoLike {
   providers: Record<string, boolean>;
   commands: number;
   desktop?: boolean;
+  keysFile?: string;
+  envFile?: string | null;
 }
 
 const PROVIDERS: Array<[string, string, string]> = [
@@ -170,7 +177,7 @@ export class SettingsView {
         </div>
       </section>`);
     prefs.add('API keys', 'key', `
-      <p class="ft-set-note">A key saved here is stored in FormAT's data folder with owner-only permissions and takes precedence over <code>backend/.env</code>. You can keep keys in <code>backend/.env</code> instead (copy <code>backend/.env.example</code>); remove the saved key here and the .env one is used again. Keys never come back to this window.</p>
+      <p class="ft-set-note ft-keys-note">A key saved here is stored in FormAT's data folder with owner-only permissions. Keys never come back to this window.</p>
       ${PROVIDERS.map(([id, label, note]) => `<section class="ft-prefs-group ft-key-row" data-p="${id}">
           <div class="ft-key-head"><h3 class="ft-prefs-label">${label}</h3><span class="ft-key-status">checking</span></div>
           <small class="ft-key-note">${esc(note)}</small>
@@ -374,6 +381,13 @@ export class SettingsView {
     set('version', `v${info.version}`);
     set('dataDir', info.dataDir);
     set('commands', String(info.commands));
+    const where = info.keysFile ? `, in <code>${esc(info.keysFile)}</code>,` : '';
+    const rest = info.envFile
+      ? `It takes precedence over <code>backend/.env</code>. You can keep keys in <code>backend/.env</code> instead (copy <code>backend/.env.example</code>); remove the saved key here and the .env one is used again.`
+      : 'If no key is saved here, FormAT uses one set in the environment it was started from (ANTHROPIC_API_KEY, OPENAI_API_KEY or ELEVENLABS_API_KEY); removing the saved key here goes back to that one.';
+    const note = q(this.root, '.ft-keys-note');
+    const html = `A key saved here is stored in FormAT's data folder${where} with owner-only permissions. ${rest} Keys never come back to this window.`;
+    if (note.dataset.v !== html) { note.dataset.v = html; note.innerHTML = html; }
     void run<{ enabled: boolean; built: boolean; adapter?: string; backend?: string; error?: string }>('native.status').then((n) => {
       set('native', !n.built ? 'not built (optional: ./format native build)' : !n.enabled ? 'built, off (start FormAT with FORMAT_NATIVE=1)' : n.adapter ? `on: ${n.adapter}, ${n.backend}` : `on, but ${n.error ?? 'no GPU adapter'}`);
     }).catch(() => set('native', 'unknown'));

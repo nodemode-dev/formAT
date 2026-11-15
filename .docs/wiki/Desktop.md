@@ -6,10 +6,10 @@ The desktop app follows formlit and formvis: a Tauri 2 shell in `src-tauri/` and
 
 1. The shell shows a small undecorated `splash` window (`frontend/public/splash.html`, copied into `frontend/dist`): the family's card, with a bar that fills over the 2.6 s the splash stays at least.
 2. It spawns the sidecar with `FORMAT_DESKTOP=1` and `FORMAT_PARENT_PID`, and copies every line it prints to `<app log dir>/engine.log`.
-3. `backend/format_engine.py` points `FORMAT_DATA_DIR` at the platform's app-data folder, `FORMAT_DIST` at the bundled window, picks port 8490 or a free one, takes the login shell's PATH (macOS GUI apps get a bare one), starts a thread that exits when the shell's process is gone, and runs uvicorn.
-4. The shell waits for uvicorn's `Uvicorn running on http://127.0.0.1:<port>` line and builds the `main` window on that URL, unseen (on macOS on screen at alpha 0, so the page keeps rendering). If the engine exits first, it hides the splash and shows the last 40 lines of its output.
+3. `backend/format_engine.py` points `FORMAT_DATA_DIR` at the platform's app-data folder, `FORMAT_DIST` at the bundled window, picks port 8490 or a free one, takes the data folder (an OS lock on `engine.lock` there, `backend/app/core/instance.py`; a second engine on the same folder waits 3 s, then prints "FormAT is already running on the data folder ..." and exits with 2; `startup()` takes the same lock for engines started from source), locks a marker file in its own one-file unpack folder and, in the background, removes the `_MEI<launcher pid as 8 hex digits>...` folders beside it whose launcher is gone and whose marker nobody holds (or, without a marker, that are shaped like an older FormAT's: `frontend_dist` and `app/demos`), takes the login shell's PATH (macOS GUI apps get a bare one), starts a thread that exits when the shell's process or the launcher is gone (removing its own unpack folder first on macOS and Linux), and runs uvicorn.
+4. The shell waits for uvicorn's `Uvicorn running on http://127.0.0.1:<port>` line and builds the `main` window on that URL, unseen (on macOS on screen at alpha 0, so the page keeps rendering). If the engine exits first, or the sidecar cannot be spawned at all, it hides the splash, shows an error dialog with the last 40 lines of its output (or the spawn error) and the path of `engine.log`, and exits with 1.
 5. When the page has drawn it calls the shell command `app_ready` (`frontend/src/main.ts`). The shell (`src-tauri/src/reveal.rs`) waits out the rest of the 2.6 s, lets the splash finish its bar, shows the window whole and closes the splash. If the page never calls, the window is shown after 20 s.
-6. On quit the shell kills the sidecar.
+6. On quit the shell sends the sidecar SIGTERM on macOS and Linux (the one-file launcher passes it to the server, which stops, and then removes its unpack folder) and kills it only if it is still there after 1.5 s; on Windows it kills it.
 
 ## What the shell handles
 
@@ -21,6 +21,7 @@ The desktop app follows formlit and formvis: a Tauri 2 shell in `src-tauri/` and
 | Microphone | `on_permission_request` | granted to the page; macOS still asks the person once (Info.plist `NSMicrophoneUsageDescription`, entitlement `device.audio-input`) |
 | Menus on macOS | the page, through `window.__TAURI__.menu` (`frontend/src/ui/native-menu.ts`) | File, Edit, View, Go, Window and Help in the system menu bar, built from the window's command registry; Copy, Paste, Undo and the like are the system's own items. On Windows and Linux the same menus are a bar in the window's title row |
 | Updates | `tauri-plugin-updater` | only when `plugins.updater.pubkey` is set |
+| A second launch | `tauri-plugin-single-instance`, registered first | the second process exits at once; the running one shows and focuses its splash or main window |
 
 The page calls into the shell in two places only, both through the injected global `window.__TAURI__` (no npm package): `app_ready` and, on macOS, the menu and window APIs. The page is a remote origin to Tauri (`http://127.0.0.1:<port>`), so `src-tauri/capabilities/default.json` lists that address and the permissions, and `build.rs` declares `app_ready` so its permission is generated. In a browser the global is absent and the same window code runs without it.
 

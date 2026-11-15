@@ -15,6 +15,7 @@ Python 3.12, FastAPI, in `backend/app`.
 | Module | Owns |
 | --- | --- |
 | `core/config.py` | ports, folders, version |
+| `core/instance.py` | one engine per data folder: an OS lock on `engine.lock` |
 | `engine/commands.py`, `events.py`, `store.py` | the registry, the event bus, SQLite |
 | `engine/cmd_chat.py`, `chat.py` | sending, the reply loop, stop, retry, edit, branch, compact, wait |
 | `harness/`, `providers/` | building Claude API requests; one adapter per provider |

@@ -5,7 +5,7 @@ interface ItemHandle { setEnabled(on: boolean): Promise<void>; setChecked?(on: b
 interface ItemOptions { text: string; enabled: boolean; action: () => void; accelerator?: string }
 interface SubmenuHandle { setAsWindowsMenuForNSApp?(): Promise<void>; setAsHelpMenuForNSApp?(): Promise<void> }
 interface MenuApi {
-  Menu: { 'new'(opts: { items: unknown[] }): Promise<{ setAsAppMenu(): Promise<unknown> }> };
+  Menu: { 'new'(opts: { items: unknown[] }): Promise<{ setAsAppMenu(): Promise<unknown> }>; 'default'(): Promise<{ setAsAppMenu(): Promise<unknown> }> };
   Submenu: { 'new'(opts: { text: string; items: unknown[] }): Promise<SubmenuHandle> };
   MenuItem: { 'new'(opts: ItemOptions): Promise<ItemHandle> };
   CheckMenuItem: { 'new'(opts: ItemOptions & { checked: boolean }): Promise<ItemHandle> };
@@ -64,6 +64,24 @@ export class NativeMenus {
     for (const ev of ['pointerup', 'keyup', 'focusin', 'focusout'] as const) window.addEventListener(ev, () => { if (this.items.length) this.refresh(); }, { passive: true });
   }
 
+  async apply(): Promise<void> {
+    if (menusInWindow()) await this.release();
+    else await this.build();
+  }
+
+  private async release(): Promise<void> {
+    if (this.building) { this.again = true; return; }
+    this.building = true;
+    try {
+      this.items = [];
+      document.documentElement.classList.remove('has-native-menus');
+      await (await (await menuApi()).Menu.default()).setAsAppMenu();
+    } finally {
+      this.building = false;
+      if (this.again) { this.again = false; void this.apply().catch(() => undefined); }
+    }
+  }
+
   async build(): Promise<void> {
     if (this.building) { this.again = true; return; }
     this.building = true;
@@ -113,7 +131,7 @@ export class NativeMenus {
       throw err;
     } finally {
       this.building = false;
-      if (this.again) { this.again = false; void this.build().catch(() => undefined); }
+      if (this.again) { this.again = false; void this.apply().catch(() => undefined); }
     }
   }
 

@@ -13,6 +13,10 @@ def _path() -> Path:
     return config.data_dir() / "secrets.json"
 
 
+def location() -> Path:
+    return _path()
+
+
 def _read() -> dict:
     p = _path()
     if not p.is_file():

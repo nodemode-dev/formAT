@@ -3,7 +3,7 @@ from app.engine.commands import CommandError, command
 
 
 @command("demo.list", "Demos", mutates=False,
-         description="The demo chats Format ships with: each one's id, chat title, artifact title, number of output files, and conversationId, which is null when the person deleted that demo. A demo is a recorded chat stored like any other; reading one needs no API key and calls no model.")
+         description="The demo chats Format ships with: each one's id, chat title, one-line blurb and order (from the demo folder's about.json, which the window reads to list the demos), artifact title, number of output files, and conversationId, which is null when the person deleted that demo. A demo is a recorded chat stored like any other; reading one needs no API key and calls no model.")
 def list_() -> dict:
     return {"demos": demos.list_()}
 

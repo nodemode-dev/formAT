@@ -28,6 +28,12 @@ export class EventStream {
     this.socket?.close();
   }
 
+  retryNow(): void {
+    if (this.stopped || this.socket?.readyState !== WebSocket.CLOSED) return;
+    window.clearTimeout(this.timer);
+    this.connect();
+  }
+
   on(fn: Listener): () => void {
     this.listeners.add(fn);
     return () => this.listeners.delete(fn);

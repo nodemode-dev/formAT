@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.26.3 · 2026-11-15
+
+- The desktop app tidies up after itself. On macOS and Linux, quitting removes the folder the engine unpacks into the temporary folder, where it used to leave one per launch; at every start the engine also removes such folders left by a crash or by an older version, and keeps any that belong to a FormAT that is still running or to another program. On Windows quitting is unchanged, and the clean-up at the next start is new there too.
+- FormAT runs once. Opening the desktop app while it is already open brings the open window forward instead of starting a second one, and a second engine on the same data folder refuses to start and says which folder is in use.
+- If the desktop app cannot start its engine at all, it now shows a message with the place of its log and then closes, where it used to close without a word.
+- The window notices a stopped engine within a second or two. The line under the message box says so, every other page shows a notice at the bottom, and both go away by themselves when the engine is back. A chat that was shown as working when the engine stopped is no longer shown as working.
+- Deleting a project, a scheduled task or an artifact asks first, with a sheet that says what is deleted and what is kept, like deleting a chat. Errors on the Projects page now appear on that page.
+- The bottom row of the message box fits narrow windows: at 1000 by 700 with the sidebar and a side panel open, the model name is no longer cut off and the line about the missing key wraps onto two lines.
+- Settings, API keys says where your keys are kept, and talks about `backend/.env` only when you run FormAT from the source. On macOS, View, Menus in Window takes effect at once.
+- Turning on Other devices no longer silences the engine's log, and the log never holds a pairing code or a share link's token: the line for such a request stays, with the secret replaced by `<redacted>`. A chat can no longer get stuck on "A reply is already running" after a reply or a summary failed to start.
+- On Windows, `.\format.bat` now has `build`, `serve`, `doctor`, `clean`, `install-voice` and `install-browser`, as `./format` does, and the script that packs the engine no longer runs two options together.
+- Demo chats: the list in the Help menu comes from the engine. A demo you have not changed is brought up to date with the app's copy at the next start; one you renamed, continued or added files to stays as you left it, and deleting it and restoring it from Help, Demos gives the new copy.
+- The Orrery page has a Credits button listing the credit line and the source page of each of its 26 NASA maps. Every figure on the page is now quoted from a NASA page or marked as converted or computed, and the new file `FIGURES.md` in Outputs gives the page and the date behind each one; 49 entries changed to match NASA's words. The page's source and its build script are in `tools/demos/orrery`.
+- Outputs shows each file's description under its name, and Download all saves one zip named after the chat ("<chat title> - all files.zip"), so it is not mistaken for a zip that is one of the files.
+- Engine: `app.info` also returns `keysFile` and `envFile`, and `demo.list` also returns each demo's `blurb` and `order` (still 114 commands). New dependency in the desktop shell: `tauri-plugin-single-instance` 2.5.5 (Apache-2.0 or MIT).
+
 ## 0.26.2 · 2026-11-15
 
 - The desktop app's updater looks for new versions at `nodemode-dev/formcompiler`, where formcompiler publishes them, instead of the old `nodemode-ai` address. The updater's signing key is unchanged.

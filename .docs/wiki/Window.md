@@ -9,14 +9,15 @@ Vanilla TypeScript and Vite in `frontend/src`. No framework: each view is a clas
 | `main.ts` | the boot frame, the engine probe, the event stream |
 | `app.ts` | the shell, views, side track (`data-ft-side`: artifact, files, browser), layout toggles, keys, the palette's entries, event dispatch |
 | `state/app-state.ts` | the in-memory state and its topics (`conversations`, `messages`, `skills`, `plugins`, ...) |
-| `engine-client/` | `run(id, params)` for commands, `EventStream` for events |
+| `engine-client/` | `run(id, params)` for commands, `EventStream` for events, `watchEngine` (`watch.ts`) for whether the engine still answers |
 | `ui/sidebar.ts`, `composer.ts`, `chat-view.ts`, `tool-cards.ts`, `markdown.ts` | the conversation |
 | `ui/artifact-panel.ts`, `doc-view.ts`, `files-pane.ts`, `browser-pane.ts`, `side-panel.ts` | the side track and Outputs |
 | `ui/views.ts`, `customize-view.ts`, `projects-view.ts`, `scheduled-view.ts` | pages |
 | `ui/commands.ts`, `app-menu.ts`, `menubar.ts`, `native-menu.ts` | the command registry (ids, labels, keys, enabled, checked), FormAT's commands and six menus, the bar in the title row, and the same menus in the macOS menu bar |
 | `ui/prefs-window.ts` | the settings window's shell (rail, stacked sections, the wire); its controls are in `views.ts` and `memory-panel.ts` |
-| `ui/confirm.ts` | the confirm sheet |
-| `demos.ts` | the demo chats the window knows by id, and where they sit in the sidebar |
+| `ui/confirm.ts` | the confirm sheet: deleting a chat, a project, a scheduled task or an artifact goes through it |
+| `ui/engine-note.ts` | the notice at the bottom of every page but the chat while the engine is not answering |
+| `demos.ts` | the demo list the window takes from `demo.list` at load (title, blurb, order), and where the demo chats sit in the sidebar and the Help menu |
 | `ui/icons-ft.ts` | every icon, inline SVG paths drawn in `currentColor` |
 | `styles/` | the family's vendored Studio Dark sheets unchanged, and Format's `ft-*.css` |
 

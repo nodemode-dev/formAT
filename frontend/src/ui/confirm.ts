@@ -37,6 +37,18 @@ export function confirmSheet(title: string, note: string, action: string): Promi
   return new Promise((resolve) => { settle = resolve; });
 }
 
+export function askDeleteProject(name: string): Promise<boolean> {
+  return confirmSheet('Delete this project?', `"${name}" is deleted with its instructions, its list of files and its memory. Its chats are kept and move out of the project. This cannot be undone.`, 'Delete');
+}
+
+export function askDeleteSchedule(name: string): Promise<boolean> {
+  return confirmSheet('Delete this scheduled task?', `"${name}" stops running and is deleted with its run history. The chats its earlier runs made are kept. This cannot be undone.`, 'Delete');
+}
+
+export function askDeleteArtifact(title: string): Promise<boolean> {
+  return confirmSheet('Delete this artifact?', `"${title}" is deleted with all of its versions. The chat that made it is kept. This cannot be undone.`, 'Delete');
+}
+
 export async function deleteChat(chat: { id: string; title: string; demo?: string | null }): Promise<void> {
   const note = `"${chat.title}" is deleted with its messages, artifacts and files. This cannot be undone.${chat.demo ? ' A demo can be brought back from Help, Demos.' : ''}`;
   if (await confirmSheet('Delete this chat?', note, 'Delete')) await run('conversation.delete', { id: chat.id }).catch(() => undefined);

@@ -7,7 +7,7 @@ use std::sync::{Arc, Mutex};
 
 use tauri::webview::{DownloadEvent, NewWindowResponse, PermissionKind, PermissionResponse};
 use tauri::{Manager, RunEvent, Theme, Url, WebviewUrl, WebviewWindowBuilder};
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_opener::OpenerExt;
 use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
@@ -23,15 +23,62 @@ const SCREEN_FRACTION: f64 = 0.88;
 const LOG_TAIL: usize = 40;
 
 fn kill_backend(handle: &tauri::AppHandle) {
-    if let Some(child) = handle.state::<Backend>().0.lock().unwrap().take() {
+    let child = handle.state::<Backend>().0.lock().ok().and_then(|mut slot| slot.take());
+    if let Some(child) = child {
+        #[cfg(unix)]
+        {
+            let pid = child.pid().to_string();
+            let signal = |sig: &str| {
+                std::process::Command::new("kill")
+                    .args([sig, pid.as_str()])
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .status()
+                    .is_ok_and(|s| s.success())
+            };
+            if signal("-TERM") {
+                for _ in 0..30 {
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    if !signal("-0") {
+                        return;
+                    }
+                }
+            }
+        }
         let _ = child.kill();
     }
 }
 
+fn engine_log_path(handle: &tauri::AppHandle) -> Option<PathBuf> {
+    handle.path().app_log_dir().ok().map(|dir| dir.join("engine.log"))
+}
+
 fn engine_log(handle: &tauri::AppHandle) -> Option<std::fs::File> {
-    let dir = handle.path().app_log_dir().ok()?;
-    std::fs::create_dir_all(&dir).ok()?;
-    std::fs::File::create(dir.join("engine.log")).ok()
+    let path = engine_log_path(handle)?;
+    std::fs::create_dir_all(path.parent()?).ok()?;
+    std::fs::File::create(path).ok()
+}
+
+fn engine_failed(handle: &tauri::AppHandle, message: &str) {
+    if let Some(splash) = handle.get_webview_window("splash") {
+        let _ = splash.hide();
+    }
+    let place = engine_log_path(handle).map(|p| format!("\n\nThe engine's log is at:\n{}", p.display())).unwrap_or_default();
+    handle
+        .dialog()
+        .message(format!("{message}{place}"))
+        .title("FormAT")
+        .kind(MessageDialogKind::Error)
+        .blocking_show();
+    kill_backend(handle);
+    handle.exit(1);
+}
+
+fn focus_running(app: &tauri::AppHandle) {
+    let Some(window) = app.get_webview_window("splash").or_else(|| app.get_webview_window("main")) else { return };
+    let _ = window.unminimize();
+    let _ = window.show();
+    let _ = window.set_focus();
 }
 
 fn check_for_updates(handle: tauri::AppHandle) {
@@ -162,6 +209,7 @@ fn open_main(handle: &tauri::AppHandle, port: u16) {
 fn main() {
     reveal::mark_launch();
     let app = tauri::Builder::default()
+        .plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| focus_running(app)))
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
@@ -171,14 +219,24 @@ fn main() {
         .setup(|app| {
             let handle = app.handle().clone();
             reveal::round_splash(&handle);
-            let (mut rx, child) = app
-                .shell()
-                .sidecar("format-engine")
-                .expect("sidecar binary is bundled")
-                .env("FORMAT_DESKTOP", "1")
-                .env("FORMAT_PARENT_PID", std::process::id().to_string())
-                .spawn()
-                .expect("the Format engine failed to spawn");
+            let spawned = app.shell().sidecar("format-engine").and_then(|command| {
+                command
+                    .env("FORMAT_DESKTOP", "1")
+                    .env("FORMAT_PARENT_PID", std::process::id().to_string())
+                    .spawn()
+            });
+            let (mut rx, child) = match spawned {
+                Ok(started) => started,
+                Err(err) => {
+                    if let Some(mut file) = engine_log(&handle) {
+                        let _ = writeln!(file, "the engine could not be started: {err}");
+                    }
+                    tauri::async_runtime::spawn(async move {
+                        engine_failed(&handle, &format!("FormAT could not start its engine ({err}).\n\nReinstalling FormAT usually fixes this."));
+                    });
+                    return Ok(());
+                }
+            };
             app.state::<Backend>().0.lock().unwrap().replace(child);
 
             tauri::async_runtime::spawn(async move {
@@ -217,16 +275,7 @@ fn main() {
                     }
                 }
                 if port.is_none() {
-                    if let Some(splash) = handle.get_webview_window("splash") {
-                        let _ = splash.hide();
-                    }
-                    handle
-                        .dialog()
-                        .message(format!("The FormAT engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")))
-                        .title("FormAT")
-                        .blocking_show();
-                    kill_backend(&handle);
-                    std::process::exit(1);
+                    engine_failed(&handle, &format!("The FormAT engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")));
                 }
             });
             Ok(())

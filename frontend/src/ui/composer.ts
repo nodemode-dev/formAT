@@ -46,6 +46,7 @@ export class Composer {
   private pickRow: HTMLElement;
   private notice: HTMLElement;
   private alertTimer = 0;
+  private offline = '';
   private attachRow: HTMLElement;
   private files: Pending[] = [];
   private research = false;
@@ -126,7 +127,7 @@ export class Composer {
         <textarea class="ft-composer-input" rows="1" placeholder="How can FormAT help?" aria-label="Message"></textarea>
         <div class="ft-composer-send-row"><button type="button" class="ft-send" aria-label="Send" title="Send (Enter)" disabled>${ui('send')}</button></div>
       </div>
-      <div class="ft-composer-bar">
+      <div class="ft-composer-bar"><div class="ft-bar-row">
         <div class="ft-bar-left">
           <button type="button" class="ft-icon-btn ft-plus" data-menu-anchor aria-label="Add" title="Add files, skills, connectors">${ui('plus')}</button>
           <button type="button" class="ft-icon-btn ft-mic" aria-label="Dictation" aria-pressed="false" title="Dictation">${ui('mic')}</button>
@@ -140,7 +141,7 @@ export class Composer {
           <button type="button" class="ft-text-btn ft-model" data-menu-anchor aria-label="Model and effort"><span class="ft-model-name"></span><span class="ft-muted ft-model-effort"></span>${ui('chevronDown', 14)}</button>
           <button type="button" class="ft-text-btn ft-mode" data-menu-anchor aria-label="Permission mode"></button>
         </div>
-      </div>
+      </div></div>
       <input type="file" class="ft-hidden-file" multiple hidden>
     </div>`);
     this.input = q(this.root, '.ft-composer-input');
@@ -271,8 +272,20 @@ export class Composer {
     this.alertTimer = window.setTimeout(() => this.settle(), 6000);
   }
 
+  setOffline(msg: string): void {
+    if (msg === this.offline) return;
+    this.offline = msg;
+    if (msg) this.flash(msg);
+    else this.settle();
+  }
+
   private settle(): void {
     window.clearTimeout(this.alertTimer);
+    if (this.offline) {
+      setText(this.notice, this.offline);
+      setAttr(this.notice, 'title', this.offline);
+      return;
+    }
     this.notice.classList.remove('is-alert');
     this.renderSettings();
   }

@@ -76,4 +76,8 @@ Two page quirks, noted so nobody is misled: the Miranda page lists its download 
 
 ## Figures
 
-The numbers in the information panel were checked against NASA's planetary fact sheets (`https://nssdc.gsfc.nasa.gov/planetary/factsheet/`) and NASA Science pages (`https://science.nasa.gov/`) on 15 November 2026. Moon counts change as discoveries are confirmed; the page shows 115 for Jupiter, 274 for Saturn, 28 for Uranus and 16 for Neptune, as those pages gave them on that date.
+The numbers in the information panel were checked against NASA's planetary fact sheets (`https://nssdc.gsfc.nasa.gov/planetary/factsheet/`) and NASA Science pages (`https://science.nasa.gov/`) on 15 November 2026. Moon counts change as discoveries are confirmed; the page shows 115 for Jupiter (NASA's Jupiter moons page, `https://science.nasa.gov/jupiter/jupiter-moons/`, last updated 21 September 2026), 274 for Saturn, 28 for Uranus and 16 for Neptune, as those pages gave them on that date. `FIGURES.md`, the next file in this chat, gives the page and the words behind every figure, and says which values are converted (a radius doubled, hours turned into days) or computed.
+
+## In the page
+
+The Orrery's own Credits button, at the top left of the page, lists the credit line of each of the 26 maps given above with a link to its source page, and says which parts the page generates itself and where its figures come from.

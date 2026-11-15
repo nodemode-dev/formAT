@@ -5,6 +5,8 @@ export interface CommandReply<T> {
   error?: string;
 }
 
+export const NOT_ANSWERING = "FormAT's engine is not answering. Try again in a moment.";
+
 export class EngineError extends Error {
   constructor(message: string, readonly command: string, readonly status: number) {
     super(message);
@@ -23,7 +25,7 @@ export async function run<T>(id: string, params: Record<string, unknown> = {}): 
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
   }).catch(() => {
-    throw new EngineError("FormAT's engine is not answering. Try again in a moment.", id, 0);
+    throw new EngineError(NOT_ANSWERING, id, 0);
   });
   let body: CommandReply<T>;
   try {

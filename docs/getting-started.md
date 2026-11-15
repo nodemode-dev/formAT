@@ -19,7 +19,7 @@ The quickest way in is the desktop app for macOS, Windows or Linux: install it a
 ./format doctor         # checks the toolchain, the installs, the key and the ports
 ```
 
-On Windows run `.\format_oc_install.bat` and `.\format.bat` from the repository folder. Never type a bare `format` outside it: that is Windows' disk formatter.
+On Windows run `.\format_oc_install.bat` and `.\format.bat` from the repository folder; `.\format.bat` has `doctor`, `build`, `serve`, `clean`, `install-voice` and `install-browser` too. Never type a bare `format` outside it: that is Windows' disk formatter.
 
 Two optional parts install separately:
 
@@ -42,7 +42,7 @@ FormAT's own tools (artifacts, documents, memory, the built-in browser) belong t
 
 ## Your API key
 
-Open Settings, API keys and paste the key. It is stored in FormAT's data folder, readable only by your user. You can instead put `ANTHROPIC_API_KEY=...` in `backend/.env`; a key saved in Settings wins. The models menu lists the models your key can use, read from the API.
+Open Settings, API keys and paste the key. It is stored in FormAT's data folder, readable only by your user. Running from source, you can instead put `ANTHROPIC_API_KEY=...` in `backend/.env`; in the desktop app, set it in the environment FormAT starts from. A key saved in Settings wins. The models menu lists the models your key can use, read from the API.
 
 ## The window at a glance
 
@@ -55,7 +55,7 @@ Open Settings, API keys and paste the key. It is stored in FormAT's data folder,
 
 ## Demo chats
 
-FormAT starts with three recorded chats under **Demos** in the sidebar: Aurora page, Orrery page and Ferry dashboard. Opening one needs no API key and sends nothing: you read the conversation, its page runs beside it, Orrery page lists the credit line, source page and terms of each of its 26 NASA surface maps in Outputs, and Ferry dashboard lists its files there (a zip you can import into form.md, and each file in it). They are ordinary chats: with a key you can continue one, and you can rename, pin or delete them. A deleted demo stays deleted; Help, Demos brings it back and opens it. The pages are drawn in code and the ferry data is invented.
+FormAT starts with three recorded chats under **Demos** in the sidebar: Aurora page, Orrery page and Ferry dashboard. Opening one needs no API key and sends nothing: you read the conversation, its page runs beside it, Orrery page has a Credits button at the top of its page that lists the credit line and source page of each of its 26 NASA surface maps, and lists the same credits, terms and the NASA page behind each figure in Outputs, and Ferry dashboard lists its files there (a zip you can import into form.md, and each file in it). They are ordinary chats: with a key you can continue one, and you can rename, pin or delete them. A deleted demo stays deleted; Help, Demos brings it back and opens it. When a new version of FormAT improves a demo, a demo chat you have not touched is updated at the next start; one you renamed or continued stays as you left it, and deleting it and restoring it from Help, Demos brings back the new one. The pages are drawn in code and the ferry data is invented.
 
 ## Where your data lives
 

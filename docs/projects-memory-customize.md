@@ -8,6 +8,8 @@ The Projects page holds projects. Each has:
 - **Knowledge files**, given to Claude at the start of each chat in it.
 - **Its chats**. New chat in this project starts one; a chat's title menu has Move to project. A crumb in the top bar shows a chat's project.
 
+Deleting a project asks first. Its instructions, its list of files and its memory go with it; its chats are kept and leave the project. A failure on this page, such as a file that did not upload, is shown at the top of the page.
+
 ## Memory
 
 Turn on Memory in Settings. Claude then keeps notes in a local folder that carries across chats: one for chats outside projects and one per project. Settings shows the notes; read, edit or delete them there.

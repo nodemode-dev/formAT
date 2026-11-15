@@ -1,6 +1,7 @@
 import tempfile
 import zipfile
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
@@ -66,7 +67,11 @@ def outputs_zip(cid: str) -> StreamingResponse:
             if path.is_file():
                 zf.write(path, o["path"])
     buf.seek(0)
-    return StreamingResponse(buf, media_type="application/zip", headers={"content-disposition": 'attachment; filename="outputs.zip"'})
+    name = tools.outputs_zip_name(cid)
+    plain = "".join(ch for ch in name if ch.isascii() and ch not in '"\\').strip()
+    if plain.startswith("- "):
+        plain = "outputs.zip"
+    return StreamingResponse(buf, media_type="application/zip", headers={"content-disposition": f"attachment; filename=\"{plain}\"; filename*=UTF-8''{quote(name)}"})
 
 
 CDN = "https://cdnjs.cloudflare.com https://cdn.jsdelivr.net https://unpkg.com"

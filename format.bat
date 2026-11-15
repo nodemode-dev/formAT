@@ -7,16 +7,22 @@ if not "%~1"=="" shift
 if /i "%CMD%"=="boot" goto boot
 if /i "%CMD%"=="dev" goto boot
 if /i "%CMD%"=="install" ( call setup\install_all.bat & goto :eof )
+if /i "%CMD%"=="install-voice" ( call setup\install_voice.bat & goto :eof )
+if /i "%CMD%"=="install-browser" ( call setup\install_browser.bat & goto :eof )
 if /i "%CMD%"=="install-desktop" ( call setup\install_desktop.bat & goto :eof )
 if /i "%CMD%"=="freeze" ( call setup\freeze_backend.bat & goto :eof )
 if /i "%CMD%"=="desktop" goto desktop
 if /i "%CMD%"=="backend" ( call backend\boot_backend.bat & goto :eof )
 if /i "%CMD%"=="frontend" ( call frontend\boot_frontend.bat & goto :eof )
+if /i "%CMD%"=="build" ( call setup\build_frontend.bat & goto :eof )
+if /i "%CMD%"=="serve" ( call setup\serve.bat & goto :eof )
 if /i "%CMD%"=="cli" goto cli
 if /i "%CMD%"=="mcp" goto mcp
 if /i "%CMD%"=="native" goto native
 if /i "%CMD%"=="agents" goto agents
-echo usage: .\format.bat [boot^|install^|install-desktop^|freeze^|desktop dev^|desktop build^|backend^|frontend^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync^|install [--user]]]
+if /i "%CMD%"=="doctor" ( call setup\doctor.bat & goto :eof )
+if /i "%CMD%"=="clean" ( call setup\clean.bat %1 & goto :eof )
+echo usage: .\format.bat [boot^|install^|install-voice^|install-browser^|install-desktop^|freeze^|desktop dev^|desktop build^|backend^|frontend^|build^|serve^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync^|install [--user]]^|doctor^|clean [--all]]
 echo Always run it as .\format.bat from this folder: plain "format" elsewhere is Windows' disk formatter.
 exit /b 2
 :boot

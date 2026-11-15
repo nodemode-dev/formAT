@@ -1,12 +1,12 @@
 import { run } from '../engine-client/api';
 import type { AppState, FileInfo, ProjectDetail, ProjectSummary } from '../state/app-state';
+import { askDeleteProject } from './confirm';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
 export interface ProjectsHooks {
   openChat(id: string): void;
   newChatIn(projectId: string): void;
-  showError(message: string): void;
 }
 
 function when(ts: number): string {
@@ -30,6 +30,8 @@ export class ProjectsView {
   private editForm: HTMLElement;
   private instr: HTMLTextAreaElement;
   private instrMsg: HTMLElement;
+  private toast: HTMLElement;
+  private toastTimer = 0;
   private files: HTMLElement;
   private chats: HTMLElement;
   private picker: HTMLInputElement;
@@ -42,6 +44,7 @@ export class ProjectsView {
 
   constructor(private state: AppState, private hooks: ProjectsHooks) {
     this.root = el(`<section class="ft-page ft-projects" data-view="projects" hidden>
+      <div class="ft-proj-toast-wrap"><p class="ft-proj-toast" role="alert" hidden></p></div>
       <div class="ft-proj-list">
         <header class="ft-proj-head"><h1>Projects</h1><button type="button" class="ft-btn ft-btn-primary ft-proj-new">${ui('plus', 16)}<span>New project</span></button></header>
         <div class="ft-proj-form ft-proj-create" hidden>
@@ -92,6 +95,7 @@ export class ProjectsView {
     this.editForm = q(this.root, '.ft-proj-edit');
     this.instr = q<HTMLTextAreaElement>(this.root, '.ft-proj-instr');
     this.instrMsg = q(this.root, '.ft-proj-instr-msg');
+    this.toast = q(this.root, '.ft-proj-toast');
     this.files = q(this.root, '.ft-proj-files');
     this.chats = q(this.root, '.ft-proj-chats');
     this.picker = q<HTMLInputElement>(this.root, '.ft-proj-picker');
@@ -102,14 +106,14 @@ export class ProjectsView {
     q<HTMLInputElement>(this.createForm, '[data-f=name]').addEventListener('keydown', (e) => { if (e.key === 'Enter') void this.create(); });
     this.grid.addEventListener('click', (e) => {
       const id = (e.target as HTMLElement).closest<HTMLElement>('[data-id]')?.dataset.id;
-      if (id) void this.open(id);
+      if (id) void this.open(id).catch((err) => this.say(err));
     });
     q(this.root, '.ft-proj-back').addEventListener('click', () => this.showList());
     q(this.root, '.ft-proj-chat').addEventListener('click', () => { if (this.current) this.hooks.newChatIn(this.current.id); });
     q(this.root, '.ft-proj-edit-open').addEventListener('click', () => this.openEdit());
     q(this.root, '.ft-proj-edit-cancel').addEventListener('click', () => { this.editForm.hidden = true; });
     q(this.root, '.ft-proj-edit-go').addEventListener('click', () => void this.saveEdit());
-    q(this.root, '.ft-proj-delete').addEventListener('click', (e) => void this.remove(e.currentTarget as HTMLButtonElement));
+    q(this.root, '.ft-proj-delete').addEventListener('click', () => void this.remove());
     q(this.root, '.ft-proj-instr-save').addEventListener('click', () => void this.saveInstructions());
     this.instr.addEventListener('input', () => {
       this.dirty = this.instr.value !== (this.current?.instructions ?? '');
@@ -119,7 +123,7 @@ export class ProjectsView {
     this.picker.addEventListener('change', () => { void this.addFiles([...(this.picker.files ?? [])]); this.picker.value = ''; });
     this.files.addEventListener('click', (e) => {
       const id = (e.target as HTMLElement).closest<HTMLElement>('[data-remove]')?.dataset.remove;
-      if (id && this.current) void run('project.removeFile', { id: this.current.id, uploadId: id }).catch((err) => this.hooks.showError(String(err instanceof Error ? err.message : err)));
+      if (id && this.current) void run('project.removeFile', { id: this.current.id, uploadId: id }).catch((err) => this.say(err));
     });
     this.chats.addEventListener('click', (e) => {
       const id = (e.target as HTMLElement).closest<HTMLElement>('[data-chat]')?.dataset.chat;
@@ -139,6 +143,20 @@ export class ProjectsView {
     return this.detail.hidden ? null : this.current?.id ?? null;
   }
 
+  say(err: unknown): void {
+    const text = err instanceof Error ? err.message : String(err);
+    setText(this.toast, text);
+    setAttr(this.toast, 'title', text);
+    if (this.toast.hidden) this.toast.hidden = false;
+    window.clearTimeout(this.toastTimer);
+    this.toastTimer = window.setTimeout(() => this.hush(), 8000);
+  }
+
+  private hush(): void {
+    window.clearTimeout(this.toastTimer);
+    if (!this.toast.hidden) this.toast.hidden = true;
+  }
+
   private openCreate(): void {
     q<HTMLInputElement>(this.createForm, '[data-f=name]').value = '';
     q<HTMLTextAreaElement>(this.createForm, '[data-f=description]').value = '';
@@ -151,15 +169,17 @@ export class ProjectsView {
     const name = q<HTMLInputElement>(this.createForm, '[data-f=name]').value.trim();
     const description = q<HTMLTextAreaElement>(this.createForm, '[data-f=description]').value.trim();
     if (!name) { setText(q(this.createForm, '.ft-proj-msg'), 'Give the project a name.'); return; }
+    let p: ProjectSummary;
     try {
-      const p = await run<ProjectSummary>('project.create', { name, description });
-      this.state.projects.set(p.id, p);
-      this.state.emit('projects');
-      this.createForm.hidden = true;
-      await this.open(p.id);
+      p = await run<ProjectSummary>('project.create', { name, description });
     } catch (err) {
       setText(q(this.createForm, '.ft-proj-msg'), err instanceof Error ? err.message : String(err));
+      return;
     }
+    this.state.projects.set(p.id, p);
+    this.state.emit('projects');
+    this.createForm.hidden = true;
+    await this.open(p.id).catch((err) => this.say(err));
   }
 
   renderList(): void {
@@ -184,6 +204,7 @@ export class ProjectsView {
   }
 
   showList(): void {
+    this.hush();
     ++this.seq;
     this.current = null;
     if (this.detail.hidden === false) this.detail.hidden = true;
@@ -248,8 +269,6 @@ export class ProjectsView {
     });
     const noChats = q(this.root, '.ft-proj-chats-none');
     if (noChats.hidden !== p.chatList.length > 0) noChats.hidden = p.chatList.length > 0;
-    const del = q<HTMLButtonElement>(this.root, '.ft-proj-delete');
-    if (fresh && del.dataset.armed) { delete del.dataset.armed; del.textContent = 'Delete project'; setAttr(del, 'aria-label', null); }
   }
 
   private openEdit(): void {
@@ -268,7 +287,7 @@ export class ProjectsView {
       await run('project.update', { id: this.current.id, name, description });
       this.editForm.hidden = true;
     } catch (err) {
-      this.hooks.showError(err instanceof Error ? err.message : String(err));
+      this.say(err);
     }
   }
 
@@ -283,22 +302,14 @@ export class ProjectsView {
     }
   }
 
-  private async remove(btn: HTMLButtonElement): Promise<void> {
-    if (!this.current) return;
-    if (!btn.dataset.armed) {
-      btn.dataset.armed = '1';
-      btn.textContent = 'Delete? Its chats are kept';
-      setAttr(btn, 'aria-label', 'Confirm deleting the project; its chats are kept');
-      return;
-    }
+  private async remove(): Promise<void> {
+    const p = this.current;
+    if (!p || !(await askDeleteProject(p.name))) return;
     try {
-      await run('project.delete', { id: this.current.id });
+      await run('project.delete', { id: p.id });
     } catch (err) {
-      this.hooks.showError(err instanceof Error ? err.message : String(err));
+      this.say(err);
     }
-    delete btn.dataset.armed;
-    btn.textContent = 'Delete project';
-    setAttr(btn, 'aria-label', null);
   }
 
   private async addFiles(list: File[]): Promise<void> {
@@ -315,7 +326,7 @@ export class ProjectsView {
         if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
         await run('project.addFile', { id: pid, uploadId: (body.file as FileInfo).id });
       } catch (err) {
-        this.hooks.showError(`${f.name}: ${err instanceof Error ? err.message : String(err)}`);
+        this.say(`${f.name}: ${err instanceof Error ? err.message : String(err)}`);
       }
       this.uploads.splice(this.uploads.indexOf(f.name), 1);
     }

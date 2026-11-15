@@ -7,19 +7,21 @@ export interface DemoDef {
   blurb: string;
 }
 
-export const DEMOS: readonly DemoDef[] = [
-  { id: 'northern-light', title: 'Aurora page', blurb: 'A calm animated page: the northern lights over a mountain lake, reacting to the pointer.' },
-  { id: 'solar-system', title: 'Orrery page', blurb: 'A 3D model of the solar system: fly to any planet, watch its moons orbit and read its figures.' },
-  { id: 'harbour-ferries', title: 'Ferry dashboard', blurb: 'An operations dashboard for an invented ferry operator, with its data as a form.md import package in Outputs.' },
-];
+let demos: readonly DemoDef[] = [];
+
+export const demoList = (): readonly DemoDef[] => demos;
+
+export function setDemoList(found: readonly DemoDef[]): void {
+  demos = found.map(({ id, title, blurb }) => ({ id, title, blurb }));
+}
 
 export const DEMO_GROUP = 'Demos';
 
 export const demoCommand = (id: string): string => `demo-${id}`;
 
 const rank = (c: Conversation): number => {
-  const at = DEMOS.findIndex((d) => d.id === c.demo);
-  return at < 0 ? DEMOS.length : at;
+  const at = demos.findIndex((d) => d.id === c.demo);
+  return at < 0 ? demos.length : at;
 };
 
 export function demosFirst(sorted: Conversation[]): Conversation[] {

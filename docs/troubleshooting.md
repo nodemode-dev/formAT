@@ -4,10 +4,11 @@ Start with `./format doctor`: it checks Node, Python, the installs, your key and
 
 | Problem | What to do |
 | --- | --- |
-| "No API key yet" in the sidebar | add your Anthropic key in Settings, API keys, or `ANTHROPIC_API_KEY` in `backend/.env` |
+| "No API key yet" in the sidebar | add your Anthropic key in Settings, API keys (from source, `ANTHROPIC_API_KEY` in `backend/.env` also works) |
 | The models menu shows a short built-in list | your key could not reach the models endpoint; the message under the list says why |
 | Port 8490 or 5490 in use | another FormAT, or another program, holds it; stop it, or set `FORMAT_PORT` for the engine |
-| The window says the engine is not answering | the engine stopped; start it again with `./format` (the window reconnects by itself) |
+| The window says the engine is not answering | the engine stopped (within a few seconds the line under the message box says so, and on every other page a notice at the bottom of the window does); start it again with `./format` (the window reconnects by itself) |
+| The engine stops at once with "FormAT is already running on the data folder" | another FormAT engine uses the same data folder; close it, or start this one with `FORMAT_DATA_DIR` set to another folder |
 | Dictation says no transcription engine | add an ElevenLabs key (Scribe v2) or an OpenAI key, or run `./format install-voice`; Chrome, Edge and Safari can also use the browser's recognition |
 | Dictation says the local speech model could not be loaded | `./format install-voice` downloads large-v3-turbo from Hugging Face; check the network and run it again, or set `FORMAT_WHISPER_MODEL` to a model folder on this computer (an older `.env` may still say `base`) |
 | Dictation says ElevenLabs transcription failed (401) | the ElevenLabs key is wrong or lacks speech to text; save a new one in Settings, API keys |
@@ -19,4 +20,4 @@ Start with `./format doctor`: it checks Node, Python, the installs, your key and
 | A connector shows an error | open it in Customize and Reconnect; the message says what failed |
 | An outside agent gets "blocked" | Settings, Outside agents |
 
-On Windows use `.\format.bat`, never a bare `format`.
+On Windows use `.\format.bat` (`.\format.bat doctor`, `.\format.bat install-voice` and so on), never a bare `format`.

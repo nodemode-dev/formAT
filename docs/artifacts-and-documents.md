@@ -10,7 +10,7 @@ When Claude publishes a page, an app or a small tool, the reply shows a card. Op
 
 Pages run in a sandbox: they cannot read FormAT or your files, and they load scripts only from the common CDNs. Settings, Tools can let them load images and data from the internet.
 
-The Artifacts page in the sidebar lists every artifact from every chat.
+The Artifacts page in the sidebar lists every artifact from every chat. Delete in a row's menu asks first, removes the artifact with all its versions and keeps the chat that made it.
 
 ## Documents, spreadsheets and slides
 
@@ -32,4 +32,4 @@ The folder button in the top bar lists every file in the chat's folder and previ
 
 ## Outputs
 
-The Outputs button (Mod+.) opens a floating card: Progress (Claude's plan), the files Claude sent you with Download and Download all (a .zip), and Used in this session (your uploads, the searches, pages, commands and file changes).
+The Outputs button (Mod+.) opens a floating card: Progress (Claude's plan), the files Claude sent you, each with its caption and a Download arrow, and Download all (one .zip of everything in the list, saved as the chat's title followed by "- all files.zip", so it is never confused with a zip that is itself one of the files), and Used in this session (your uploads, the searches, pages, commands and file changes).

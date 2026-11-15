@@ -91,9 +91,92 @@ def watch_parent() -> None:
     def loop() -> None:
         while alive(parent) and (not launcher or os.getppid() == launcher):
             time.sleep(0.5)
+        unpacked = getattr(sys, "_MEIPASS", "")
+        if os.name == "posix" and os.path.basename(unpacked).startswith("_MEI"):
+            import shutil
+            shutil.rmtree(unpacked, ignore_errors=True)
         os._exit(0)
 
     threading.Thread(target=loop, name="format-parent-watch", daemon=True).start()
+
+
+UNPACK_MARK = ".format-engine-running"
+_unpack_hold = None
+
+
+def unpack_dir() -> str:
+    unpacked = getattr(sys, "_MEIPASS", "")
+    return unpacked if os.path.basename(unpacked).startswith("_MEI") else ""
+
+
+def launcher_alive(pid: int) -> bool:
+    if os.name == "nt":
+        import ctypes
+        handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
+        if not handle:
+            return False
+        code = ctypes.c_ulong()
+        ctypes.windll.kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return code.value == 259
+    try:
+        os.kill(pid, 0)
+    except (ProcessLookupError, PermissionError):
+        return False
+    return True
+
+
+def hold_unpack() -> None:
+    global _unpack_hold
+    own = unpack_dir()
+    if not own:
+        return
+    from app.core import instance
+    try:
+        f = open(os.path.join(own, UNPACK_MARK), "a+", encoding="utf-8")
+    except OSError:
+        return
+    if instance.try_lock(f):
+        _unpack_hold = f
+    else:
+        f.close()
+
+
+def sweep_stale_unpacks() -> None:
+    own = unpack_dir()
+    if not own:
+        return
+    import re
+    import shutil
+    from app.core import instance
+
+    def unused(folder: str) -> bool:
+        mark = os.path.join(folder, UNPACK_MARK)
+        if not os.path.isfile(mark):
+            return os.path.isdir(os.path.join(folder, "frontend_dist")) and os.path.isdir(os.path.join(folder, "app", "demos"))
+        try:
+            f = open(mark, "a+", encoding="utf-8")
+        except OSError:
+            return False
+        try:
+            return instance.try_lock(f)
+        finally:
+            f.close()
+
+    def run() -> None:
+        root, mine = os.path.split(own)
+        try:
+            names = os.listdir(root)
+        except OSError:
+            return
+        for name in names:
+            m = re.fullmatch(r"_MEI([0-9a-f]{8}).+", name)
+            folder = os.path.join(root, name)
+            if not m or name == mine or launcher_alive(int(m.group(1), 16)) or not unused(folder):
+                continue
+            shutil.rmtree(folder, ignore_errors=True)
+
+    threading.Thread(target=run, name="format-unpack-sweep", daemon=True).start()
 
 
 def prepare_env() -> None:
@@ -157,6 +240,14 @@ def main() -> int:
         prepare_env()
         return selfcheck()
     prepare_env()
+    from app.core import instance
+    try:
+        instance.claim(Path(os.environ["FORMAT_DATA_DIR"]))
+    except instance.AlreadyRunning as err:
+        print(err, file=sys.stderr, flush=True)
+        return 2
+    hold_unpack()
+    sweep_stale_unpacks()
     adopt_login_path()
     watch_parent()
     import uvicorn
