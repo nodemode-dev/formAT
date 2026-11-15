@@ -9,6 +9,7 @@ export interface DemoDef {
 
 export const DEMOS: readonly DemoDef[] = [
   { id: 'northern-light', title: 'Aurora page', blurb: 'A calm animated page: the northern lights over a mountain lake, reacting to the pointer.' },
+  { id: 'solar-system', title: 'Orrery page', blurb: 'A 3D model of the solar system: fly to any planet, watch its moons orbit and read its figures.' },
   { id: 'harbour-ferries', title: 'Ferry dashboard', blurb: 'An operations dashboard for an invented ferry operator, with its data as a form.md import package in Outputs.' },
 ];
 

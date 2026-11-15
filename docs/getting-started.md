@@ -54,7 +54,7 @@ Open Settings, API keys and paste the key. It is stored in FormAT's data folder,
 
 ## Demo chats
 
-FormAT starts with two recorded chats under **Demos** in the sidebar: Aurora page and Ferry dashboard. Opening one needs no API key and sends nothing: you read the conversation, its page runs beside it, and Ferry dashboard lists its files in Outputs (a zip you can import into form.md, and each file in it). They are ordinary chats: with a key you can continue one, and you can rename, pin or delete them. A deleted demo stays deleted; Help, Demos brings it back and opens it. The pages are drawn in code and the ferry data is invented.
+FormAT starts with three recorded chats under **Demos** in the sidebar: Aurora page, Orrery page and Ferry dashboard. Opening one needs no API key and sends nothing: you read the conversation, its page runs beside it, Orrery page lists the credits for its NASA surface maps in Outputs, and Ferry dashboard lists its files there (a zip you can import into form.md, and each file in it). They are ordinary chats: with a key you can continue one, and you can rename, pin or delete them. A deleted demo stays deleted; Help, Demos brings it back and opens it. The pages are drawn in code and the ferry data is invented.
 
 ## Where your data lives
 
