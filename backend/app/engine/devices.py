@@ -1,7 +1,9 @@
 import asyncio
 import hmac
 import json
+import logging
 import os
+import re
 import secrets
 import socket
 from http.cookies import SimpleCookie
@@ -19,6 +21,31 @@ COOKIE = "format_pair"
 _server = None
 _task = None
 _loop: asyncio.AbstractEventLoop | None = None
+_SECRET_IN_URL = re.compile(r"(/pair\?)[^\s\"]*|([?&]code=)[^&\s\"]*|(/s/)[^\s/?\"]+")
+
+
+def _blank(value: object) -> object:
+    if not isinstance(value, str):
+        return value
+    return _SECRET_IN_URL.sub(lambda m: (m.group(1) or m.group(2) or m.group(3)) + "<redacted>", value)
+
+
+class _Redact(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        record.msg = _blank(record.msg)
+        if isinstance(record.args, tuple):
+            record.args = tuple(_blank(a) for a in record.args)
+        return True
+
+
+def redact_logs() -> None:
+    for name in ("uvicorn.access", "uvicorn.error"):
+        target = logging.getLogger(name)
+        if not any(isinstance(f, _Redact) for f in target.filters):
+            target.addFilter(_Redact())
+
+
+redact_logs()
 
 
 def bind(loop: asyncio.AbstractEventLoop) -> None:
@@ -132,6 +159,7 @@ async def _serve() -> None:
     from starlette.staticfiles import StaticFiles
 
     from app.main import app
+    redact_logs()
     cfg = uvicorn.Config(Gate(app, StaticFiles(directory=str(_dist()), html=True)), host="0.0.0.0", port=LAN_PORT, lifespan="off", log_config=None, log_level=None)
     _server = uvicorn.Server(cfg)
     _server.capture_signals = contextlib.nullcontext
