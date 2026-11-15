@@ -135,10 +135,10 @@ export class BrowserPane {
       else delete this.body.dataset.busy;
     }
     const missing = s.available && s.installed === false;
-    const note = !s.available ? 'The built-in browser is not installed. Run ./format install-browser, then restart Format.'
+    const note = !s.available ? 'The built-in browser is not installed. Run ./format install-browser, then restart FormAT.'
       : s.installing ? `${s.note || 'Downloading Chromium'} (about 150 MB, once). This takes a minute or two.`
       : s.error ? s.error
-      : missing ? 'The built-in browser needs Chromium, downloaded once (about 150 MB). Sign-ins you make here stay in Format.'
+      : missing ? 'The built-in browser needs Chromium, downloaded once (about 150 MB). Sign-ins you make here stay in FormAT.'
       : 'Type a URL above to browse here. Claude uses this same browser when it needs to click through a site, and you can watch and take over.';
     setText(this.note, note);
     const btn = q<HTMLButtonElement>(this.root, '.ft-br-install');

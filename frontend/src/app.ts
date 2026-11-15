@@ -24,6 +24,7 @@ import { ScheduledView, type ScheduleSummary } from './ui/scheduled-view';
 import { BackgroundPanel } from './ui/background-panel';
 import { FindBar } from './ui/find-bar';
 import { mountMenus, type AppMenus } from './ui/app-menu';
+import { formatKeys } from './ui/commands';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -152,21 +153,21 @@ export class App {
     this.state.on('active', () => this.refreshOutputs());
     this.dock = new TerminalDock(() => this.toggle('term', false));
     this.palette = new Palette(this.state, () => [
-      { label: 'New chat', icon: 'plus', hint: `${modKey}⇧O`, run: () => this.newChat() },
-      { label: 'Toggle sidebar', icon: 'sidebar', hint: `${modKey}B`, run: () => this.toggle('sidebar') },
-      { label: 'Toggle outputs', icon: 'outputs', hint: `${modKey}.`, run: () => this.toggle('panel') },
+      { label: 'New chat', icon: 'plus', hint: this.menus.keyLabel('new-chat'), run: () => this.newChat() },
+      { label: 'Toggle sidebar', icon: 'sidebar', hint: this.menus.keyLabel('toggle-sidebar'), run: () => this.toggle('sidebar') },
+      { label: 'Toggle outputs', icon: 'outputs', hint: this.menus.keyLabel('toggle-outputs'), run: () => this.toggle('panel') },
       { label: 'Artifacts', icon: 'artifacts', run: () => this.setView('artifacts') },
       { label: 'Projects', icon: 'projects', run: () => this.setView('projects') },
       { label: 'Scheduled', icon: 'clock', run: () => this.setView('scheduled') },
-      { label: 'Find in page', icon: 'search', hint: `${modKey}F`, run: () => this.find.open() },
+      { label: 'Find in page', icon: 'search', hint: this.menus.keyLabel('find'), run: () => this.find.open() },
       { label: 'Background work', icon: 'activity', run: () => this.background.toggle(q(this.shell, '.ft-bg-toggle')) },
       { label: 'Files in this chat', icon: 'folder', run: () => this.toggleFiles() },
       { label: 'Browser', icon: 'globe', run: () => this.toggleBrowser() },
       { label: 'API keys', icon: 'key', run: () => this.openSettings('keys') },
-      { label: 'Keyboard shortcuts', icon: 'customize', hint: `${modKey}/`, run: () => this.shortcuts() },
+      { label: 'Keyboard shortcuts', icon: 'customize', hint: this.menus.keyLabel('shortcuts'), run: () => this.shortcuts() },
       { label: 'Summarize earlier messages', icon: 'compress', run: () => this.compactNow() },
       { label: 'Account', icon: 'user', run: () => this.openSettings('account') },
-      { label: 'Toggle terminal', icon: 'terminal', hint: `${modKey}J`, run: () => this.toggle('term') },
+      { label: 'Toggle terminal', icon: 'terminal', hint: this.menus.keyLabel('toggle-terminal'), run: () => this.toggle('term') },
       { label: 'Settings', icon: 'settings', run: () => this.openSettings() },
       { label: 'Customize', icon: 'customize', run: () => this.setView('customize') },
     ], (id) => void this.openChat(id));
@@ -323,7 +324,8 @@ export class App {
   private shortcuts(): void {
     let sheet = document.getElementById('ft-shortcuts');
     if (!sheet) {
-      const rows: Array<[string, string]> = [['New chat', `${modKey}⇧O`], ['Command palette and search', `${modKey}K`], ['Sidebar open or rail', `${modKey}B`], ['Terminal', `${modKey}J`], ['Outputs', `${modKey}.`], ['Add files', `${modKey}U`], ['Find in page', `${modKey}F`], ['Keyboard shortcuts', `${modKey}/`], ['Home', this.menus.keyLabel('home')], ['Settings', this.menus.keyLabel('settings')], ['Send', 'Enter'], ['New line', '⇧Enter'], ['Close a menu or dialog', 'Esc']];
+      const key = (id: string): string => this.menus.keyLabel(id);
+      const rows: Array<[string, string]> = [['New chat', key('new-chat')], ['Command palette and search', key('palette')], ['Sidebar open or rail', key('toggle-sidebar')], ['Terminal', key('toggle-terminal')], ['Outputs', key('toggle-outputs')], ['Add files', key('add-files')], ['Find in page', key('find')], ['Keyboard shortcuts', key('shortcuts')], ['Home', key('home')], ['Settings', key('settings')], ['Send', formatKeys('Enter')], ['New line', formatKeys('Shift+Enter')], ['Close a menu or dialog', formatKeys('Escape')]];
       sheet = el(`<div class="ft-sheet-scrim" id="ft-shortcuts" hidden><div class="ft-sheet" role="dialog" aria-label="Keyboard shortcuts"><h2>Keyboard shortcuts</h2><dl>${rows.map(([a, k]) => `<dt>${a}</dt><dd>${k}</dd>`).join('')}</dl></div></div>`);
       sheet.addEventListener('pointerdown', (e) => { if (e.target === sheet) sheet!.hidden = true; });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet && !sheet.hidden) sheet.hidden = true; });
@@ -336,8 +338,8 @@ export class App {
     let sheet = document.getElementById('ft-consent');
     if (!sheet) {
       sheet = el(`<div class="ft-sheet-scrim" id="ft-consent" hidden><div class="ft-sheet ft-consent" role="alertdialog" aria-labelledby="ft-consent-h" aria-describedby="ft-consent-p">
-        <h2 id="ft-consent-h">Let outside agents use Format?</h2>
-        <p id="ft-consent-p" class="ft-set-note"><b class="ft-consent-who"></b> <span class="ft-consent-via"></span> wants to use Format: chat with Claude on your key, publish artifacts and run any Format command. This applies to every agent on this computer until you change it in Settings, Outside agents.</p>
+        <h2 id="ft-consent-h">Let outside agents use FormAT?</h2>
+        <p id="ft-consent-p" class="ft-set-note"><b class="ft-consent-who"></b> <span class="ft-consent-via"></span> wants to use FormAT: chat with Claude on your key, publish artifacts and run any FormAT command. This applies to every agent on this computer until you change it in Settings, Outside agents.</p>
         <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary" data-v="allowed">Allow</button><button type="button" class="ft-btn" data-v="blocked">Block</button></div>
       </div></div>`);
       const box = sheet;
@@ -706,7 +708,7 @@ export class App {
     const c = id ? this.state.conversations.get(id) : null;
     const pageTitle: Record<View, string> = { chat: c?.title ?? 'New chat', projects: 'Projects', artifacts: 'Artifacts', scheduled: 'Scheduled', customize: 'Customize' };
     setText(this.title, pageTitle[this.state.view]);
-    document.title = this.state.view === 'chat' && c ? `${c.title} · Format` : 'Format';
+    document.title = this.state.view === 'chat' && c ? `${c.title} · FormAT` : 'FormAT';
     const pid = this.state.view === 'chat' ? (c ? c.project_id : this.state.draftProject) : null;
     const project = pid ? this.state.projects.get(pid) : undefined;
     const crumb = q(this.shell, '.ft-crumb');

@@ -18,7 +18,7 @@ async function probe(): Promise<void> {
     const h = await health();
     frame.set('engine', h.version === VERSION ? 'ok' : 'warn', h.version === VERSION ? `v${h.version} on 127.0.0.1:8490` : `v${h.version}, window is v${VERSION}`);
     const info = await run<AppInfo>('app.info');
-    frame.set('anthropic', info.providers.anthropic ? 'ok' : 'warn', info.providers.anthropic ? 'set in backend/.env' : 'not set: backend/.env');
+    frame.set('anthropic', info.providers.anthropic ? 'ok' : 'warn', info.providers.anthropic ? 'set' : 'not set: add one in Settings, API keys');
     frame.set('commands', 'ok', `${info.commands} registered`);
   } catch {
     frame.set('engine', 'bad', 'not answering: ./format backend');

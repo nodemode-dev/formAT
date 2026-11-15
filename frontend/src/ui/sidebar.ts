@@ -1,7 +1,7 @@
 import { run } from '../engine-client/api';
 import type { Account, AppState, Conversation, View } from '../state/app-state';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
-import { icon, ui, type UiIcon } from './icons-ft';
+import { ui, type UiIcon } from './icons-ft';
 import { openMenu } from './menu';
 
 export interface SidebarHooks {
@@ -48,7 +48,7 @@ export class Sidebar {
     this.root = el(`<aside class="ft-sidebar" aria-label="Sidebar">
       <div class="ft-side-head">
         <button type="button" class="ft-icon-btn ft-side-toggle" title="Toggle sidebar (${modKey}B)" aria-label="Toggle sidebar">${ui('sidebar')}</button>
-        <span class="ft-wordmark"><span class="ft-wordmark-home" data-cmd="home" role="button" tabindex="0" title="Home: a new chat"><span class="ft-wordmark-mark">${icon('mark', 18)}</span><span class="ft-label">Format</span></span></span>
+        <span class="ft-wordmark"><span class="ft-wordmark-home" data-cmd="home" role="button" tabindex="0" title="Home: a new chat"><img class="ft-wordmark-mark" src="/favicon.png" width="18" height="18" alt="" draggable="false"><span class="ft-label">FormAT</span></span></span>
         <div class="ft-seg ft-label" role="group" aria-label="Mode">
           <button type="button" class="ft-seg-btn is-on" data-mode="chat" title="Chat" aria-pressed="true">${ui('chat', 16)}</button>
           <button type="button" class="ft-seg-btn" data-mode="terminal" title="Terminal (${modKey}J)" aria-pressed="false">${ui('terminal', 16)}</button>

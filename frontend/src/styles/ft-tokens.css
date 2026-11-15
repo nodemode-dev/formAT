@@ -5,9 +5,9 @@
   --ft-composer-w: 704px;
   --ft-panel-w: 41vw;
   --ft-panel-min-w: 360px;
-  --ft-topbar-h: 44px;
-  --ft-nav-row-h: 36px;
-  --ft-recent-row-h: 36px;
+  --ft-topbar-h: var(--cv-titlebar-h);
+  --ft-nav-row-h: var(--ctl-lg);
+  --ft-recent-row-h: var(--ctl-lg);
   --ft-attach-card: 112px;
   --ft-reading-face: var(--font-ui);
   --ft-reading-size: 15px;
@@ -23,11 +23,12 @@
   --ft-syn-comment: var(--text-muted);
   --ft-syn-title: var(--accent-ink);
   --ft-syn-attr: var(--handle-image);
-  --ft-syn-type: #7dd3fc;
-  --ft-sidebar-bg: color-mix(in srgb, var(--bg-primary) 72%, #000);
+  --ft-syn-type: color-mix(in srgb, var(--handle-image) 50%, var(--handle-mask));
   --ft-bubble: var(--surface-2);
-  --ft-menu-bg: color-mix(in srgb, var(--bg-node) 92%, var(--text-primary) 8%);
-  --ft-row-active: color-mix(in srgb, var(--surface-2) 80%, var(--text-primary) 6%);
+  --ft-menu-bg: var(--surface-2);
+  --ft-row-active: var(--surface-2);
+  --ft-title-bg: linear-gradient(to bottom, var(--surface-2), var(--surface-1));
+  --ft-focus-ring: 2px solid var(--accent-color);
   --ft-side-motion: 180ms var(--ease-glass);
 }
 

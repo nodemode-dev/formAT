@@ -83,7 +83,7 @@ const PROVIDERS: Array<[string, string, string]> = [
 
 function sourceText(k: KeyStatus | undefined): string {
   if (!k || !k.set) return 'Not set';
-  const where = k.source === 'format' ? 'saved in Format' : k.source === '.env' ? 'from backend/.env' : 'from the environment';
+  const where = k.source === 'format' ? 'saved in FormAT' : k.source === '.env' ? 'from backend/.env' : 'from the environment';
   return `Set ${k.hint ?? ''} · ${where}`;
 }
 
@@ -102,7 +102,7 @@ export class SettingsView {
       <section class="ft-prefs-group">
         <h3 class="ft-prefs-label">Profile</h3>
         <label class="ft-field"><span>What should Claude call you?</span><input class="ft-input" data-a="displayName" maxlength="80" autocomplete="name"></label>
-        <label class="ft-field ft-prefs-wide"><span>How Claude should respond</span><textarea class="ft-input" data-a="preferences" rows="4" maxlength="8000" placeholder="For example: answer briefly, use British spelling, show code in TypeScript"></textarea><small>Sent with every chat, after Format's own instructions.</small></label>
+        <label class="ft-field ft-prefs-wide"><span>How Claude should respond</span><textarea class="ft-input" data-a="preferences" rows="4" maxlength="8000" placeholder="For example: answer briefly, use British spelling, show code in TypeScript"></textarea><small>Sent with every chat, after FormAT's own instructions.</small></label>
       </section>
       <section class="ft-prefs-group">
         <h3 class="ft-prefs-label">Composer</h3>
@@ -117,7 +117,7 @@ export class SettingsView {
       </section>
       <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-save-account">Save</button><span class="ft-saved" aria-live="polite"></span></div>`);
     prefs.add('Tools', 'terminal', `
-      <p class="ft-set-note">Workspace tools let Claude run commands and read and change files in the chat's own folder on this computer; commands and file changes ask first in Ask mode, never run in Plan mode, and run without asking in Auto mode. Web search is billed by Anthropic per search. Artifacts run sealed off from Format and your files; they load scripts and fonts from the common CDNs, and nothing else from the internet unless you allow it.</p>
+      <p class="ft-set-note">Workspace tools let Claude run commands and read and change files in the chat's own folder on this computer; commands and file changes ask first in Ask mode, never run in Plan mode, and run without asking in Auto mode. Web search is billed by Anthropic per search. Artifacts run sealed off from FormAT and your files; they load scripts and fonts from the common CDNs, and nothing else from the internet unless you allow it.</p>
       <section class="ft-prefs-group">
         <h3 class="ft-prefs-label">Tools</h3>
         <div class="ft-prefs-cols">
@@ -147,14 +147,14 @@ export class SettingsView {
         </div>
       </section>`);
     prefs.add('Other devices', 'devices', `
-      <p class="ft-set-note">Continue on your phone or another computer on the same network: turn this on, then scan the code or open the link there. Paired devices see the same chats live; shared artifact links open for anyone who can reach this computer, read-only. Turn it off to keep Format on this computer only.</p>
+      <p class="ft-set-note">Continue on your phone or another computer on the same network: turn this on, then scan the code or open the link there. Paired devices see the same chats live; shared artifact links open for anyone who can reach this computer, read-only. Turn it off to keep FormAT on this computer only.</p>
       <section class="ft-prefs-group">
         <h3 class="ft-prefs-label">Pairing</h3>
         <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-dev-toggle">Open to other devices</button><button type="button" class="ft-btn ft-dev-forget" hidden>Forget paired devices</button><span class="ft-saved ft-dev-msg" aria-live="polite"></span></div>
         <div class="ft-dev-pair" hidden><div class="ft-dev-qr" aria-label="Pairing code"></div><div class="ft-dev-text"><small>Open on the other device:</small><code class="ft-dev-url"></code><small class="ft-dev-also"></small></div></div>
       </section>`);
     prefs.add('Outside agents', 'plug', `
-      <p class="ft-set-note">While Format runs it is an MCP server at <code>http://127.0.0.1:8490/mcp</code>, and <code>./format mcp</code> serves the same over stdio, so Claude Code, Codex, Cursor and other agents on this computer can chat, publish artifacts and run any Format command. Ask shows a prompt here the first time an agent calls.</p>
+      <p class="ft-set-note">While FormAT runs it is an MCP server at <code>http://127.0.0.1:8490/mcp</code>, and <code>./format mcp</code> serves the same over stdio, so Claude Code, Codex, Cursor and other agents on this computer can chat, publish artifacts and run any FormAT command. Ask shows a prompt here the first time an agent calls.</p>
       <section class="ft-prefs-group">
         <h3 class="ft-prefs-label">Access</h3>
         <label class="ft-field"><span>Agents on this computer</span><select class="ft-input" data-g="outsideAgents"><option value="ask">Ask me</option><option value="allowed">Allowed</option><option value="blocked">Blocked</option></select></label>
@@ -170,7 +170,7 @@ export class SettingsView {
         </div>
       </section>`);
     prefs.add('API keys', 'key', `
-      <p class="ft-set-note">A key saved here is stored in Format's data folder with owner-only permissions and takes precedence over <code>backend/.env</code>. You can keep keys in <code>backend/.env</code> instead (copy <code>backend/.env.example</code>); remove the saved key here and the .env one is used again. Keys never come back to this window.</p>
+      <p class="ft-set-note">A key saved here is stored in FormAT's data folder with owner-only permissions and takes precedence over <code>backend/.env</code>. You can keep keys in <code>backend/.env</code> instead (copy <code>backend/.env.example</code>); remove the saved key here and the .env one is used again. Keys never come back to this window.</p>
       ${PROVIDERS.map(([id, label, note]) => `<section class="ft-prefs-group ft-key-row" data-p="${id}">
           <div class="ft-key-head"><h3 class="ft-prefs-label">${label}</h3><span class="ft-key-status">checking</span></div>
           <small class="ft-key-note">${esc(note)}</small>
@@ -213,7 +213,7 @@ export class SettingsView {
       input.addEventListener('keydown', (e) => { if (e.key === 'Enter') void save(); });
       q(row, '.ft-key-clear').addEventListener('click', async () => {
         await run('keys.clear', { provider }).catch(() => undefined);
-        setText(msg, 'Removed from Format.');
+        setText(msg, 'Removed from FormAT.');
       });
     });
     const auto = q<HTMLInputElement>(this.root, '[data-s="autoCompact"]');
@@ -375,7 +375,7 @@ export class SettingsView {
     set('dataDir', info.dataDir);
     set('commands', String(info.commands));
     void run<{ enabled: boolean; built: boolean; adapter?: string; backend?: string; error?: string }>('native.status').then((n) => {
-      set('native', !n.built ? 'not built (optional: ./format native build)' : !n.enabled ? 'built, off (start Format with FORMAT_NATIVE=1)' : n.adapter ? `on: ${n.adapter}, ${n.backend}` : `on, but ${n.error ?? 'no GPU adapter'}`);
+      set('native', !n.built ? 'not built (optional: ./format native build)' : !n.enabled ? 'built, off (start FormAT with FORMAT_NATIVE=1)' : n.adapter ? `on: ${n.adapter}, ${n.backend}` : `on, but ${n.error ?? 'no GPU adapter'}`);
     }).catch(() => set('native', 'unknown'));
     if (voice) this.fillVoice(voice);
   }
