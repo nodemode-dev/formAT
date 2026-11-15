@@ -120,8 +120,8 @@ Prefer it in your browser, or want to contribute? Run the web UI straight from t
 **Requires:** Node 20.19 or newer (22 recommended), Python 3.12 or newer, git. ffmpeg on the PATH for video and audio.
 
 ```sh
-git clone git@github.com:nodemode-dev/format.git
-cd format
+git clone git@github.com:nodemode-dev/formAT.git
+cd formAT
 ./format_oc_install   # engine venv, frontend packages, backend/.env from the example
 ./format              # engine on 127.0.0.1:8490, web UI at http://localhost:5490
 ```
@@ -152,7 +152,7 @@ Add `ANTHROPIC_API_KEY` in `backend/.env` or in Settings. No key? If Claude Code
 | `setup/` | install, boot, build, serve, doctor and the CLI |
 | `src-tauri/` | the Tauri 2 desktop shell |
 
-Docs: [`docs/`](docs/README.md) · Wiki: [`.docs/wiki`](.docs/wiki/Home.md) · Agents: [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md) · Contributing: [`BRANCHING.md`](BRANCHING.md)
+Docs: [`docs/`](docs/README.md) · Wiki: [`.docs/wiki`](.docs/wiki/Home.md) · Agents: [`CLAUDE.md`](CLAUDE.md), [`AGENTS.md`](AGENTS.md) · Contributing: [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`SECURITY.md`](SECURITY.md), [`BRANCHING.md`](BRANCHING.md)
 
 ---
 
