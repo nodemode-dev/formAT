@@ -1,6 +1,10 @@
 # Settings
 
-Open Settings from the sidebar (More, Settings), the account menu at the bottom of the sidebar, or the palette.
+Open Settings with Mod+, or from File, Settings, the sidebar (More, Settings), the account menu at the bottom of the sidebar, or the palette.
+
+Settings is a window over the app: the list of sections floats on the left, the sections themselves are stacked in the panel on the right, and a line joins the section you are in to the panel. Click a section in the list to scroll to it, or scroll the panel and the list follows. Click a section's heading to fold it; the button under the list folds the list to icons, and Format remembers that. Drag the window by its title bar. Close it with Done, the close button, Escape or a click outside. Changes apply as you make them, except the Account and Voice fields, which are saved together by either Save button.
+
+The sections, in order: Account, API keys, Tools, Long chats, Memory, Voice, Other devices, Outside agents, About.
 
 ## Account
 
@@ -9,6 +13,11 @@ Open Settings from the sidebar (More, Settings), the account menu at the bottom 
 | What should Claude call you? | your name, shown in the sidebar and given to Claude |
 | How Claude should respond | your standing preferences, sent with every chat after Format's own instructions |
 | Send with | Enter, or Mod+Enter (then Enter makes a new line) |
+
+## Voice
+
+| Setting | Does |
+| --- | --- |
 | Dictation language | the language code for dictation, for example en-US |
 | Dictation engine | Automatic, ElevenLabs Scribe v2, local Whisper large-v3-turbo, OpenAI or the browser (see [Chatting](chatting.md)) |
 
@@ -43,7 +52,7 @@ Anthropic (powers chat), OpenAI (optional: dictation) and ElevenLabs (optional: 
 
 ## Memory
 
-The last section of the page, below About: turn memory on, and read, edit or delete Claude's notes, general and per project.
+Turn memory on, and read, edit or delete Claude's notes, general and per project.
 
 ## About
 

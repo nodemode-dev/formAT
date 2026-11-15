@@ -20,13 +20,15 @@ export class MemoryPanel {
   private editing: string | null = null;
 
   constructor(private state: AppState) {
-    this.root = el(`<section class="ft-set-section" id="ft-set-memory" aria-labelledby="ft-set-memory-h">
-      <h2 id="ft-set-memory-h">${ui('file', 16)}<span>Memory</span></h2>
+    this.root = el(`<div class="ft-prefs-part">
       <p class="ft-set-note">With memory on, Claude keeps notes in a memory folder with Anthropic's memory tool and checks it at the start of each reply, so what it learns in one chat carries into the next. Chats outside projects share one memory; each project has its own. You can read, change and delete everything here; deleting a project deletes its memory.</p>
-      <label class="ft-field ft-check"><input type="checkbox" class="ft-mem-on"><span>Let Claude remember across chats</span></label>
-      <div class="ft-field-row">
+      <section class="ft-prefs-group">
+        <h3 class="ft-prefs-label">Memory</h3>
+        <label class="ft-field ft-check"><input type="checkbox" class="ft-mem-on"><span>Let Claude remember across chats</span></label>
+      </section>
+      <section class="ft-prefs-group">
+        <h3 class="ft-prefs-label">Memory files</h3>
         <label class="ft-field"><span>Memory of</span><select class="ft-input ft-mem-scope"><option value="">Chats outside projects</option></select></label>
-      </div>
       <div class="ft-set-actions"><button type="button" class="ft-btn ft-mem-new">New memory file</button></div>
       <div class="ft-mem-editor" hidden>
         <input class="ft-input ft-mem-path" aria-label="Memory file path" spellcheck="false">
@@ -35,7 +37,8 @@ export class MemoryPanel {
       </div>
       <div class="ft-mem-list" role="list"></div>
       <p class="ft-proj-none ft-mem-empty">Nothing remembered here yet.</p>
-    </section>`);
+      </section>
+    </div>`);
     this.toggle = q<HTMLInputElement>(this.root, '.ft-mem-on');
     this.scope = q<HTMLSelectElement>(this.root, '.ft-mem-scope');
     this.list = q(this.root, '.ft-mem-list');

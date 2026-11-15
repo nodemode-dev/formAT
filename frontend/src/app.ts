@@ -18,7 +18,8 @@ import { BrowserPane, type BrowserStatus } from './ui/browser-pane';
 import { ProjectsView } from './ui/projects-view';
 import { CustomizeView } from './ui/customize-view';
 import { MemoryPanel } from './ui/memory-panel';
-import { ArtifactsView, SettingsView, type InfoLike } from './ui/views';
+import { PrefsWindow } from './ui/prefs-window';
+import { ArtifactsView, SettingsView, type InfoLike, type SettingsSection } from './ui/views';
 import { ScheduledView, type ScheduleSummary } from './ui/scheduled-view';
 import { BackgroundPanel } from './ui/background-panel';
 import { FindBar } from './ui/find-bar';
@@ -26,6 +27,7 @@ import { mountMenus, type AppMenus } from './ui/app-menu';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
+const SETTINGS: Record<'account' | 'keys' | 'about', SettingsSection> = { account: 'Account', keys: 'API keys', about: 'About' };
 
 export class App {
   readonly state = new AppState();
@@ -47,6 +49,7 @@ export class App {
   private background: BackgroundPanel;
   private find: FindBar;
   private outputsSeq = 0;
+  private prefs: PrefsWindow;
   private settingsView: SettingsView;
   private pages = new Map<View, HTMLElement>();
   private title: HTMLElement;
@@ -142,7 +145,8 @@ export class App {
     this.state.on('messages', () => this.updateContext());
     this.state.on('active', () => this.updateContext());
     this.state.on('settings', () => this.updateContext());
-    this.settingsView = new SettingsView(this.state);
+    this.prefs = new PrefsWindow('Settings');
+    this.settingsView = new SettingsView(this.state, this.prefs, this.memoryPanel.root);
     const panel = new SidePanel(() => this.toggle('panel', false), (p) => this.openFiles(p));
     this.panel = panel;
     this.state.on('active', () => this.refreshOutputs());
@@ -163,7 +167,7 @@ export class App {
       { label: 'Summarize earlier messages', icon: 'compress', run: () => this.compactNow() },
       { label: 'Account', icon: 'user', run: () => this.openSettings('account') },
       { label: 'Toggle terminal', icon: 'terminal', hint: `${modKey}J`, run: () => this.toggle('term') },
-      { label: 'Settings', icon: 'settings', run: () => this.setView('settings') },
+      { label: 'Settings', icon: 'settings', run: () => this.openSettings() },
       { label: 'Customize', icon: 'customize', run: () => this.setView('customize') },
     ], (id) => void this.openChat(id));
 
@@ -186,13 +190,10 @@ export class App {
     this.state.on('active', () => this.find.close());
     this.pages.set('customize', this.customizeView.root);
     center.appendChild(this.customizeView.root);
-    this.settingsView.root.appendChild(this.memoryPanel.root);
     this.pages.set('projects', this.projectsView.root);
     center.appendChild(this.projectsView.root);
     this.pages.set('artifacts', this.gallery.root);
     center.appendChild(this.gallery.root);
-    this.pages.set('settings', this.settingsView.root);
-    center.appendChild(this.settingsView.root);
     q(this.shell, '.ft-body').appendChild(this.artifact.root);
     q(this.shell, '.ft-body').appendChild(this.filesPane.root);
     q(this.shell, '.ft-body').appendChild(this.browserPane.root);
@@ -356,9 +357,9 @@ export class App {
     q<HTMLElement>(sheet, '[data-v="allowed"]').focus();
   }
 
-  openSettings(section: 'account' | 'keys' | 'about'): void {
-    this.setView('settings');
-    this.settingsView.scrollTo(section);
+  openSettings(section?: 'account' | 'keys' | 'about'): void {
+    closeMenus();
+    this.prefs.show(section ? SETTINGS[section] : undefined);
   }
 
   private refreshOutputs(): void {
@@ -703,7 +704,7 @@ export class App {
   private renderTitle(opening?: string): void {
     const id = opening ?? this.state.activeId;
     const c = id ? this.state.conversations.get(id) : null;
-    const pageTitle: Record<View, string> = { chat: c?.title ?? 'New chat', projects: 'Projects', artifacts: 'Artifacts', scheduled: 'Scheduled', customize: 'Customize', settings: 'Settings' };
+    const pageTitle: Record<View, string> = { chat: c?.title ?? 'New chat', projects: 'Projects', artifacts: 'Artifacts', scheduled: 'Scheduled', customize: 'Customize' };
     setText(this.title, pageTitle[this.state.view]);
     document.title = this.state.view === 'chat' && c ? `${c.title} · Format` : 'Format';
     const pid = this.state.view === 'chat' ? (c ? c.project_id : this.state.draftProject) : null;

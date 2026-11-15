@@ -12,7 +12,7 @@ export interface SidebarHooks {
   toggleTerminal(): void;
   openPalette(): void;
   renamed(id: string): void;
-  openSettings(section: 'account' | 'keys' | 'about'): void;
+  openSettings(section?: 'account' | 'keys' | 'about'): void;
 }
 
 const NAV: Array<[View | 'new', string, UiIcon]> = [
@@ -87,6 +87,7 @@ export class Sidebar {
       if (id === 'new') hooks.newChat();
       else if (id === 'more') this.toggleMore(nav);
       else if (id === 'terminal') hooks.toggleTerminal();
+      else if (id === 'settings') hooks.openSettings();
       else hooks.setView(id as View);
     });
     this.list.addEventListener('click', (e) => {

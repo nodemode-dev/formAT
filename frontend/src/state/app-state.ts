@@ -142,7 +142,7 @@ export interface Settings {
   chatEngine?: 'auto' | 'api' | 'claude-code';
 }
 
-export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
+export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize';
 
 type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors' | 'plugins' | 'marketplaces';
 

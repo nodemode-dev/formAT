@@ -12,7 +12,7 @@ export interface MenuHost {
   newProject(): void;
   newTask(): void;
   setView(view: View): void;
-  openSettings(section: 'account' | 'keys' | 'about'): void;
+  openSettings(section?: 'account' | 'keys' | 'about'): void;
   layout(which: Layout): string;
   toggle(which: Layout): void;
   side(): string | null;
@@ -84,7 +84,7 @@ async function paste(): Promise<void> {
 }
 
 function dialogOpen(): boolean {
-  return !!document.querySelector('.ft-palette-scrim:not([hidden]), .ft-sheet-scrim:not([hidden]), .ft-viewer:not([hidden])');
+  return !!document.querySelector('.ft-palette-scrim:not([hidden]), .ft-sheet-scrim:not([hidden]), .ft-viewer:not([hidden]), .ft-prefs-scrim:not([hidden])');
 }
 
 export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
@@ -99,7 +99,7 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     { id: 'new-project', label: 'New Project...', run: () => host.newProject() },
     { id: 'new-task', label: 'New Scheduled Task...', run: () => host.newTask() },
     { id: 'add-files', label: 'Add Files...', keys: ['Mod+U'], enabled: view('chat'), run: () => host.addFiles() },
-    { id: 'settings', label: 'Settings...', keys: ['Mod+,'], run: () => host.setView('settings') },
+    { id: 'settings', label: 'Settings...', keys: ['Mod+,'], run: () => host.openSettings() },
     { id: 'settings-account', label: 'Account', run: () => host.openSettings('account') },
     { id: 'settings-keys', label: 'API Keys', run: () => host.openSettings('keys') },
     { id: 'close-window', label: 'Close Window', enabled: inWindow, run: () => void desktopWindow()?.close().catch(() => undefined) },
