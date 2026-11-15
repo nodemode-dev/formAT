@@ -1,5 +1,24 @@
 # Changelog
 
+## 0.26.0 · 2026-11-15
+
+- FormAT has menus: File, Edit, View, Go, Window and Help, in the window's top bar on Windows, Linux and in a browser, and in the system menu bar on macOS. Every command is there with its shortcut, and F10 or Alt with a menu's first letter opens the bar from the keyboard. New shortcuts: Mod+, for Settings and Alt+Mod+H for Home; the icon and name at the top of the sidebar also go Home.
+- Settings open as a window over what you were doing, not as a page: a list of sections on the left, the sections stacked on the right, and a line joining the one you are in. It folds, drags and closes with Escape, and puts you back where you were.
+- Three demo chats are in the sidebar from the first start and open without an API key: Aurora page (the northern lights over a lake, following the pointer), Orrery page (a 3D solar system with NASA surface maps, fly-ins, moons and checked figures) and Ferry dashboard (an invented ferry operator's season, with its data as a package you can import into form.md). They are ordinary chats: rename, pin, delete or continue them, and Help, Demos brings a deleted one back.
+- The desktop app starts behind the family's splash, a card with a bar that fills, and shows its window whole once the page has drawn.
+- The window wears the family's look: the title row, the app icon and the name FormAT, and the family's switches, buttons and menus. Nothing moved.
+- Other devices works again: since 0.24.6 a paired phone or computer loaded the window and was then refused every action.
+- Deleting a chat asks first, and also removes the chat's folder of files.
+- The terminal: the shortcut that opens the dock (Mod+J) now also hides it from inside the shell, and reloading the window keeps the shells that were running, with their output, where it used to start a new one each time.
+- A message that cannot be sent because the engine is not answering stays in the composer, with a plain note saying so.
+- The window no longer reloads without end when one thing fails while it starts, and the composer is ready to type in as soon as the window opens.
+- Narrow windows: a long chat title no longer pushes the Files and Outputs buttons off the edge, and making a wide window narrow folds the sidebar to its rail.
+- The engine stops promptly when asked to, where it used to hang once a window had connected.
+- The desktop build: the macOS build script finds the app under its new name, and the Windows script that packs the engine no longer has two options run together. If the engine cannot start, the message saying so is shown before the app closes.
+- macOS: the manual says how to open a build that is signed but not notarized (System Settings, Privacy and Security, Open Anyway on macOS 15).
+- The engine, the desktop dialogs and the macOS permission prompts say FormAT, like the window.
+- Engine: two new commands, `demo.list` and `demo.restore` (114 in all). `conversation.delete` also stops a running reply and removes the chat's folder; `conversation.list` always includes the demo chats; `conversation.create` refuses a project that does not exist.
+
 ## 0.25.4 · 2026-11-03
 
 - The README is rewritten to the Form family layout with real screenshots in `docs/images/`.
