@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.26.2 · 2026-11-15
+
+- The desktop app's updater looks for new versions at `nodemode-dev/formcompiler`, where formcompiler publishes them, instead of the old `nodemode-ai` address. The updater's signing key is unchanged.
+
 ## 0.26.1 · 2026-11-15
 
 - The Orrery's credits are complete: the file that comes with the Orrery page (CREDITS.md in Outputs) and `NOTICE.md` now give, for each of the 26 NASA surface maps, the credit line and the source page as NASA Science states them, what the page says the map is, and the terms. They also say plainly that not every map is a photograph: Venus is a radar map with gaps filled in, and the Saturn, Neptune and Titan textures are artists' or concept textures. If your sidebar already holds the Orrery chat it keeps the earlier credits file; delete the chat and choose Help, Demos to bring it back with the new one.
