@@ -7,7 +7,9 @@
 - `backend/app/__init__.py` (`__version__`)
 - `frontend/src/version.ts` (`VERSION`)
 - `frontend/package.json` (`version`) and both `version` fields at the top of `frontend/package-lock.json`
+- `src-tauri/Cargo.toml` (`version`), the `format` package entry in `src-tauri/Cargo.lock`, and `src-tauri/tauri.conf.json` (`version`)
 - the README badge
+- the newest `## X.Y.Z ·` heading in `CHANGELOG.md`
 - the `Current build version` and `Last updated` lines of both HASHOUT logs
 
 ## Before committing

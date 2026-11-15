@@ -1,6 +1,6 @@
 # Keyboard shortcuts
 
-Mod is Cmd on macOS and Ctrl elsewhere. Mod+/ shows this list in Format.
+Mod is Cmd on macOS and Ctrl elsewhere. Mod+/ shows this list in FormAT.
 
 | Shortcut | Does |
 | --- | --- |
@@ -21,4 +21,4 @@ Mod is Cmd on macOS and Ctrl elsewhere. Mod+/ shows this list in Format.
 | Enter, Shift+Enter in find | next and previous match |
 | Left, Right in slides | previous and next slide |
 
-Inside the terminal dock the shell keeps its own Ctrl keys. In the Browser pane, keys you press while the page has focus go to the page.
+Inside the terminal dock the shell keeps its own Ctrl keys, except Mod+J, which hides the dock again. In the Browser pane, keys you press while the page has focus go to the page.

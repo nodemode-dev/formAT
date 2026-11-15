@@ -1,26 +1,26 @@
 # The desktop app
 
-Format runs as a desktop app on macOS, Windows and Linux. The app is the same Format as the web window: it starts Format's engine itself, opens the window on it, and stops the engine when you quit. Nothing else needs installing: Python, the engine, the window, the built-in browser's package and local dictation are inside the app.
+FormAT runs as a desktop app on macOS, Windows and Linux. The app is the same FormAT as the web window: it starts FormAT's engine itself, opens the window on it, and stops the engine when you quit. Nothing else needs installing: Python, the engine, the window, the built-in browser's package and local dictation are inside the app.
 
 ## Getting the app
 
 | Platform | File |
 | --- | --- |
-| macOS (Apple silicon or Intel) | `Format_<version>_aarch64.dmg` or `Format_<version>_x64.dmg`: open it and drag Format to Applications |
-| Windows | `Format_<version>_x64-setup.exe` or the `.msi` |
-| Linux | `Format_<version>_amd64.deb`, `Format-<version>-1.x86_64.rpm` or `Format_<version>_amd64.AppImage` |
+| macOS (Apple silicon or Intel) | `FormAT_<version>_aarch64.dmg` or `FormAT_<version>_x64.dmg`: open it and drag FormAT to Applications |
+| Windows | `FormAT_<version>_x64-setup.exe` or the `.msi` |
+| Linux | `FormAT_<version>_amd64.deb`, `FormAT-<version>-1.x86_64.rpm` or `FormAT_<version>_amd64.AppImage` |
 
 The files come from the release page of formcompiler (`nodemode-ai/formcompiler`), which builds macOS, Linux and Windows bundles from a `compile_vX.Y.Z` branch of this repository and publishes them as `format-vX.Y.Z`, or from building it yourself (below).
 
 ### macOS: the first launch
 
-Builds without an Apple Developer ID are signed ad hoc, not notarized, so macOS warns the first time. Either right-click Format in Applications and choose Open, then Open again, or run once:
+A build that Apple has not notarized (one signed with a Developer ID only, or signed ad hoc without one) is stopped by macOS the first time it is opened. Drag FormAT to Applications first, open it once and dismiss the warning, then open System Settings, Privacy and Security, scroll to the line about FormAT and choose Open Anyway. On macOS 14 and older, right-click FormAT in Applications and choose Open, then Open again. Or run once:
 
 ```bash
-xattr -dr com.apple.quarantine /Applications/Format.app
+xattr -dr com.apple.quarantine /Applications/FormAT.app
 ```
 
-With the `APPLE_*` secrets set in the repository, the build signs and notarizes the app and the warning goes away.
+A notarized build opens without the warning.
 
 ## Where things are
 
@@ -31,7 +31,7 @@ With the `APPLE_*` secrets set in the repository, the build signs and notarizes 
 | The built-in browser's Chromium | `~/Library/Caches/ms-playwright` | `%LOCALAPPDATA%\ms-playwright` | `~/.cache/ms-playwright` |
 | Local dictation model | `~/.cache/huggingface` | `%USERPROFILE%\.cache\huggingface` | `~/.cache/huggingface` |
 
-The desktop app keeps its own data, separate from a Format you run from the repository with `./format`.
+The desktop app keeps its own data, separate from a FormAT you run from the repository with `./format`.
 
 ## What is different in the app
 
@@ -51,7 +51,7 @@ On macOS or Linux, one command in the Format folder does all of it:
 ./build_app
 ```
 
-It checks Python (3.12 or newer), Node (20.19 or newer) and, on macOS, the Xcode command line tools; installs Rust with rustup into `~/.cargo` if there is none, and always builds with rustup's stable compiler even when Homebrew's `rust` is also installed; installs the engine, the window and the desktop packages; freezes the engine; and builds the app. On macOS it then packs a `.dmg`, copies `Format.app` to Applications (replacing an older copy) and clears the download warning, so Format opens from Launchpad. On Linux it builds the `.deb` and prints the line that installs it. Everything it prints is also kept in `build_app.log`.
+It checks Python (3.12 or newer), Node (20.19 or newer) and, on macOS, the Xcode command line tools; installs Rust with rustup into `~/.cargo` if there is none, and always builds with rustup's stable compiler even when Homebrew's `rust` is also installed; installs the engine, the window and the desktop packages; freezes the engine; and builds the app. On macOS it then packs a `.dmg`, copies `FormAT.app` to Applications (replacing an older copy) and clears the download warning, so FormAT opens from Launchpad. On Linux it builds the `.deb` and prints the line that installs it. Everything it prints is also kept in `build_app.log`.
 
 | Option | Does |
 | --- | --- |

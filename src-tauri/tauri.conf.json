@@ -34,7 +34,7 @@
     "targets": "all",
     "category": "DeveloperTool",
     "shortDescription": "A.T, the Agentic Terminal",
-    "longDescription": "Format is a chat and agent workspace on the Claude API: chats, tools with approvals, artifacts, documents and slides, projects, memory, skills, plugins, connectors, a built-in browser, scheduled tasks and real terminals, on your own API key.",
+    "longDescription": "FormAT is a chat and agent workspace on the Claude API: chats, tools with approvals, artifacts, documents and slides, projects, memory, skills, plugins, connectors, a built-in browser, scheduled tasks and real terminals, on your own API key.",
     "copyright": "Copyright 2026 nodemode-ai.",
     "externalBin": ["binaries/format-engine"],
     "resources": { "../LICENSE": "LICENSE", "../NOTICE.md": "NOTICE.md" },

@@ -131,7 +131,7 @@ def _npm(src: dict, dest: Path) -> Path:
     import tarfile
     pkg, version, registry = str(src.get("package") or ""), str(src.get("version") or ""), str(src.get("registry") or "")
     if not pkg or pkg.startswith(("git", "file:", "npm:", "http:", ".", "/")) or ".." in pkg:
-        raise CommandError(f"Format does not fetch the npm package {pkg!r}: use a package name or an https tarball link")
+        raise CommandError(f"FormAT does not fetch the npm package {pkg!r}: use a package name or an https tarball link")
     if registry and not registry.startswith("https://"):
         raise CommandError("An npm registry must use https")
     if shutil.which("npm") is None:
@@ -320,7 +320,7 @@ def install(market: str, plugin: str, confirm: bool = False) -> dict:
             path = _command(src)
         else:
             kind = src.get("source") if isinstance(src, dict) else type(src).__name__
-            raise CommandError(f"Format does not install plugins from a {kind} source")
+            raise CommandError(f"FormAT does not install plugins from a {kind} source")
         got = plugins.install(path, {"kind": "marketplace", "marketplace": market, "entry": str(item["name"])})
     finally:
         if temp is not None:

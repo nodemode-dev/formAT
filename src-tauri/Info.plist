@@ -3,9 +3,9 @@
 <plist version="1.0">
 <dict>
   <key>NSMicrophoneUsageDescription</key>
-  <string>Format uses the microphone for dictation into the composer.</string>
+  <string>FormAT uses the microphone for dictation into the composer.</string>
   <key>NSLocalNetworkUsageDescription</key>
-  <string>Format can open itself to your phone and other devices on your network when you turn on Other devices in Settings.</string>
+  <string>FormAT can open itself to your phone and other devices on your network when you turn on Other devices in Settings.</string>
   <key>NSAppTransportSecurity</key>
   <dict>
     <key>NSAllowsLocalNetworking</key>

@@ -22,6 +22,8 @@ export async function run<T>(id: string, params: Record<string, unknown> = {}): 
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(params),
+  }).catch(() => {
+    throw new EngineError("FormAT's engine is not answering. Try again in a moment.", id, 0);
   });
   let body: CommandReply<T>;
   try {

@@ -51,7 +51,7 @@ fn check_for_updates(handle: tauri::AppHandle) {
         let Ok(Some(update)) = updater.check().await else { return };
         let install = handle
             .dialog()
-            .message(format!("Format {} is available. Install it and restart?", update.version))
+            .message(format!("FormAT {} is available. Install it and restart?", update.version))
             .title("Update available")
             .buttons(MessageDialogButtons::OkCancel)
             .blocking_show();
@@ -217,11 +217,13 @@ fn main() {
                     }
                 }
                 if port.is_none() {
-                    reveal::close_splash(&handle);
+                    if let Some(splash) = handle.get_webview_window("splash") {
+                        let _ = splash.hide();
+                    }
                     handle
                         .dialog()
-                        .message(format!("The Format engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")))
-                        .title("Format")
+                        .message(format!("The FormAT engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")))
+                        .title("FormAT")
                         .blocking_show();
                     kill_backend(&handle);
                     std::process::exit(1);

@@ -1,6 +1,7 @@
 import { DEMO_GROUP, demosFirst } from '../demos';
 import { run } from '../engine-client/api';
 import type { Account, AppState, Conversation, View } from '../state/app-state';
+import { deleteChat } from './confirm';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
 import { ui, type UiIcon } from './icons-ft';
 import { openMenu } from './menu';
@@ -233,7 +234,7 @@ export class Sidebar {
       { label: c.pinned ? 'Unpin' : 'Pin', icon: 'pin', action: () => void run('conversation.pin', { id, pinned: !c.pinned }) },
       { label: 'Rename', icon: 'pencil', action: () => this.rename(id) },
       { divider: true },
-      { label: 'Delete', icon: 'trash', action: () => void run('conversation.delete', { id }) },
+      { label: 'Delete', icon: 'trash', action: () => void deleteChat(c) },
     ], 'down');
   }
 

@@ -26,6 +26,7 @@ import { FindBar } from './ui/find-bar';
 import { mountMenus, type AppMenus } from './ui/app-menu';
 import { formatKeys } from './ui/commands';
 import { demoConversation, demoPage } from './demos';
+import { deleteChat } from './ui/confirm';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -152,7 +153,7 @@ export class App {
     const panel = new SidePanel(() => this.toggle('panel', false), (p) => this.openFiles(p));
     this.panel = panel;
     this.state.on('active', () => this.refreshOutputs());
-    this.dock = new TerminalDock(() => this.toggle('term', false));
+    this.dock = new TerminalDock(() => this.toggle('term', false), (e) => this.menus.commands.forEvent(e)?.id === 'toggle-terminal');
     this.palette = new Palette(this.state, () => [
       { label: 'New chat', icon: 'plus', hint: this.menus.keyLabel('new-chat'), run: () => this.newChat() },
       { label: 'Toggle sidebar', icon: 'sidebar', hint: this.menus.keyLabel('toggle-sidebar'), run: () => this.toggle('sidebar') },
@@ -244,6 +245,9 @@ export class App {
     this.sidebar.setTerminalOpen(html.dataset.ftTerm === 'open');
     this.syncToggles();
     if (html.dataset.ftTerm === 'open') void this.dock.ensure();
+    window.matchMedia('(max-width: 760px)').addEventListener('change', (e) => {
+      if (e.matches && html.dataset.ftSidebar === 'open') html.dataset.ftSidebar = 'rail';
+    });
   }
 
   async load(): Promise<void> {
@@ -733,7 +737,7 @@ export class App {
 
   private claimNext = false;
 
-  private async send(text: string, files: FileInfo[] = [], comments: FileComment[] = []): Promise<void> {
+  private async send(text: string, files: FileInfo[] = [], comments: FileComment[] = []): Promise<boolean> {
     const id = this.state.activeId;
     if (!id) this.claimNext = true;
     try {
@@ -742,9 +746,11 @@ export class App {
       await run('chat.send', { text, conversationId: id ?? undefined, attachments: files.map((f) => f.id), ...(comments.length ? { comments } : {}), ...project, ...(off.length ? { connectorsOff: off } : {}),
         ...(this.composer.researchOn ? { research: true } : {}), ...(this.composer.outputKind ? { output: this.composer.outputKind } : {}) });
       if (this.composer.outputKind) this.composer.setOutput(null);
+      return true;
     } catch (err) {
       this.claimNext = false;
       this.composer.showError(err instanceof Error ? err.message : String(err));
+      return false;
     }
   }
 
@@ -787,7 +793,7 @@ export class App {
         },
       },
       { divider: true },
-      { label: 'Delete', icon: 'trash', action: () => void run('conversation.delete', { id }) },
+      { label: 'Delete', icon: 'trash', action: () => void deleteChat(c) },
     ], 'down');
   }
 

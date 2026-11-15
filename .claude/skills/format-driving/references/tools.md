@@ -79,7 +79,7 @@ Creates an empty conversation and returns it with its id. Use when you need an e
 
 ### delete_conversation
 
-Deletes a conversation and its messages, and removes its attachments from the Anthropic Files API where they were uploaded. Not undoable. Use only when the person asks to delete a chat; it cannot be undone.
+Deletes a conversation with its messages, its artifacts and its own folder of files, and removes its attachments from the Anthropic Files API where they were uploaded. A reply still running in it is stopped. Not undoable. Use only when the person asks to delete a chat; it cannot be undone.
 
 - changes state · command `conversation.delete` · params: `id` string
 

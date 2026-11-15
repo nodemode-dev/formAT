@@ -63,7 +63,7 @@ def info() -> dict:
 
 def require() -> None:
     if not enabled():
-        raise CommandError("The native renderer is off; build it with ./format native build and start Format with FORMAT_NATIVE=1", 409)
+        raise CommandError("The native renderer is off; build it with ./format native build and start FormAT with FORMAT_NATIVE=1", 409)
 
 
 def snapshot(ansi: str, cols: int, rows: int, sid: str) -> dict:

@@ -1,6 +1,6 @@
 # The built-in browser
 
-Format has its own browser, separate from the one you use every day. You can browse in it, and Claude can use it when a task needs clicking through a site, filling in a form or a page that needs scripts or a sign-in.
+FormAT has its own browser, separate from the one you use every day. You can browse in it, and Claude can use it when a task needs clicking through a site, filling in a form or a page that needs scripts or a sign-in.
 
 ## Install
 
@@ -8,7 +8,7 @@ Format has its own browser, separate from the one you use every day. You can bro
 ./format install-browser
 ```
 
-This installs Playwright and its Chromium into Format's engine. Restart Format afterwards.
+This installs Playwright and its Chromium into FormAT's engine. Restart FormAT afterwards.
 
 In the desktop app the package is already inside; the first time you open the Browser pane it offers Install the browser, which downloads Chromium once (about 150 MB).
 
@@ -16,7 +16,7 @@ In the desktop app the package is already inside; the first time you open the Br
 
 The globe in the top bar opens the Browser pane beside the chat. Type a URL and press Enter. Then use the page directly: click on it, type, press Enter or Tab, scroll with the wheel. Back, Forward and Reload are in the pane's header.
 
-Sign-ins you make in this browser stay in Format (in its own profile in the data folder), apart from your everyday browser.
+Sign-ins you make in this browser stay in FormAT (in its own profile in the data folder), apart from your everyday browser.
 
 ## Claude and the browser
 

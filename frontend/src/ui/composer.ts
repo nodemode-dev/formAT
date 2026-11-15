@@ -9,7 +9,7 @@ import { SlashMenu, type SlashItem } from './slash-menu';
 import { Dictation } from './dictation';
 
 export interface ComposerHooks {
-  send(text: string, files: FileInfo[], comments: FileComment[]): Promise<void>;
+  send(text: string, files: FileInfo[], comments: FileComment[]): Promise<boolean>;
   edit(text: string, id: string): Promise<void>;
   stop(): void;
   isRunning(): boolean;
@@ -411,7 +411,11 @@ export class Composer {
       this.renderQueue();
       return;
     }
-    await this.hooks.send(text, files, comments);
+    const ok = await this.hooks.send(text, files, comments);
+    if (!ok && text && !this.input.value) {
+      this.input.value = text;
+      this.autosize();
+    }
   }
 
   nextQueued(): { text: string; files: FileInfo[]; comments: FileComment[] } | undefined {

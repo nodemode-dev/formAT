@@ -3,7 +3,7 @@ from pathlib import Path
 
 from app import __version__
 
-APP_NAME = "Format"
+APP_NAME = "FormAT"
 VERSION = __version__
 BACKEND_DIR = Path(__file__).resolve().parents[2]
 REPO_DIR = BACKEND_DIR.parent

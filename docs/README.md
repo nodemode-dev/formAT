@@ -1,23 +1,23 @@
-# Format manual
+# FormAT manual
 
-Format (A.T, the Agentic Terminal) is a chat and agent workspace that runs on your own computer and talks to Claude through your own Anthropic API key. It works the way claude.ai does: a sidebar of chats, a conversation in the middle, a composer at the bottom, and panels beside the chat for what Claude makes.
+FormAT (A.T, the Agentic Terminal) is a chat and agent workspace that runs on your own computer and talks to Claude through your own Anthropic API key. It has a sidebar of chats, a conversation in the middle, a composer at the bottom, and panels beside the chat for what Claude makes.
 
-This manual is for people using Format. People changing Format's code want the developer wiki in [`.docs/wiki`](../.docs/wiki/Home.md).
+This manual is for people using FormAT. People changing FormAT's code want the developer wiki in [`.docs/wiki`](../.docs/wiki/Home.md).
 
 ## Pages
 
 | Page | Covers |
 | --- | --- |
 | [Getting started](getting-started.md) | install, first run, your API key, the window at a glance |
-| [The desktop app](desktop-app.md) | Format for macOS, Windows and Linux: installing, first launch, where data lives, building it |
+| [The desktop app](desktop-app.md) | FormAT for macOS, Windows and Linux: installing, first launch, where data lives, building it |
 | [Chatting](chatting.md) | the composer, models and effort, attachments, dictation, editing and branches, find, Research, Create |
 | [Tools and approvals](tools-and-approvals.md) | what Claude can do on your computer, Ask, Allow all and Plan, the sandbox, questions, plans, sub-agents |
 | [Artifacts and documents](artifacts-and-documents.md) | pages and apps beside the chat, documents, spreadsheets and slides, comments, export, share links, files and outputs |
 | [Projects, memory and Customize](projects-memory-customize.md) | projects, memory, skills, plugins, connectors |
-| [The built-in browser](browser.md) | browsing in Format, and Claude using the same browser |
+| [The built-in browser](browser.md) | browsing in FormAT, and Claude using the same browser |
 | [Other devices](other-devices.md) | pairing a phone or another computer, share links on your network |
 | [Terminal, scheduled tasks and background work](terminal-and-scheduled.md) | the terminal dock, Claude's tab, scheduled tasks, the Background list |
-| [Agents and MCP](agents-and-mcp.md) | using Format from Claude Code, Codex and Cursor |
+| [Agents and MCP](agents-and-mcp.md) | using FormAT from Claude Code, Codex and Cursor |
 | [Settings](settings.md) | every setting and what it changes |
 | [Keyboard shortcuts](shortcuts.md) | the full list |
 | [Troubleshooting](troubleshooting.md) | common problems and what to do |
