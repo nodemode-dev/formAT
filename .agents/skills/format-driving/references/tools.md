@@ -565,6 +565,18 @@ Whether the Claude Code CLI is installed (its path and version) and which engine
 
 - read-only · command `claudecode.status` · params: none
 
+### list_demos
+
+The demo chats Format ships with: each one's id, chat title, artifact title, number of output files, and conversationId, which is null when the person deleted that demo. A demo is a recorded chat stored like any other; reading one needs no API key and calls no model. Use to see which demo chats ship with Format and which of them are still in the sidebar.
+
+- read-only · command `demo.list` · params: none
+
+### restore_demo
+
+Returns the conversation of one demo, and puts the demo back first when it was deleted: a new chat with the recorded messages, the artifact page and the output files, made from the data shipped with Format. Calls no model and needs no API key. restored is true when a chat was made, false when the demo was already there, in which case nothing changes. Use when the person wants a demo chat opened or brought back after deleting it; it returns the demo's conversation.
+
+- changes state · command `demo.restore` · params: `id` string
+
 ### forget_devices
 
 Changes the pairing code, so every paired device has to pair again. Use when the person wants every paired device to pair again.

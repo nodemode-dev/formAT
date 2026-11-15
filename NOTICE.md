@@ -6,6 +6,10 @@ Format · Copyright 2026 NodeAgentc, Inc. · Licensed under the Apache License, 
 
 `frontend/src/styles/tokens.css`, `scrollbars.css`, `fonts.css`, `light-mode.css`, `shell.css` and `dialogs.css` are the form family's Studio Dark sheets, copied unchanged from formvis v1.66.1 (Apache-2.0, nodemode-ai). The theme boot script in `frontend/index.html` is the family's `theme-boot.js` v1.0.0, as formlit carries it.
 
+## Demo chats
+
+`backend/app/demos/` holds the demo chats Format ships with: `northern-light` (the page Northern Light) and `harbour-ferries` (the page Harbour Ferries, season 2026, with a form.md import package of Markdown and CSV files and the same folder as a zip). They are original work made for Format and carry its licence. The pages are drawn in code (canvas and inline SVG) and contain no image, font, script or data from anyone else. Harbour Ferries is not a real operator: its routes, vessels and every figure are invented. The messages in both chats were written for the demos; opening one calls no model.
+
 ## Third-party packages
 
 | Package | Licence | Where |

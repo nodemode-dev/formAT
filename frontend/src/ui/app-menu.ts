@@ -1,3 +1,4 @@
+import { DEMOS, demoCommand } from '../demos';
 import type { AppState, View } from '../state/app-state';
 import { Commands, type Command } from './commands';
 import { isMac } from './dom';
@@ -26,6 +27,7 @@ export interface MenuHost {
   addFiles(): void;
   compact(): void;
   shortcuts(): void;
+  openDemo(id: string): void;
 }
 
 export interface AppMenus {
@@ -132,6 +134,7 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     { id: 'window-zoom', label: isMac ? 'Zoom' : 'Maximize', enabled: inWindow, run: () => void desktopWindow()?.toggleMaximize().catch(() => undefined) },
 
     { id: 'shortcuts', label: 'Keyboard Shortcuts', keys: ['Mod+/'], run: () => host.shortcuts() },
+    ...DEMOS.map((d) => ({ id: demoCommand(d.id), label: d.title, description: d.blurb, run: () => host.openDemo(d.id) })),
     { id: 'about', label: 'About FormAT', run: () => host.openSettings('about') },
   );
 
@@ -141,7 +144,7 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     { label: 'View', items: () => ['toggle-sidebar', 'toggle-outputs', 'toggle-terminal', '-', 'toggle-files', 'toggle-browser', 'toggle-background', ...(isMacDesktop() ? ['-', 'menus-in-window'] : [])] },
     { label: 'Go', items: ['home', 'palette', '-', 'go-chat', 'go-projects', 'go-artifacts', 'go-scheduled', 'go-customize'] },
     { label: 'Window', items: ['window-minimize', 'window-zoom'] },
-    { label: 'Help', items: ['shortcuts', '-', 'about'] },
+    { label: 'Help', items: ['shortcuts', '-', { label: 'Demos', items: DEMOS.map((d) => demoCommand(d.id)) }, '-', 'about'] },
   ];
 
   const menubar = new MenuBar(bar, commands, menus, dialogOpen);

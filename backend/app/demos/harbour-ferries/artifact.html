@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Harbour Ferries, season 2026</title>
+<style>
+  :root { --bg: #0a1115; --card: #111b21; --card2: #0e171c; --line: rgba(190, 225, 230, 0.09); --grid: rgba(190, 225, 230, 0.07);
+    --ink: #e7eff1; --ink2: #b3c4c8; --mute: #7f969b; --teal: #22a596; --teal-hi: #5fd6c8; --amber: #c4832a; --amber-hi: #f0b45e; --good: #37c26b; --bad: #ec835a;
+    --ui: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", sans-serif; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--ui); }
+  body { overflow-x: hidden; overflow-y: auto; scrollbar-width: none; background: radial-gradient(120% 80% at 80% -10%, #12262b 0%, var(--bg) 55%); }
+  body::-webkit-scrollbar { display: none; }
+  .app { height: 100%; min-height: 620px; padding: 12px; display: grid; gap: 10px;
+    grid-template-columns: repeat(12, minmax(0, 1fr)); grid-template-rows: auto auto minmax(0, 1.25fr) minmax(0, 1fr);
+    grid-template-areas: "head head head head head head head head head head head head" "k1 k1 k1 k2 k2 k2 k3 k3 k3 k4 k4 k4" "daily daily daily daily daily daily daily daily ontime ontime ontime ontime" "routes routes routes routes board board board board board board board board"; }
+  header { grid-area: head; display: flex; align-items: center; gap: 12px; min-width: 0; height: 34px; }
+  .brand { display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .brand svg { width: 22px; height: 22px; flex: none; color: var(--teal-hi); }
+  .brand b { font-size: 14px; font-weight: 600; letter-spacing: 0.01em; white-space: nowrap; }
+  .brand span { font-size: 12px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .chips { display: flex; gap: 4px; margin-left: auto; padding: 3px; border-radius: 9px; background: rgba(255, 255, 255, 0.035); border: 1px solid var(--line); }
+  .chips button { all: unset; cursor: pointer; height: 22px; padding: 0 9px; border-radius: 6px; font: 500 11px/22px var(--ui); color: var(--ink2); white-space: nowrap; transition: background 0.15s ease, color 0.15s ease; }
+  .chips button:hover { background: rgba(255, 255, 255, 0.06); color: var(--ink); }
+  .chips button[aria-pressed="true"] { background: rgba(34, 165, 150, 0.22); color: #fff; box-shadow: inset 0 0 0 1px rgba(95, 214, 200, 0.4); }
+  .chips button:focus-visible, .bar-row:focus-visible { outline: 2px solid var(--amber-hi); outline-offset: 1px; }
+  .chips .short { display: none; }
+  .clock { display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--line); background: rgba(255, 255, 255, 0.035); font-size: 11px; color: var(--mute); white-space: nowrap; }
+  .clock i { width: 7px; height: 7px; border-radius: 50%; background: var(--good); box-shadow: 0 0 0 0 rgba(55, 194, 107, 0.5); animation: pulse 2s ease-out infinite; }
+  .clock b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; width: 58px; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(55, 194, 107, 0.55); } 100% { box-shadow: 0 0 0 9px rgba(55, 194, 107, 0); } }
+  .card { position: relative; min-width: 0; min-height: 0; border-radius: 12px; background: linear-gradient(180deg, var(--card) 0%, var(--card2) 100%); border: 1px solid var(--line); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03); }
+  .kpi { height: 84px; padding: 11px 13px; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr auto; }
+  .kpi .lab, .card h2 { margin: 0; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .val { align-self: center; font-size: 25px; font-weight: 600; letter-spacing: -0.01em; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .kpi .sub { font-size: 11px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kpi .sub em { font-style: normal; font-weight: 600; color: var(--ink2); }
+  .kpi .sub em.up::before, .kpi .sub em.down::before { content: ""; display: inline-block; width: 0; height: 0; margin-right: 4px; border-left: 4px solid transparent; border-right: 4px solid transparent; vertical-align: 1px; }
+  .kpi .sub em.up::before { border-bottom: 6px solid var(--good); }
+  .kpi .sub em.down::before { border-top: 6px solid var(--bad); }
+  .kpi svg { position: absolute; right: 13px; top: 13px; width: 34%; height: 42px; overflow: visible; }
+  .panel { display: flex; flex-direction: column; padding: 12px 13px 10px; }
+  .panel .top { display: flex; align-items: baseline; gap: 8px; min-width: 0; height: 15px; flex: none; }
+  .panel .top p { margin: 0; font-size: 11px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .plot { position: relative; flex: 1; min-height: 0; margin-top: 6px; }
+  .plot svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; overflow: visible; }
+  svg text { font-family: var(--ui); font-size: 10px; fill: var(--mute); font-variant-numeric: tabular-nums; }
+  .draw { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 1.4s 0.15s cubic-bezier(0.3, 0.7, 0.2, 1) forwards; }
+  .fade { opacity: 0; animation: fade 0.9s 0.7s ease forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+  @keyframes fade { to { opacity: 1; } }
+  #k1 { grid-area: k1; } #k2 { grid-area: k2; } #k3 { grid-area: k3; } #k4 { grid-area: k4; }
+  #daily { grid-area: daily; } #ontime { grid-area: ontime; } #routes { grid-area: routes; } #board { grid-area: board; }
+  .bars { flex: 1; min-height: 0; margin-top: 8px; display: grid; grid-auto-rows: minmax(0, 1fr); gap: 2px; }
+  .bar-row { display: grid; grid-template-columns: 96px minmax(0, 1fr) 96px; align-items: center; gap: 8px; padding: 0 4px; margin: 0 -4px; border-radius: 6px; cursor: pointer; font-size: 11.5px; color: var(--ink2); transition: opacity 0.18s ease, background 0.18s ease; }
+  .bar-row:hover { background: rgba(255, 255, 255, 0.04); }
+  .bar-row .track { height: 10px; border-radius: 0 4px 4px 0; }
+  .bar-row .fill { height: 100%; width: 100%; border-radius: 0 4px 4px 0; background: var(--teal); transform-origin: left center; transform: scaleX(var(--v)); transition: transform 0.9s cubic-bezier(0.2, 0.7, 0.2, 1), background 0.18s ease; }
+  .bar-row .num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink); white-space: nowrap; }
+  .bar-row .num small { font-size: 10.5px; color: var(--mute); margin-left: 5px; }
+  .bars.has-sel .bar-row:not(.sel) { opacity: 0.45; }
+  .bar-row.sel .fill, .bar-row:hover .fill { background: var(--teal-hi); }
+  .bar-row span:first-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  table { width: 100%; height: 100%; border-collapse: collapse; table-layout: fixed; font-size: 11.5px; }
+  .tablewrap { flex: 1; min-height: 0; margin-top: 6px; overflow: hidden; }
+  th { text-align: left; font-size: 9.5px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--mute); padding: 0 6px 4px 0; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 0 6px 0 0; border-bottom: 1px solid var(--grid); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink2); }
+  tr:last-child td { border-bottom: 0; }
+  td.r, th.r { text-align: right; padding-right: 0; }
+  td b { font-weight: 600; color: var(--ink); }
+  td .code { display: inline-block; width: 24px; height: 16px; margin-right: 7px; border-radius: 4px; background: rgba(34, 165, 150, 0.18); color: var(--teal-hi); font-size: 9.5px; font-weight: 700; line-height: 16px; text-align: center; letter-spacing: 0.04em; vertical-align: 1px; }
+  td.num { font-variant-numeric: tabular-nums; color: var(--ink); }
+  td.soon { color: var(--amber-hi); }
+  .prog { display: block; height: 3px; border-radius: 2px; background: rgba(190, 225, 230, 0.1); overflow: hidden; }
+  .prog i { display: block; height: 100%; background: var(--teal); transform-origin: left center; transform: scaleX(var(--p, 0)); transition: transform 1s linear; }
+  col.c-route { width: 34%; } col.c-next { width: 13%; } col.c-in { width: 15%; } col.c-ves { width: 20%; } col.c-prog { width: 18%; }
+  .tip { position: fixed; left: 0; top: 0; z-index: 5; min-width: 148px; padding: 8px 10px 9px; border-radius: 9px; pointer-events: none; opacity: 0; background: rgba(8, 14, 18, 0.95); border: 1px solid rgba(190, 225, 230, 0.2); box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5); font-size: 11px; color: var(--mute); transition: opacity 0.12s ease; will-change: transform; }
+  .tip.on { opacity: 1; }
+  .tip h3 { margin: 0 0 3px; font-size: 10.5px; font-weight: 500; color: var(--ink2); }
+  .tip strong { display: block; font-size: 15px; font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+  .tip p { margin: 2px 0 0; white-space: nowrap; }
+  .tip p.note { color: var(--amber-hi); }
+  .foot { position: absolute; right: 13px; top: 12px; font-size: 10px; color: var(--mute); white-space: nowrap; }
+  @media (max-width: 900px) {
+    .app { min-height: 760px; padding: 10px; gap: 8px; grid-template-rows: auto auto auto auto minmax(150px, 1.3fr) minmax(128px, 0.9fr) auto;
+      grid-template-areas: "head head head head head head head head head head head head" "chips chips chips chips chips chips chips chips chips chips chips chips" "k1 k1 k1 k1 k1 k1 k2 k2 k2 k2 k2 k2" "k3 k3 k3 k3 k3 k3 k4 k4 k4 k4 k4 k4" "daily daily daily daily daily daily daily daily daily daily daily daily" "routes routes routes routes routes routes ontime ontime ontime ontime ontime ontime" "board board board board board board board board board board board board"; }
+    header { display: contents; }
+    .brand { grid-area: head; grid-column: 1 / 9; height: 28px; }
+    .clock { grid-area: head; grid-column: 9 / 13; justify-self: end; }
+    .chips { grid-area: chips; margin: 0; justify-content: space-between; }
+    .chips button { flex: 1; text-align: center; padding: 0 4px; }
+    .kpi { height: 76px; padding: 9px 11px; }
+    .kpi .val { font-size: 22px; }
+    .kpi svg { right: 11px; top: 27px; height: 26px; width: 36%; }
+    #ontime .top p, #routes .top p { display: none; }
+    .bar-row { grid-template-columns: 78px minmax(0, 1fr) 52px; font-size: 11px; }
+    .bar-row .num small { display: none; }
+    #board { height: 172px; }
+    .clock span { display: none; }
+  }
+  @media (max-width: 620px) { .chips .long { display: none; } .chips .short { display: inline; } .foot { display: none; } col.c-ves { width: 0; } .ves { padding: 0; font-size: 0; } col.c-route { width: 44%; } col.c-prog { width: 16%; } }
+  @media (prefers-reduced-motion: reduce) { .draw, .fade { animation: none; stroke-dashoffset: 0; opacity: 1; } .clock i { animation: none; } .bar-row .fill, .prog i { transition: none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 15l2 4h14l2-4-9-3z"/><path d="M7 13.5V8h10v5.5"/><path d="M12 8V4"/><path d="M2 22c1.5 0 1.5-1 3-1s1.500 1 3 1 1.500-1 3-1 1.500 1 3 1 1.500-1 3-1 1.500 1 3 1"/></svg>
+      <b>Harbour Ferries</b><span id="range"></span>
+    </div>
+    <div class="chips" id="chips" role="group" aria-label="Route"></div>
+    <div class="clock" title="Your clock against the season timetable"><i></i><span>Timetable clock</span><b id="clock">00:00:00</b></div>
+  </header>
+  <section class="card kpi" id="k1"><div class="lab" id="k1l">Season riders</div><div class="val" id="k1v">&nbsp;</div><svg id="k1s" aria-hidden="true"></svg><div class="sub" id="k1d">&nbsp;</div></section>
+  <section class="card kpi" id="k2"><div class="lab">Average per day</div><div class="val" id="k2v">&nbsp;</div><svg id="k2s" aria-hidden="true"></svg><div class="sub" id="k2d">&nbsp;</div></section>
+  <section class="card kpi" id="k3"><div class="lab">Busiest day</div><div class="val" id="k3v">&nbsp;</div><svg id="k3s" aria-hidden="true"></svg><div class="sub" id="k3d">&nbsp;</div></section>
+  <section class="card kpi" id="k4"><div class="lab">On-time sailings</div><div class="val" id="k4v">&nbsp;</div><svg id="k4s" aria-hidden="true"></svg><div class="sub" id="k4d">&nbsp;</div></section>
+  <section class="card panel" id="daily"><div class="top"><h2 id="dailyTitle">Daily riders</h2><p id="dailySub"></p></div><div class="plot" id="dailyPlot"><svg id="dailySvg" role="img" aria-label="Riders per day across the season"></svg></div></section>
+  <section class="card panel" id="ontime"><div class="top"><h2>On time by week</h2><p id="ontimeSub"></p></div><div class="plot" id="ontimePlot"><svg id="ontimeSvg" role="img" aria-label="On-time rate per week"></svg></div></section>
+  <section class="card panel" id="routes"><div class="top"><h2>Riders by route</h2><p>Season total and share</p></div><div class="bars" id="bars"></div></section>
+  <section class="card panel" id="board"><div class="top"><h2>Next departures</h2><p>Season timetable against your clock</p></div><span class="foot" id="fleetLine"></span>
+    <div class="tablewrap"><table><colgroup><col class="c-route"><col class="c-next"><col class="c-in"><col class="c-ves"><col class="c-prog"></colgroup>
+      <thead><tr><th>Route</th><th>Next</th><th>Leaves in</th><th class="ves">Vessel</th><th class="r">Wait</th></tr></thead><tbody id="rows"></tbody></table></div></section>
+</div>
+<div class="tip" id="tip"><h3 id="tipH"></h3><strong id="tipV"></strong><p id="tipA"></p><p id="tipB"></p><p class="note" id="tipC"></p></div>
+<script id="data" type="application/json">{"operator":"Harbour Ferries","start":"2026-05-01","end":"2026-09-30","weather":["Clear","Cloudy","Rain","Windy","Fog"],"routes":[{"name":"Harbour Loop","code":"HL","frm":"Town Pier","to":"Town Pier","mins":25,"first":"06:30","last":"22:30","every":20,"perDay":49,"fare":3.5,"vessels":["Tern","Kittiwake"]},{"name":"Eastern Quay","code":"EQ","frm":"Town Pier","to":"Eastern Quay","mins":12,"first":"06:45","last":"21:45","every":30,"perDay":62,"fare":2.8,"vessels":["Guillemot"]},{"name":"Island Shuttle","code":"IS","frm":"Town Pier","to":"Gull Island","mins":35,"first":"08:00","last":"19:00","every":60,"perDay":24,"fare":7.5,"vessels":["Fulmar","Shearwater"]},{"name":"Lighthouse Run","code":"LR","frm":"Marina","to":"Skerry Light","mins":50,"first":"09:00","last":"18:00","every":90,"perDay":14,"fare":9.0,"vessels":["Petrel"]},{"name":"West Sands","code":"WS","frm":"North Mole","to":"West Sands","mins":20,"first":"07:30","last":"21:00","every":45,"perDay":38,"fare":4.2,"vessels":["Eider"]}],"days":[["2026-05-01",1,533,403,301,239,161,187,187,183],["2026-05-02",3,542,435,298,232,182,187,174,158],["2026-05-03",3,661,438,296,252,169,187,177,159],["2026-05-04",1,402,357,252,176,143,187,187,174],["2026-05-05",4,397,281,192,149,123,187,181,164],["2026-05-06",1,459,359,266,191,141,187,186,182],["2026-05-07",3,400,323,197,133,131,187,176,165],["2026-05-08",4,446,389,261,188,155,187,179,157],["2026-05-09",4,600,446,339,272,204,187,178,160],["2026-05-10",4,594,466,367,280,215,187,179,158],["2026-05-11",4,428,321,209,147,124,187,178,152],["2026-05-12",4,396,300,211,147,124,187,182,164],["2026-05-13",0,516,378,272,226,178,187,187,180],["2026-05-14",0,532,357,292,256,176,187,187,183],["2026-05-15",0,581,456,380,258,209,187,187,181],["2026-05-16",2,531,401,252,175,170,187,186,175],["2026-05-17",2,496,400,275,193,170,187,186,179],["2026-05-18",2,321,280,156,115,95,187,186,171],["2026-05-19",2,344,270,144,98,96,187,186,175],["2026-05-20",0,480,396,282,252,171,187,187,182],["2026-05-21",0,523,389,314,245,182,187,187,181],["2026-05-22",1,581,469,331,255,183,187,184,179],["2026-05-23",1,708,524,434,392,251,187,186,183],["2026-05-24",1,765,586,455,388,265,187,186,178],["2026-05-25",1,649,537,369,303,226,187,186,181],["2026-05-26",1,458,341,263,204,163,187,186,176],["2026-05-27",1,493,387,288,224,161,187,187,180],["2026-05-28",1,509,420,301,222,183,187,186,179],["2026-05-29",1,574,467,327,270,199,187,186,181],["2026-05-30",1,805,561,440,362,255,187,186,175],["2026-05-31",0,887,647,567,467,314,187,187,180],["2026-06-01",0,534,434,309,267,194,187,185,172],["2026-06-02",0,551,392,336,267,179,187,186,183],["2026-06-03",0,591,424,328,275,203,187,187,179],["2026-06-04",2,443,324,174,138,125,187,185,171],["2026-06-05",2,509,384,220,157,138,187,185,172],["2026-06-06",3,687,532,355,294,231,187,177,160],["2026-06-07",3,612,542,367,294,241,187,174,159],["2026-06-08",3,422,376,218,186,139,187,180,167],["2026-06-09",3,486,358,232,177,141,187,173,160],["2026-06-10",1,561,453,323,227,191,187,187,179],["2026-06-11",1,574,501,340,248,208,187,186,178],["2026-06-12",1,730,492,433,307,223,187,186,175],["2026-06-13",0,957,674,606,465,350,187,187,177],["2026-06-14",0,972,745,595,540,370,187,187,176],["2026-06-15",0,674,531,367,295,225,187,184,179],["2026-06-16",0,646,479,396,285,225,187,187,184],["2026-06-17",2,452,359,208,148,134,187,183,173],["2026-06-18",3,516,417,284,210,169,187,177,153],["2026-06-19",1,768,590,437,340,254,187,186,181],["2026-06-20",1,1097,764,608,490,377,187,187,180],["2026-06-21",0,1063,770,710,575,400,187,187,175],["2026-06-22",1,626,481,374,272,215,187,187,177],["2026-06-23",2,498,387,213,155,133,187,184,179],["2026-06-24",0,742,535,402,315,253,187,187,180],["2026-06-25",2,512,436,218,184,167,187,186,179],["2026-06-26",2,621,484,306,187,182,187,185,176],["2026-06-27",1,967,756,604,497,372,187,187,174],["2026-06-28",0,1232,874,763,638,391,187,187,178],["2026-06-29",0,768,598,463,336,257,187,187,180],["2026-06-30",0,779,580,443,347,269,187,187,180],["2026-07-01",1,703,584,394,315,231,187,186,181],["2026-07-02",1,748,587,424,331,248,187,186,175],["2026-07-03",1,865,671,514,381,322,187,185,176],["2026-07-04",1,1075,844,672,526,376,187,186,170],["2026-07-05",1,1064,844,747,612,419,187,187,175],["2026-07-06",0,779,639,429,364,294,187,185,179],["2026-07-07",0,812,637,484,340,263,187,187,183],["2026-07-08",2,607,469,259,192,164,187,187,182],["2026-07-09",1,773,635,419,362,260,187,186,179],["2026-07-10",2,732,598,308,230,203,187,186,177],["2026-07-11",1,1205,826,721,543,426,187,186,173],["2026-07-12",0,1218,1281,1008,807,614,187,186,173],["2026-07-13",0,849,598,509,392,278,187,187,184],["2026-07-14",0,891,649,479,360,260,187,186,177],["2026-07-15",0,874,671,531,375,294,187,187,183],["2026-07-16",0,877,643,556,428,313,187,187,182],["2026-07-17",0,1013,795,601,524,389,187,187,180],["2026-07-18",2,845,756,436,346,292,187,186,172],["2026-07-19",2,1012,750,428,337,283,187,187,171],["2026-07-20",2,591,492,274,203,182,187,186,172],["2026-07-21",2,608,508,253,184,171,187,186,175],["2026-07-22",2,621,520,289,185,188,187,184,172],["2026-07-23",2,701,568,296,188,188,187,185,178],["2026-07-24",1,1011,723,628,496,290,187,186,181],["2026-07-25",1,1190,924,763,590,430,187,186,178],["2026-07-26",1,1345,932,786,609,449,187,187,174],["2026-07-27",1,808,670,459,341,271,187,185,181],["2026-07-28",1,739,633,432,323,275,187,186,182],["2026-07-29",1,789,621,436,367,247,187,187,180],["2026-07-30",1,803,668,504,362,300,187,186,182],["2026-07-31",1,998,711,517,408,324,187,186,180],["2026-08-01",0,1320,975,860,647,449,187,187,179],["2026-08-02",0,1294,916,878,738,471,187,185,173],["2026-08-03",0,906,628,492,405,317,187,187,185],["2026-08-04",0,842,608,475,380,278,187,187,183],["2026-08-05",0,763,696,498,423,315,187,187,177],["2026-08-06",0,892,619,547,434,296,187,187,182],["2026-08-07",0,1028,793,641,520,368,187,187,177],["2026-08-08",0,1461,1105,913,746,488,187,187,170],["2026-08-09",0,1267,979,859,688,473,187,186,181],["2026-08-10",0,840,624,481,395,310,187,186,178],["2026-08-11",0,805,649,475,368,278,187,187,183],["2026-08-12",0,852,633,533,368,277,187,187,178],["2026-08-13",0,819,674,526,460,310,187,187,179],["2026-08-14",0,1019,760,554,451,324,187,187,178],["2026-08-15",0,1208,922,728,654,455,187,187,178],["2026-08-16",0,1320,963,757,669,480,187,187,178],["2026-08-17",0,839,596,458,338,281,187,187,182],["2026-08-18",0,781,569,469,354,271,187,186,184],["2026-08-19",0,760,577,463,366,272,187,187,186],["2026-08-20",0,776,708,494,344,289,187,187,185],["2026-08-21",0,897,701,553,481,318,187,186,179],["2026-08-22",0,1120,918,739,588,434,187,187,182],["2026-08-23",0,1106,823,773,624,422,187,187,181],["2026-08-24",0,745,531,430,336,233,187,187,181],["2026-08-25",0,703,521,401,317,246,187,186,179],["2026-08-26",0,700,544,413,310,229,187,187,182],["2026-08-27",0,722,531,441,342,264,187,186,184],["2026-08-28",0,874,636,556,403,295,187,187,182],["2026-08-29",2,677,536,353,258,219,187,186,179],["2026-08-30",2,738,561,385,256,244,187,185,176],["2026-08-31",0,864,676,550,399,309,187,186,184],["2026-09-01",1,602,490,324,237,190,187,186,182],["2026-09-02",2,450,364,229,147,134,187,184,176],["2026-09-03",0,653,533,421,307,231,187,187,180],["2026-09-04",0,786,574,489,388,273,187,186,181],["2026-09-05",0,985,685,645,468,327,187,186,179],["2026-09-06",1,894,687,531,411,327,187,186,181],["2026-09-07",0,621,492,363,288,220,187,187,182],["2026-09-08",0,641,465,369,268,222,187,187,183],["2026-09-09",1,579,446,317,236,174,187,186,185],["2026-09-10",1,547,454,302,233,194,187,187,184],["2026-09-11",1,669,513,406,294,238,187,186,182],["2026-09-12",1,844,627,521,434,331,187,185,174],["2026-09-13",0,856,685,565,480,314,187,187,183],["2026-09-14",0,595,468,347,249,201,187,186,184],["2026-09-15",2,380,315,187,118,116,187,186,171],["2026-09-16",1,527,431,294,210,176,187,185,173],["2026-09-17",1,548,427,323,238,175,187,187,186],["2026-09-18",1,637,436,336,275,218,187,187,178],["2026-09-19",1,812,527,499,371,254,187,187,183],["2026-09-20",1,726,582,489,407,260,187,185,174],["2026-09-21",1,520,411,281,209,166,187,187,177],["2026-09-22",1,485,374,255,206,165,187,187,181],["2026-09-23",1,529,381,264,210,172,187,185,182],["2026-09-24",0,565,390,314,252,178,187,187,186],["2026-09-25",2,421,360,199,145,133,187,187,169],["2026-09-26",2,521,437,266,204,177,187,187,172],["2026-09-27",2,550,465,280,203,191,187,184,169],["2026-09-28",2,352,298,161,104,107,187,186,174],["2026-09-29",1,448,348,258,185,162,187,186,180],["2026-09-30",1,487,327,265,205,150,187,186,179]],"notes":{"2026-05-25":"Spring bank holiday","2026-06-20":"Midsummer evening sailings","2026-07-12":"Harbour Regatta","2026-08-08":"Gull Island open day","2026-08-31":"Late summer bank holiday","2026-09-12":"Lighthouse open weekend"},"fleet":[{"name":"Tern","cls":"Harbour class","built":2014,"seats":96,"route":"Harbour Loop","status":"In service","drive":"Hybrid","next":"2027-03-18"},{"name":"Kittiwake","cls":"Harbour class","built":2016,"seats":96,"route":"Harbour Loop","status":"In service","drive":"Hybrid","next":"2027-02-24"},{"name":"Guillemot","cls":"Harbour class","built":2011,"seats":80,"route":"Eastern Quay","status":"In service","drive":"Diesel","next":"2027-04-02"},{"name":"Fulmar","cls":"Sound class","built":2019,"seats":148,"route":"Island Shuttle","status":"In service","drive":"Hybrid","next":"2027-03-05"},{"name":"Shearwater","cls":"Sound class","built":2008,"seats":140,"route":"Island Shuttle","status":"In service","drive":"Diesel","next":"2027-01-21"},{"name":"Petrel","cls":"Sound class","built":2021,"seats":148,"route":"Lighthouse Run","status":"In service","drive":"Hybrid","next":"2027-04-14"},{"name":"Eider","cls":"Harbour class","built":2023,"seats":90,"route":"West Sands","status":"In service","drive":"Electric","next":"2027-03-30"},{"name":"Turnstone","cls":"Harbour class","built":2006,"seats":72,"route":"Relief","status":"Reserve","drive":"Diesel","next":"2026-11-12"}],"fares":[["Adult single",111522],["Day return",92584],["Season pass",59969],["Concession",48747],["Child",37876]],"history":[[2023,311980,28102,94.1,3987],[2024,325410,28240,95.2,4155],[2025,338640,28291,96.0,4402],[2026,350698,28376,95.4,4928]]}</script>
+<script>
+(function () {
+  'use strict';
+  var DATA = JSON.parse(document.getElementById('data').textContent);
+  var NS = 'http://www.w3.org/2000/svg', DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  function $(id) { return document.getElementById(id); }
+  function el(name, attrs, parent) { var e = document.createElementNS(NS, name); for (var k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; }
+  function fmt(n) { return Math.round(n).toLocaleString('en-US'); }
+  function sum(a) { var s = 0; for (var i = 0; i < a.length; i++) s += a[i]; return s; }
+  var NR = DATA.routes.length;
+  var days = DATA.days.map(function (r) {
+    var p = r[0].split('-'), d = new Date(Date.UTC(+p[0], +p[1] - 1, +p[2])), riders = r.slice(2, 2 + NR);
+    return { iso: r[0], dow: d.getUTCDay(), day: +p[2], month: +p[1] - 1, weather: DATA.weather[r[1]], riders: riders, total: sum(riders), sched: r[2 + NR], run: r[3 + NR], ontime: r[4 + NR] };
+  });
+  function label(d) { return DOW[d.dow] + ' ' + d.day + ' ' + MON[d.month]; }
+  var N = days.length, routeTotals = DATA.routes.map(function (_, i) { return sum(days.map(function (d) { return d.riders[i]; })); }), grand = sum(routeTotals);
+  var runAll = sum(days.map(function (d) { return d.run; })), onAll = sum(days.map(function (d) { return d.ontime; })), schedAll = sum(days.map(function (d) { return d.sched; }));
+  var hist = DATA.history, prev = hist[hist.length - 2];
+  var weeks = [];
+  for (var w = 0; w < N; w += 7) { var sl = days.slice(w, w + 7); weeks.push({ from: sl[0], to: sl[sl.length - 1], run: sum(sl.map(function (d) { return d.run; })), on: sum(sl.map(function (d) { return d.ontime; })), days: sl }); }
+  var sel = -1, first = true, reduce = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function series() { return days.map(function (d) { return sel < 0 ? d.total : d.riders[sel]; }); }
+
+  $('range').textContent = 'Season 2026 · ' + days[0].day + ' ' + MON[days[0].month] + ' to ' + days[N - 1].day + ' ' + MON[days[N - 1].month];
+  var inService = DATA.fleet.filter(function (v) { return v.status === 'In service'; }).length;
+  $('fleetLine').textContent = DATA.fleet.length + ' vessels · ' + inService + ' in service · ' + (DATA.fleet.length - inService) + ' in reserve';
+
+  var chips = $('chips');
+  [{ name: 'All routes', code: 'All' }].concat(DATA.routes).forEach(function (r, i) {
+    var b = document.createElement('button'); b.type = 'button'; b.setAttribute('aria-pressed', String(i === 0)); b.setAttribute('aria-label', r.name);
+    var l = document.createElement('span'); l.className = 'long'; l.textContent = r.name; var s = document.createElement('span'); s.className = 'short'; s.textContent = r.code;
+    b.appendChild(l); b.appendChild(s);
+    b.addEventListener('click', function () { select(i - 1); });
+    chips.appendChild(b);
+  });
+
+  var bars = $('bars'), maxRoute = Math.max.apply(null, routeTotals);
+  DATA.routes.forEach(function (r, i) {
+    var row = document.createElement('div'); row.className = 'bar-row'; row.tabIndex = 0; row.setAttribute('role', 'button');
+    row.setAttribute('aria-label', r.name + ', ' + fmt(routeTotals[i]) + ' riders, ' + (routeTotals[i] / grand * 100).toFixed(1) + ' percent');
+    var n = document.createElement('span'); n.textContent = r.name;
+    var t = document.createElement('div'); t.className = 'track'; var f = document.createElement('div'); f.className = 'fill'; f.style.setProperty('--v', reduce ? routeTotals[i] / maxRoute : 0); t.appendChild(f);
+    var v = document.createElement('span'); v.className = 'num'; v.textContent = fmt(routeTotals[i]); var sm = document.createElement('small'); sm.textContent = (routeTotals[i] / grand * 100).toFixed(1) + '%'; v.appendChild(sm);
+    row.appendChild(n); row.appendChild(t); row.appendChild(v);
+    row.addEventListener('click', function () { select(sel === i ? -1 : i); });
+    row.addEventListener('keydown', function (e) { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); select(sel === i ? -1 : i); } });
+    bars.appendChild(row);
+    if (!reduce) requestAnimationFrame(function () { requestAnimationFrame(function () { f.style.setProperty('--v', routeTotals[i] / maxRoute); }); });
+  });
+
+  function spark(svg, values, kind, mark) {
+    var box = svg.getBoundingClientRect(), W = Math.max(20, box.width), H = Math.max(16, box.height);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.textContent = '';
+    var max = Math.max.apply(null, values), min = kind === 'line' ? Math.min.apply(null, values) : 0, span = (max - min) || 1, top = 4, bot = H - 3;
+    if (kind === 'bars') {
+      var bw = W / values.length;
+      values.forEach(function (v, i) { var h = Math.max(1.5, (v - min) / span * (bot - top)); el('rect', { x: i * bw + 1, y: bot - h, width: Math.max(1, bw - 2), height: h, rx: Math.min(2, (bw - 2) / 2), fill: i === mark ? 'var(--amber)' : 'var(--teal)', opacity: i === mark ? 1 : 0.8 }, svg); });
+      return;
+    }
+    var pts = values.map(function (v, i) { return [i / (values.length - 1) * W, bot - (v - min) / span * (bot - top)]; });
+    var d = 'M' + pts.map(function (p) { return p[0].toFixed(1) + ' ' + p[1].toFixed(1); }).join('L');
+    el('path', { d: d + 'L' + W + ' ' + H + 'L0 ' + H + 'Z', fill: 'var(--teal)', opacity: 0.14 }, svg);
+    el('path', { d: d, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 1.6, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    var lp = pts[pts.length - 1]; el('circle', { cx: lp[0], cy: lp[1], r: 2.4, fill: 'var(--teal-hi)' }, svg);
+  }
+
+  function kpis() {
+    var s = series(), total = sum(s), name = sel < 0 ? '' : DATA.routes[sel].name;
+    var peakI = 0; s.forEach(function (v, i) { if (v > s[peakI]) peakI = i; });
+    $('k1l').textContent = sel < 0 ? 'Season riders' : name + ' riders';
+    $('k1v').textContent = fmt(total);
+    var k1d = $('k1d'); k1d.textContent = '';
+    if (sel < 0) {
+      var ch = (total - prev[1]) / prev[1] * 100, em = document.createElement('em'); em.className = ch >= 0 ? 'up' : 'down'; em.textContent = (ch >= 0 ? '+' : '') + ch.toFixed(1) + '%';
+      k1d.appendChild(em); k1d.appendChild(document.createTextNode(' vs ' + prev[0] + ' (' + fmt(prev[1]) + ')'));
+    } else k1d.textContent = (total / grand * 100).toFixed(1) + '% of all ' + fmt(grand) + ' riders';
+    $('k2v').textContent = fmt(total / N);
+    var wk = [0, 0, 0, 0, 0, 0, 0], wn = [0, 0, 0, 0, 0, 0, 0];
+    days.forEach(function (d, i) { var k = (d.dow + 6) % 7; wk[k] += s[i]; wn[k]++; });
+    var prof = wk.map(function (v, i) { return v / wn[i]; }), wkend = (wk[5] + wk[6]) / (wn[5] + wn[6]), wkday = sum(wk.slice(0, 5)) / sum(wn.slice(0, 5));
+    $('k2d').textContent = 'Weekends ' + fmt(wkend) + ' · weekdays ' + fmt(wkday);
+    $('k3v').textContent = fmt(s[peakI]);
+    var note = DATA.notes[days[peakI].iso];
+    $('k3d').textContent = label(days[peakI]) + (note ? ' · ' + note : '');
+    var rate = onAll / runAll * 100, diff = rate - prev[3];
+    $('k4v').textContent = rate.toFixed(1) + '%';
+    var k4d = $('k4d'); k4d.textContent = '';
+    var e4 = document.createElement('em'); e4.className = diff >= 0 ? 'up' : 'down'; e4.textContent = (diff >= 0 ? '+' : '') + diff.toFixed(1) + ' pts';
+    k4d.appendChild(e4); k4d.appendChild(document.createTextNode(' vs ' + prev[0] + ' · ' + fmt(schedAll - runAll) + ' cancelled'));
+    var weekly = weeks.map(function (wkk) { return sum(wkk.days.map(function (d) { return sel < 0 ? d.total : d.riders[sel]; })) / wkk.days.length; });
+    spark($('k1s'), weekly, 'line');
+    spark($('k2s'), prof, 'bars', -1);
+    var pw = Math.floor(peakI / 7), wkDays = weeks[pw].days.map(function (d) { return sel < 0 ? d.total : d.riders[sel]; });
+    spark($('k3s'), wkDays, 'bars', peakI - pw * 7);
+    spark($('k4s'), weeks.map(function (wkk) { return wkk.on / wkk.run * 100; }), 'line');
+    $('dailyTitle').textContent = sel < 0 ? 'Daily riders' : 'Daily riders · ' + name;
+    $('dailySub').textContent = 'Every day of the season. Hover or tap a day.';
+  }
+
+  var geo = {};
+  function daily() {
+    var svg = $('dailySvg'), box = $('dailyPlot').getBoundingClientRect(), W = Math.max(120, box.width), H = Math.max(80, box.height);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.textContent = '';
+    var s = series(), max = Math.max.apply(null, s), stepY = max > 3000 ? 1000 : max > 1200 ? 500 : 250, top = Math.ceil(max / stepY) * stepY;
+    var L = 30, R = 8, T = 16, B = 18, pw = W - L - R, ph = H - T - B;
+    function X(i) { return L + i / (N - 1) * pw; } function Y(v) { return T + ph - v / top * ph; }
+    var defs = el('defs', {}, svg), gr = el('linearGradient', { id: 'area', x1: 0, y1: 0, x2: 0, y2: 1 }, defs);
+    el('stop', { offset: 0, 'stop-color': '#22a596', 'stop-opacity': 0.42 }, gr); el('stop', { offset: 1, 'stop-color': '#22a596', 'stop-opacity': 0.02 }, gr);
+    for (var v = 0; v <= top; v += stepY) {
+      el('line', { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'var(--grid)', 'stroke-width': 1 }, svg);
+      var t = el('text', { x: L - 6, y: Y(v) + 3.5, 'text-anchor': 'end' }, svg); t.textContent = v >= 1000 ? (v / 1000) + 'k' : String(v);
+    }
+    days.forEach(function (d, i) {
+      if (d.day === 1) { var tx = el('text', { x: X(i), y: H - 4, 'text-anchor': i === 0 ? 'start' : 'middle' }, svg); tx.textContent = MON[d.month]; el('line', { x1: X(i), x2: X(i), y1: T + ph, y2: T + ph + 3, stroke: 'var(--mute)', 'stroke-width': 1, opacity: 0.6 }, svg); }
+    });
+    var path = 'M' + s.map(function (vv, i) { return X(i).toFixed(1) + ' ' + Y(vv).toFixed(1); }).join('L');
+    el('path', { d: path + 'L' + X(N - 1) + ' ' + Y(0) + 'L' + X(0) + ' ' + Y(0) + 'Z', fill: 'url(#area)', 'class': first && !reduce ? 'fade' : '' }, svg);
+    var ln = el('path', { d: path, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    if (first && !reduce) { ln.style.setProperty('--len', Math.ceil(ln.getTotalLength())); ln.setAttribute('class', 'draw'); }
+    var avg = sum(s) / N, ay = Y(avg);
+    el('line', { x1: L, x2: W - R, y1: ay, y2: ay, stroke: 'var(--ink2)', 'stroke-width': 1, 'stroke-dasharray': '2 4', opacity: 0.55 }, svg);
+    var at = el('text', { x: L + 4, y: ay - 5, 'text-anchor': 'start' }, svg); at.textContent = 'Average ' + fmt(avg); at.style.fill = 'var(--ink2)';
+    var pk = 0; s.forEach(function (vv, i) { if (vv > s[pk]) pk = i; });
+    var g = el('g', { 'class': first && !reduce ? 'fade' : '' }, svg);
+    el('circle', { cx: X(pk), cy: Y(s[pk]), r: 5, fill: 'var(--amber)', stroke: 'var(--card)', 'stroke-width': 2 }, g);
+    var right = X(pk) > W - 150, pt = el('text', { x: X(pk) + (right ? -10 : 10), y: Y(s[pk]) + 3.5, 'text-anchor': right ? 'end' : 'start' }, g);
+    pt.textContent = 'Peak ' + fmt(s[pk]) + ' · ' + label(days[pk]); pt.style.fill = 'var(--ink)';
+    var cross = el('line', { x1: 0, x2: 0, y1: T, y2: T + ph, stroke: 'var(--ink2)', 'stroke-width': 1, 'stroke-dasharray': '3 3', opacity: 0 }, svg);
+    var dot = el('circle', { r: 4.5, fill: 'var(--teal-hi)', stroke: 'var(--card)', 'stroke-width': 2, opacity: 0 }, svg);
+    geo = { L: L, pw: pw, X: X, Y: Y, s: s, avg: avg, cross: cross, dot: dot, left: box.left, top: box.top, W: W };
+  }
+
+  function ontime() {
+    var svg = $('ontimeSvg'), box = $('ontimePlot').getBoundingClientRect(), W = Math.max(100, box.width), H = Math.max(70, box.height);
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H); svg.textContent = '';
+    var vals = weeks.map(function (wk) { return wk.on / wk.run * 100; }), lo = Math.floor(Math.min.apply(null, vals) / 2) * 2 - 2, hi = 100;
+    var L = 30, R = 10, T = 12, B = 18, pw = W - L - R, ph = H - T - B, n = vals.length;
+    function X(i) { return L + (i + 0.5) / n * pw; } function Y(v) { return T + ph - (v - lo) / (hi - lo) * ph; }
+    var stepY = (hi - lo) > 9 ? 4 : 2;
+    for (var v = hi; v >= lo; v -= stepY) { el('line', { x1: L, x2: W - R, y1: Y(v), y2: Y(v), stroke: 'var(--grid)', 'stroke-width': 1 }, svg); var t = el('text', { x: L - 6, y: Y(v) + 3.5, 'text-anchor': 'end' }, svg); t.textContent = v + '%'; }
+    weeks.forEach(function (wk, i) { if (wk.from.day <= 7) { var tx = el('text', { x: X(i), y: H - 4, 'text-anchor': 'middle' }, svg); tx.textContent = MON[wk.from.month]; } });
+    var rate = onAll / runAll * 100;
+    $('ontimeSub').textContent = 'All routes · dotted line is the season, ' + rate.toFixed(1) + '%';
+    el('line', { x1: L, x2: W - R, y1: Y(rate), y2: Y(rate), stroke: 'var(--ink2)', 'stroke-width': 1, 'stroke-dasharray': '2 4', opacity: 0.55 }, svg);
+    
+    var d = 'M' + vals.map(function (vv, i) { return X(i).toFixed(1) + ' ' + Y(vv).toFixed(1); }).join('L');
+    var ln = el('path', { d: d, fill: 'none', stroke: 'var(--teal)', 'stroke-width': 2, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, svg);
+    if (first && !reduce) { ln.style.setProperty('--len', Math.ceil(ln.getTotalLength())); ln.setAttribute('class', 'draw'); }
+    var low = 0; vals.forEach(function (vv, i) { if (vv < vals[low]) low = i; });
+    var g = el('g', { 'class': first && !reduce ? 'fade' : '' }, svg);
+    vals.forEach(function (vv, i) {
+      var c = el('circle', { cx: X(i), cy: Y(vv), r: i === low ? 4.5 : 3, fill: i === low ? 'var(--amber)' : 'var(--teal)', stroke: 'var(--card)', 'stroke-width': 2 }, g);
+      var hit = el('rect', { x: X(i) - pw / n / 2, y: T, width: pw / n, height: ph, fill: 'transparent' }, svg);
+      function show() {
+        var wk = weeks[i], rr = svg.getBoundingClientRect();
+        tipShow(rr.left + X(i), rr.top + Y(vv), label(wk.from) + ' to ' + label(wk.to), vv.toFixed(1) + '% on time', fmt(wk.on) + ' of ' + fmt(wk.run) + ' sailings run', fmt(sum(wk.days.map(function (x) { return x.sched - x.run; }))) + ' cancelled', '');
+        c.setAttribute('r', 5.5);
+      }
+      hit.addEventListener('pointerenter', show); hit.addEventListener('pointerdown', show);
+      hit.addEventListener('pointerleave', function () { c.setAttribute('r', i === low ? 4.5 : 3); tipHide(); });
+    });
+    var lt = el('text', { x: X(low) + (low > n - 6 ? -9 : 9), y: Y(vals[low]) + 12, 'text-anchor': low > n - 6 ? 'end' : 'start' }, g); lt.textContent = 'Lowest ' + vals[low].toFixed(1) + '%'; lt.style.fill = 'var(--ink)';
+  }
+
+  var tip = $('tip');
+  function tipShow(x, y, h, v, a, b, c) {
+    $('tipH').textContent = h; $('tipV').textContent = v; $('tipA').textContent = a; $('tipB').textContent = b; $('tipC').textContent = c;
+    var tw = tip.offsetWidth, th = tip.offsetHeight, vw = window.innerWidth, vh = window.innerHeight;
+    var tx = x + 14, ty = y - th - 12;
+    if (tx + tw > vw - 8) tx = x - tw - 14;
+    if (ty < 8) ty = y + 14;
+    if (ty + th > vh - 8) ty = vh - th - 8;
+    tip.style.transform = 'translate3d(' + Math.round(Math.max(8, tx)) + 'px,' + Math.round(ty) + 'px,0)';
+    tip.classList.add('on');
+  }
+  function tipHide() { tip.classList.remove('on'); }
+  var plot = $('dailyPlot');
+  function dailyMove(e) {
+    var box = plot.getBoundingClientRect(), i = Math.round((e.clientX - box.left - geo.L) / geo.pw * (N - 1));
+    i = Math.max(0, Math.min(N - 1, i));
+    var d = days[i], v = geo.s[i], x = geo.X(i), y = geo.Y(v), diff = (v - geo.avg) / geo.avg * 100;
+    geo.cross.setAttribute('x1', x); geo.cross.setAttribute('x2', x); geo.cross.setAttribute('opacity', 0.7);
+    geo.dot.setAttribute('cx', x); geo.dot.setAttribute('cy', y); geo.dot.setAttribute('opacity', 1);
+    tipShow(box.left + x, box.top + y, label(d), fmt(v) + ' riders', (diff >= 0 ? '+' : '') + diff.toFixed(0) + '% vs season average', d.weather + ' · ' + (d.ontime / d.run * 100).toFixed(1) + '% on time', DATA.notes[d.iso] || '');
+  }
+  plot.addEventListener('pointermove', dailyMove);
+  plot.addEventListener('pointerdown', dailyMove);
+  plot.addEventListener('pointerleave', function () { if (geo.cross) { geo.cross.setAttribute('opacity', 0); geo.dot.setAttribute('opacity', 0); } tipHide(); });
+
+  function select(i) {
+    sel = i;
+    Array.prototype.forEach.call(chips.children, function (b, k) { b.setAttribute('aria-pressed', String(k === i + 1)); });
+    bars.classList.toggle('has-sel', i >= 0);
+    Array.prototype.forEach.call(bars.children, function (r, k) { r.classList.toggle('sel', k === i); });
+    kpis(); daily();
+  }
+
+  var rowsEl = $('rows'), rowRefs = [];
+  DATA.routes.forEach(function (r) {
+    var tr = document.createElement('tr');
+    function td(cls) { var c = document.createElement('td'); if (cls) c.className = cls; tr.appendChild(c); return c; }
+    var a = td(''), code = document.createElement('span'); code.className = 'code'; code.textContent = r.code; var nm = document.createElement('b'); nm.textContent = r.name; a.appendChild(code); a.appendChild(nm);
+    var nx = td('num'), inn = td('num'), ves = td('ves'), pr = td('r'), bar = document.createElement('span'), fill = document.createElement('i'); bar.className = 'prog'; bar.appendChild(fill); pr.appendChild(bar);
+    rowsEl.appendChild(tr);
+    rowRefs.push({ r: r, nx: nx, inn: inn, ves: ves, fill: fill, last: {} });
+  });
+  function mins(s) { var p = s.split(':'); return +p[0] * 60 + +p[1]; }
+  function two(n) { return (n < 10 ? '0' : '') + n; }
+  function setText(node, cache, key, v) { if (cache[key] !== v) { node.textContent = v; cache[key] = v; } }
+  var clockEl = $('clock'), clockCache = {};
+  function tick() {
+    var now = new Date(), sec = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+    setText(clockEl, clockCache, 't', two(now.getHours()) + ':' + two(now.getMinutes()) + ':' + two(now.getSeconds()));
+    rowRefs.forEach(function (ref) {
+      var r = ref.r, f = mins(r.first) * 60, l = mins(r.last) * 60, ev = r.every * 60, next, k = 0, running = true;
+      if (sec <= f) { next = f; running = false; }
+      else { k = Math.ceil((sec - f) / ev); next = f + k * ev; if (next > l) { next = f + 86400; k = 0; running = false; } }
+      var rem = next - sec, nm = Math.floor((next % 86400) / 60);
+      setText(ref.nx, ref.last, 'nx', two(Math.floor(nm / 60)) + ':' + two(nm % 60));
+      var h = Math.floor(rem / 3600), m = Math.floor((rem % 3600) / 60), s = rem % 60;
+      setText(ref.inn, ref.last, 'in', h ? h + ':' + two(m) + ':' + two(s) : two(m) + ':' + two(s));
+      var soon = running && rem <= 120;
+      if (ref.last.soon !== soon) { ref.inn.className = soon ? 'num soon' : 'num'; ref.last.soon = soon; }
+      setText(ref.ves, ref.last, 'ves', r.vessels[k % r.vessels.length]);
+      ref.fill.style.setProperty('--p', running ? Math.max(0, Math.min(1, 1 - rem / ev)).toFixed(4) : 0);
+    });
+  }
+  var timer = 0;
+  function startClock() { if (timer) return; tick(); timer = setInterval(tick, 1000); }
+  function stopClock() { clearInterval(timer); timer = 0; }
+  document.addEventListener('visibilitychange', function () { if (document.hidden) stopClock(); else startClock(); });
+
+  function render() { if (!(window.innerWidth > 1)) return; kpis(); daily(); ontime(); first = false; }
+  var pending = 0;
+  window.addEventListener('resize', function () { if (pending) return; pending = requestAnimationFrame(function () { pending = 0; tipHide(); render(); }); });
+  render(); startClock();
+  window.__frames = 0;
+})();
+</script>
+</body>
+</html>

@@ -52,6 +52,10 @@ Open Settings, API keys and paste the key. It is stored in Format's data folder,
 - **Side track** beside the chat: an artifact, the chat's files or the browser, one at a time.
 - **Terminal dock** at the bottom (Mod+J).
 
+## Demo chats
+
+Format starts with two recorded chats under **Demos** in the sidebar: Aurora page and Ferry dashboard. Opening one needs no API key and sends nothing: you read the conversation, its page runs beside it, and Ferry dashboard lists its files in Outputs (a zip you can import into form.md, and each file in it). They are ordinary chats: with a key you can continue one, and you can rename, pin or delete them. A deleted demo stays deleted; Help, Demos brings it back and opens it. The pages are drawn in code and the ferry data is invented.
+
 ## Where your data lives
 
 Everything stays on your computer in `backend/data` (chats, artifacts, uploads, settings, memory, skills, plugins, the browser profile) and `backend/workspace` (each chat's own folder for Claude's files). Nothing is sent anywhere except your requests to the Claude API, and web pages Claude or you open.

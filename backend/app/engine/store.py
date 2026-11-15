@@ -150,6 +150,8 @@ def conn() -> sqlite3.Connection:
                 c.execute("ALTER TABLE conversations ADD COLUMN allow_all INTEGER NOT NULL DEFAULT 0")
             if "connectors_off" not in conv_cols:
                 c.execute("ALTER TABLE conversations ADD COLUMN connectors_off TEXT NOT NULL DEFAULT '[]'")
+            if "demo" not in conv_cols:
+                c.execute("ALTER TABLE conversations ADD COLUMN demo TEXT")
             c.execute("CREATE INDEX IF NOT EXISTS messages_by_parent ON messages(conversation_id, parent_id)")
             c.execute("INSERT OR IGNORE INTO meta(key, value) VALUES ('schema', '8')")
             c.execute("UPDATE meta SET value = '8' WHERE key = 'schema'")

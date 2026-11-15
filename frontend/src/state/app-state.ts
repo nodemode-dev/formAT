@@ -9,6 +9,7 @@ export interface Conversation {
   created: number;
   updated: number;
   activity?: 'running' | 'waiting' | null;
+  demo?: string | null;
 }
 
 export interface ContentBlock {
@@ -84,6 +85,7 @@ export interface MessageMeta {
   agents?: Record<string, { model: string; title?: string; blocks: ContentBlock[] }>;
   artifacts?: Record<string, ArtifactRef>;
   comments?: FileComment[];
+  demo?: string;
 }
 
 export interface Message {

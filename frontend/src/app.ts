@@ -25,6 +25,7 @@ import { BackgroundPanel } from './ui/background-panel';
 import { FindBar } from './ui/find-bar';
 import { mountMenus, type AppMenus } from './ui/app-menu';
 import { formatKeys } from './ui/commands';
+import { demoConversation, demoPage } from './demos';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -64,7 +65,7 @@ export class App {
         <header class="ft-topbar">
           <nav class="ft-menubar" aria-label="Main menu"></nav>
           <button type="button" class="ft-crumb" title="Open the project" hidden></button><span class="ft-crumb-sep" aria-hidden="true" hidden>/</span>
-          <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span>${ui('chevronDown', 14)}</button>
+          <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span><span class="ft-title-demo" hidden>Demo</span>${ui('chevronDown', 14)}</button>
           <span class="ft-topbar-spacer"></span>
           <button type="button" class="ft-icon-btn ft-bg-toggle" aria-label="Background work" aria-expanded="false" title="Background: what is running now">${ui('activity')}<span class="ft-bg-badge" aria-hidden="true"></span></button>
           <button type="button" class="ft-icon-btn ft-term-toggle" aria-label="Toggle terminal" title="Terminal (${modKey}J)">${ui('terminal')}</button>
@@ -78,7 +79,7 @@ export class App {
     this.title = q(this.shell, '.ft-title-text');
     this.sidebar = new Sidebar(this.state, {
       newChat: () => this.newChat(),
-      openChat: (id) => void this.openChat(id),
+      openChat: (id) => void this.openListed(id),
       setView: (v) => this.setView(v),
       toggle: () => this.toggle('sidebar'),
       toggleTerminal: () => this.toggle('term'),
@@ -234,6 +235,7 @@ export class App {
       addFiles: () => this.composer.openFilePicker(),
       compact: () => this.compactNow(),
       shortcuts: () => this.shortcuts(),
+      openDemo: (id) => void this.openDemo(id),
     });
     document.addEventListener('keydown', (e) => this.keys(e));
     interceptDownloads();
@@ -664,14 +666,14 @@ export class App {
     void this.projectsView.open(pid).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
   }
 
-  async openChat(id: string): Promise<void> {
+  async openChat(id: string, loaded?: Conversation & { messages: Message[] }): Promise<void> {
     if (this.state.view === 'chat' && this.state.activeId !== id) {
       this.chat.prepareOpen();
       this.renderTitle(id);
     }
     let conv: Conversation & { messages: Message[] };
     try {
-      conv = await run<Conversation & { messages: Message[] }>('conversation.get', { id });
+      conv = loaded ?? await run<Conversation & { messages: Message[] }>('conversation.get', { id });
     } catch (err) {
       this.state.emit('active');
       throw err;
@@ -684,6 +686,49 @@ export class App {
     this.chat.setDraftProject(null);
     this.setView('chat');
     this.state.emit('active');
+  }
+
+  private listedSeq = 0;
+
+  private async openListed(id: string): Promise<void> {
+    const seq = ++this.listedSeq;
+    if (!this.state.conversations.get(id)?.demo || window.matchMedia('(max-width: 760px)').matches) {
+      if (this.side() === 'artifact' && !this.artifact.artifactId) this.setSide(null);
+      return this.openChat(id);
+    }
+    if (this.state.view === 'chat') {
+      if (this.state.activeId !== id) {
+        this.chat.prepareOpen();
+        this.renderTitle(id);
+      }
+      this.setSide('artifact');
+    }
+    const conv = await run<Conversation & { messages: Message[] }>('conversation.get', { id }).catch(() => undefined);
+    const page = conv ? demoPage(conv.messages) : null;
+    const ready = !!page && (this.artifact.artifactId === page || await this.artifact.show(page).catch(() => false));
+    if (seq !== this.listedSeq) return;
+    if (!ready && this.side() === 'artifact' && !this.artifact.artifactId) this.setSide(null);
+    await this.openChat(id, conv);
+    if (ready && this.state.activeId === id) this.setSide('artifact');
+  }
+
+  private demoOpening = false;
+
+  private async openDemo(id: string): Promise<void> {
+    if (this.demoOpening) return;
+    this.demoOpening = true;
+    try {
+      const c = await demoConversation(id, this.state.conversations.values());
+      if (!this.state.conversations.has(c.id)) {
+        this.state.conversations.set(c.id, c);
+        this.state.emit('conversations');
+      }
+      await this.openListed(c.id);
+    } catch (err) {
+      this.composer.showError(err instanceof Error ? err.message : String(err));
+    } finally {
+      this.demoOpening = false;
+    }
   }
 
   private claimNext = false;
@@ -708,6 +753,9 @@ export class App {
     const c = id ? this.state.conversations.get(id) : null;
     const pageTitle: Record<View, string> = { chat: c?.title ?? 'New chat', projects: 'Projects', artifacts: 'Artifacts', scheduled: 'Scheduled', customize: 'Customize' };
     setText(this.title, pageTitle[this.state.view]);
+    const tag = q(this.shell, '.ft-title-demo');
+    const demo = this.state.view === 'chat' && !!c?.demo;
+    if (tag.hidden === demo) tag.hidden = !demo;
     document.title = this.state.view === 'chat' && c ? `${c.title} · FormAT` : 'FormAT';
     const pid = this.state.view === 'chat' ? (c ? c.project_id : this.state.draftProject) : null;
     const project = pid ? this.state.projects.get(pid) : undefined;

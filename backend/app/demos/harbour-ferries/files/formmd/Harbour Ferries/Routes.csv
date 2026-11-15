@@ -1,0 +1,6 @@
+Route,Code,From,To,Stops,Crossing min,Distance km,First sailing,Last sailing,Every min,Sailings per day,Adult fare,Season riders,Share %,Riders per sailing,Vessels
+Harbour Loop,HL,Town Pier,Town Pier,"Town Pier, Fish Quay, Marina, North Mole",25,4.2,06:30,22:30,20,49,3.50,111515,31.8,14.9,"Tern, Kittiwake"
+Eastern Quay,EQ,Town Pier,Eastern Quay,"Town Pier, Eastern Quay",12,1.9,06:45,21:45,30,62,2.80,85867,24.5,9.1,Guillemot
+Island Shuttle,IS,Town Pier,Gull Island,"Town Pier, Gull Island",35,9.6,08:00,19:00,60,24,7.50,64714,18.5,17.6,"Fulmar, Shearwater"
+Lighthouse Run,LR,Marina,Skerry Light,"Marina, Skerry Light",50,14.8,09:00,18:00,90,14,9.00,50492,14.4,23.6,Petrel
+West Sands,WS,North Mole,West Sands,"North Mole, West Sands",20,5.1,07:30,21:00,45,38,4.20,38110,10.9,6.6,Eider

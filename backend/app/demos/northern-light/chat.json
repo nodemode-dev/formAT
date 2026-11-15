@@ -1,0 +1,26 @@
+{
+  "format": "format-demo-chat/1",
+  "title": "Aurora page",
+  "artifact": {
+    "title": "Northern Light",
+    "kind": "html",
+    "file": "artifact.html",
+    "version": 1,
+    "toolUseId": "toolu_demo_northern_light",
+    "toolName": "publish_artifact"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "Make me a page I can leave open on a second screen: the northern lights over a mountain lake at night. Slow and calm, nothing flashy. It should react a little to the pointer and fill whatever size the window is."
+    },
+    {
+      "role": "assistant",
+      "text": "I published **Northern Light** as a page. Open it from the card above; it fills the panel and keeps running until you close it.\n\n- **Aurora:** four curtains (green, teal, pale green and violet) are computed column by column, so they read as thin vertical rays. Slow noise moves their lower edges, which makes them fold and drift, and other noise fades each curtain in and out and makes the rays flicker. A soft bloom sits over the top, and the glow on the horizon rises and falls with the aurora's brightness.\n- **Sky:** a deep gradient, a faint Milky Way band and stars in three tints. 70 of them twinkle, 26 brighter ones have a small cross flare, and a shooting star crosses every 11 to 27 seconds.\n- **Mountains and lake:** three ridges stand in front of each other. The nearest has pine silhouettes and frames the sides, leaving the centre open. The lake mirrors the sky, the ridges and the aurora in thin strips, each shifted sideways by gentle waves that grow toward the viewer, with a few drifting glints on the water.\n- **Pointer:** move the pointer and the lights gather and brighten above it, while the stars and ridges shift slightly against each other. Click anywhere for a shooting star.\n\nIt is built to stay light: the aurora is drawn at a low resolution and scaled up, the page draws about 30 frames a second, and it stops while the tab is hidden. If your system asks for reduced motion, it shows one still frame instead of animating.",
+      "artifacts": [
+        "toolu_demo_northern_light"
+      ],
+      "files": []
+    }
+  ]
+}

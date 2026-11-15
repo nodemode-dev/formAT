@@ -1,3 +1,4 @@
+import { DEMO_GROUP, demosFirst } from '../demos';
 import { run } from '../engine-client/api';
 import type { Account, AppState, Conversation, View } from '../state/app-state';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
@@ -174,14 +175,14 @@ export class Sidebar {
   }
 
   private renderList(): void {
-    const ordered = this.state.sortedConversations();
+    const ordered = demosFirst(this.state.sortedConversations());
     const active = this.state.activeId;
     const activeNew = !!active && !this.rows.has(active) && this.state.conversations.has(active);
     const stale = [...this.rows.keys()].some((id) => !this.state.conversations.has(id));
     const wanted: HTMLElement[] = [];
     let last = '';
     for (const c of ordered) {
-      const group = c.pinned ? 'Pinned' : bucket(c.updated);
+      const group = c.pinned ? 'Pinned' : c.demo ? DEMO_GROUP : bucket(c.updated);
       if (group !== last) {
         wanted.push(this.head(group));
         last = group;
