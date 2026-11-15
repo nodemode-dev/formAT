@@ -10,7 +10,7 @@ Agents and the command line can use the same shells: `./format cli terminal.writ
 
 ## Scheduled tasks
 
-The Scheduled page runs a prompt on a schedule: hourly, daily, on weekdays, weekly, once, or only when you press Run now. Each run is a new chat, listed in the task's history. Pause, edit or delete a task there.
+The Scheduled page runs a prompt on a schedule: hourly, daily, on weekdays, weekly, once, or only when you press Run now. Each run is a new chat, listed in the task's history. Pause, edit or delete a task there; deleting asks first and keeps the chats its runs made.
 
 Tasks run while FormAT is running; there is no background service when it is closed.
 

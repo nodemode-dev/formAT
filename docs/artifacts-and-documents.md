@@ -10,7 +10,7 @@ When Claude publishes a page, an app or a small tool, the reply shows a card. Op
 
 Pages run in a sandbox: they cannot read FormAT or your files, and they load scripts only from the common CDNs. Settings, Tools can let them load images and data from the internet.
 
-The Artifacts page in the sidebar lists every artifact from every chat.
+The Artifacts page in the sidebar lists every artifact from every chat. Delete in a row's menu asks first, removes the artifact with all its versions and keeps the chat that made it.
 
 ## Documents, spreadsheets and slides
 

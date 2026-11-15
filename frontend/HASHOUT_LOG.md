@@ -3,7 +3,7 @@
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
 Current build version: v0.26.2
-Last updated: 2026-11-15 · v0.26.2: no window change (the desktop updater's address; see the engine log's entry for 0.26.2); v0.26.1: no window change (documents only: each Orrery map's credit line and source page, the community files, the release addresses; see the engine log's entry for 0.26.1); v0.26.0: a menu bar from one command registry (File, Edit, View, Go, Window, Help; in the macOS menu bar through the shell's injected API), settings as a window with a rail and a wire, the family look and the name FormAT, demo chats in their own sidebar group that open with their page beside them and at their start, the family splash and the `app_ready` call, and the review's window fixes (the reload loop at boot, focus after load, a failed send keeps its text, the terminal's toggle key and adopted shells, delete asks first, narrow windows); 2026-10-26 · v0.25.0: the window smoke and the splash mark's jump (v0.25.1 to v0.25.4: no window change beyond the icon and the README); 2026-10-25 · v0.24.5: markdown-it 15.0.3 and Vite 8.3.5; 2026-10-22 · v0.24.1: no window change (checks only, releases by formcompiler, version string); v0.24.0: the app icon redrawn as a smiling chat bubble with a sparkle (every Tauri size, the macOS .icns with its margin and shadow, favicon and splash), assets/icon_src to regenerate it, and the compact build's bloom kept; v0.23.0: attachment tiles with real previews (image, SVG, video frame and length, audio length, first lines of text) in the composer and on sent messages, and a full-screen viewer for every kind; v0.22.0: a run of the API's text blocks renders as one Markdown flow (a cited answer no longer breaks into a paragraph per claim), source chips after cited claims (web, document page, search result) live while streaming, punctuation kept before the chips, the caret only on the reply's last text, redacted thinking shown as nothing, KaTeX's operator and AMS faces preloaded; v0.21.1: a whole-app audit (no overflow, scrollbars or errors in 102 states) and five fixes: opening a chat moves the composer at the click, view tabs no longer reset each other, Skills Discover's empty line waits, a plugin connector chip holds still, Customize's message line keeps its height; v0.21.0: Discover for skills and connectors, Skill with Claude, a confirm for command plugins, private marketplace tokens, .plugin uploads; v0.20.0: Create a plugin (editor) and Create with Claude, /plugin:skill in the / menu; v0.19.0: Plugins with Your plugins and Discover, marketplaces with Check for updates and Sync automatically, a plugin page with Skills, Commands, Connectors and Agents tabs; v0.18.0: connector sign-in in the add form, on rows and pages, and the + menu's connector switches per chat; v0.17.0: Customize's list beside the open item on wide windows, Enabled switches, Delete and Remove in "..." menus with a confirm, skills grouped by where they came from; v0.16.0: a connector's page with status, Disconnect, the "..." menu and tool permissions; v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
+Last updated: 2026-11-15 · v0.26.3: the review's open list fixed in the window (a stopped engine is noticed within seconds and said on every view, deleting a project, a scheduled task or an artifact asks first, the composer's bottom row wraps in narrow containers, Projects page errors appear on that page, Settings names where keys are kept, View, Menus in Window on macOS applies at once, the demo list comes from `demo.list`, Outputs shows each file's caption and names Download all); v0.26.2: no window change (the desktop updater's address; see the engine log's entry for 0.26.2); v0.26.1: no window change (documents only: each Orrery map's credit line and source page, the community files, the release addresses; see the engine log's entry for 0.26.1); v0.26.0: a menu bar from one command registry (File, Edit, View, Go, Window, Help; in the macOS menu bar through the shell's injected API), settings as a window with a rail and a wire, the family look and the name FormAT, demo chats in their own sidebar group that open with their page beside them and at their start, the family splash and the `app_ready` call, and the review's window fixes (the reload loop at boot, focus after load, a failed send keeps its text, the terminal's toggle key and adopted shells, delete asks first, narrow windows); 2026-10-26 · v0.25.0: the window smoke and the splash mark's jump (v0.25.1 to v0.25.4: no window change beyond the icon and the README); 2026-10-25 · v0.24.5: markdown-it 15.0.3 and Vite 8.3.5; 2026-10-22 · v0.24.1: no window change (checks only, releases by formcompiler, version string); v0.24.0: the app icon redrawn as a smiling chat bubble with a sparkle (every Tauri size, the macOS .icns with its margin and shadow, favicon and splash), assets/icon_src to regenerate it, and the compact build's bloom kept; v0.23.0: attachment tiles with real previews (image, SVG, video frame and length, audio length, first lines of text) in the composer and on sent messages, and a full-screen viewer for every kind; v0.22.0: a run of the API's text blocks renders as one Markdown flow (a cited answer no longer breaks into a paragraph per claim), source chips after cited claims (web, document page, search result) live while streaming, punctuation kept before the chips, the caret only on the reply's last text, redacted thinking shown as nothing, KaTeX's operator and AMS faces preloaded; v0.21.1: a whole-app audit (no overflow, scrollbars or errors in 102 states) and five fixes: opening a chat moves the composer at the click, view tabs no longer reset each other, Skills Discover's empty line waits, a plugin connector chip holds still, Customize's message line keeps its height; v0.21.0: Discover for skills and connectors, Skill with Claude, a confirm for command plugins, private marketplace tokens, .plugin uploads; v0.20.0: Create a plugin (editor) and Create with Claude, /plugin:skill in the / menu; v0.19.0: Plugins with Your plugins and Discover, marketplaces with Check for updates and Sync automatically, a plugin page with Skills, Commands, Connectors and Agents tabs; v0.18.0: connector sign-in in the add form, on rows and pages, and the + menu's connector switches per chat; v0.17.0: Customize's list beside the open item on wide windows, Enabled switches, Delete and Remove in "..." menus with a confirm, skills grouped by where they came from; v0.16.0: a connector's page with status, Disconnect, the "..." menu and tool permissions; v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -20,12 +20,13 @@ frontend/
 └── src/
     ├── main.ts                    entry: App, reveal after fonts and first load, app_ready to the desktop shell; boot frame if the engine is down
     ├── app.ts                     App: shell, layout toggles, views, keys, engine events
-    ├── demos.ts                   the demo chats the window knows by id: titles, blurbs, their sidebar group and order
+    ├── demos.ts                   the demo list the window takes from demo.list (titles, blurbs, order), their sidebar group and order
     ├── version.ts                 VERSION
     ├── state/app-state.ts         conversations, active chat, messages, models, settings, view; topics
     ├── engine-client/
-    │   ├── api.ts                 health, run(command, params), EngineError
-    │   └── events.ts              EventStream: WebSocket with backoff and state
+    │   ├── api.ts                 health, run(command, params), EngineError, the "not answering" line
+    │   ├── events.ts              EventStream: WebSocket with backoff and state, retryNow
+    │   └── watch.ts               watchEngine: tells the app when the engine stops answering and when it is back (0.26.3)
     ├── ui/
     │   ├── dom.ts                 el, esc, q, setText, setAttr, prefs
     │   ├── icons-ft.ts            inline currentColor SVG: the mark and the 20 px UI set
@@ -35,7 +36,8 @@ frontend/
     │   ├── app-menu.ts            FormAT's commands and its six menus; the one keyboard handler
     │   ├── native-menu.ts         the same menus in the macOS menu bar, through the shell's menu API
     │   ├── prefs-window.ts        the settings window's shell: rail, stacked sections, the wire, drag, focus
-    │   ├── confirm.ts             the confirm sheet, and delete-a-chat through it
+    │   ├── confirm.ts             the confirm sheet, and delete-a-chat, -a-project, -a-task and -an-artifact through it
+    │   ├── engine-note.ts         the notice at the bottom of every page but the chat while the engine is not answering (0.26.3)
     │   ├── sidebar.ts             sidebar and mini rail, nav, keyed recents, rename in place
     │   ├── composer.ts            the box, attachments, + menu, model and effort, permission mode
     │   ├── chat-view.ts           greeting, thread, note, pinned follow and scroll-to-bottom, file drop zone; composer docked
@@ -93,6 +95,7 @@ frontend/
 - [The family look](#family-look)
 - [src/demos.ts and demo chats in the window](#src-demos)
 - [Review fixes in the window, 0.26.0](#review-0-26-0)
+- [The review's open list, fixed in the window, 0.26.3](#open-items-0-26-3)
 
 ---
 
@@ -1045,6 +1048,8 @@ The engine seeds the demo chats (backend log, app/engine/demos.py); the window o
 
 `DEMOS` in the window repeats the ids, titles and blurbs so the menu exists before the engine has answered and so a deleted demo still has a menu item; the engine's `demo.list` is the truth for what is bundled.
 
+Superseded in 0.26.3: the window no longer keeps that list. `DEMOS` is gone; the list comes from `demo.list` at load (see "The demo list comes from the engine" below).
+
 ### src/app.ts · a demo opens with its page already beside it
 - refers-to: src/app.ts :: openListed; src/ui/artifact-panel.ts :: show
 - kind: rationale
@@ -1096,9 +1101,75 @@ The composer cleared itself before the send and the send hook swallowed its erro
 
 Delete in a chat's row menu and in the title menu removed the chat at once, with no way back; with demo chats in the sidebar that is one click from losing them. Both now open a small sheet naming the chat, with Cancel focused, Escape and a click outside cancelling. It reuses the consent sheet's classes, so there is no new CSS and it counts as an open dialog for the menu bar. For a demo it adds that Help, Demos brings it back. Project, task and artifact deletes still do not ask; that is left open.
 
+Superseded in 0.26.3: project, task and artifact deletes ask too, through the same sheet (see "Deleting a project, a scheduled task or an artifact asks first" below).
+
 ### src/styles/ft-shell.css, src/app.ts · narrow windows
 - refers-to: src/styles/ft-shell.css :: .ft-title-btn (min-width); src/app.ts :: the `(max-width: 760px)` listener at the end of the constructor
 - kind: fix
 - logged: v0.26.0 · 2026-11-15
 
 At 390 px a chat with a long title pushed the Files and Outputs buttons past the right edge, out of reach. The title button is a flex item whose automatic minimum width is its content's, and its text is `nowrap`, so it could not shrink below the whole title; `min-width: 0` lets it shrink and the text ends in an ellipsis. This was true before the menu bar and worse with the Demo tag. Second: the rule that turns an open sidebar into the rail below 760 px ran only at boot and on a change of view, so dragging a wide window narrow left the sidebar lying over the chat; a media-query listener now applies it at the moment the width crosses.
+
+## The review's open list, fixed in the window, 0.26.3 {#open-items-0-26-3}
+
+### src/engine-client/watch.ts, events.ts, api.ts, src/app.ts, src/ui/composer.ts, src/ui/engine-note.ts, src/styles/ft-overlays.css · a stopped engine is noticed within seconds, said on every view, and recovered from
+- refers-to: src/engine-client/watch.ts :: watchEngine; src/engine-client/events.ts :: retryNow; src/engine-client/api.ts :: NOT_ANSWERING; src/app.ts :: load (the `watchEngine` call); src/ui/composer.ts :: setOffline, settle; src/ui/engine-note.ts; src/styles/ft-overlays.css :: .ft-engine-note
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+Cause. The window learned that the engine had died only when the next command failed ("FormAT's engine is not answering"), so with the engine gone it showed nothing until the person tried something. The event socket knows at once, but a closed socket also happens for harmless reasons (a reload, a sleeping laptop, a proxy), so it is not trusted alone.
+
+Detection. When the socket reports `closed`, `watchEngine` asks `/api/health` (no cache, 2 s timeout) once; only if that fails and the socket has not reopened is the engine "down". While down it asks every 2 s and, when the engine answers, calls `retryNow()`, because the socket's own retry waits 400 ms doubled each time up to 8 s and would otherwise leave the notice up for that long after the engine is back. When the socket opens, the state is "up" again. One shared string, `NOT_ANSWERING`, is used by the failed-command error, the composer and the notice.
+
+What shows. On the chat view the line under the message box (`setOffline`: it is shown like a flash, and when the six-second flash ends `settle` puts it back instead of the usual settings line, so it stays until the engine is back). On every other view a small notice at the bottom centre (`EngineNote`): a fixed `<p role="status" aria-live="polite">` on `--z-toast` with `pointer-events: none`, always in the document and shown by opacity and visibility, so nothing is inserted, nothing moves and nothing is covered for a click; its class is toggled only when the value differs. It is hidden on the chat view because the composer's line says it there. A reduced-motion setting turns its transition off.
+
+Recovery. When the engine is back the window lists the conversations again and clears the "running" and "waiting" marks of any chat the engine no longer reports as active (a restarted engine ended those replies), and reloads the open chat if its own mark was stale, so a reply that died with the engine does not show as streaming for ever. Seen by the desktop task's probe (`scratch/formAT/turn5-desktop/probe_engine_down.py`) with Chrome at 4x CPU throttle: the engine killed under the window, the notice 31 ms later, the notice gone 1.1 s after the engine answered again, layout shift 0 and the composer's boxes identical before and after.
+
+### src/ui/confirm.ts, projects-view.ts, scheduled-view.ts, views.ts, src/styles/ft-shell.css · deleting a project, a scheduled task or an artifact asks first
+- refers-to: src/ui/confirm.ts :: askDeleteProject, askDeleteSchedule, askDeleteArtifact; src/ui/projects-view.ts :: remove; src/ui/scheduled-view.ts :: remove; src/ui/views.ts :: ArtifactsView.remove; src/styles/ft-shell.css
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+The 0.26.0 entry above says these deletes did not ask. More exactly: an artifact in the Artifacts page's row menu was deleted at once; a project and a scheduled task used a two-click button (the first click changed the button's own text to "Delete? Its chats are kept" or "Delete this task?" and armed it, the second deleted), which names nothing, can be left armed while the person moves on (the project's armed state was cleared only when its page was drawn fresh), and swaps the text inside a fixed button. All three now open the confirm sheet that chat deletes use, naming the project, task or artifact and saying what is deleted with it and what is kept (a project's chats are kept and leave the project, a task's earlier chats are kept, an artifact's chat is kept), with Cancel focused and Escape or a click outside cancelling. The armed-button code and its two `[data-armed]` rules are removed. Seen in the window at 1440x900, 1280x800 and 1000x700 with a screenshot of each sheet.
+
+### src/ui/projects-view.ts, src/styles/ft-shell.css, src/app.ts · errors on the Projects page appear on that page
+- refers-to: src/ui/projects-view.ts :: say, hush, create; src/styles/ft-shell.css :: .ft-proj-toast; src/app.ts :: openProject
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+Failures on the Projects page (opening a project, saving its edit, removing or adding a file, deleting it) were handed to the composer's line, which is not on that page, so nothing was seen. The page now has its own `ft-proj-toast` (`role="alert"`, danger border, on the raised token): a wrapper that is sticky at the top of the page with zero height, so it takes no room and does not move the list, holds a paragraph positioned in the page's top padding. `say` sets its text and title (the full message for a long one), shows it, and hides it after 8 s or when the list is shown again; `hidden` is toggled only when it differs. The `showError` hook is removed from `ProjectsHooks`. In `create`, the `try` used to wrap opening the new project too, so a failure to open it was printed under the name field as if the name were wrong; only `project.create` is inside it now and an opening failure goes to the toast. Seen with the engine failing `project.update`, `project.removeFile` and an upload, at three window sizes and with the page scrolled, the toast staying in view.
+
+### src/ui/composer.ts, src/styles/ft-chat.css · the composer's bottom row fits narrow containers
+- refers-to: src/ui/composer.ts :: the `.ft-composer-bar` markup (`.ft-bar-row`); src/styles/ft-chat.css :: .ft-composer-bar, .ft-bar-row, the container queries
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+Cause. The row was one grid, left group, no-key line, right group (model, effort, mode), which fits when the chat column is wide. At 1000x700 with the sidebar and the side track both open, and at the window's minimum size (960x620), the column is narrow, the right group clipped the model name and the no-key line was cut with an ellipsis. The window's width is not what matters here, the column's is, so the bar is a size container (`container-type: inline-size` on `.ft-composer-bar`, which keeps the padding) and the grid moved down one level into a new `.ft-bar-row`, because an element cannot be queried by its own size. Below a container width of 669 px the row becomes a wrapping flex row: the left group takes what it needs, the right group sits at the right end, and the notice drops to a line of its own (clamped to two lines, with a fixed line height and a minimum height of one line, so the row's height does not depend on how much the text needs). Below 359 px the effort label is hidden and two lines are reserved. The same wrapping applies when the left group holds a visible pill or skill picks (the `:has()` rules, inside `:where()` so they add no specificity), since those widen the left group at any width. Below a viewport width of 760 px the notice is hidden. The breakpoints are container widths, not viewport widths. No element is added or removed when the window resizes. Seen at 1440x900, 1280x800 and 1000x700, with and without a chat open, and while opening the Orrery demo's side track (a frame-by-frame record of the bar's and the notice's boxes showed no jump).
+
+### src/ui/side-panel.ts, src/styles/ft-chat.css · Outputs shows each file's caption and names Download all
+- refers-to: src/ui/side-panel.ts :: setOutputs; src/styles/ft-chat.css :: .ft-panel-file, .ft-panel-file-main, .ft-panel-file-note
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+A file's caption (the demos give each file one, such as "Source, credit and terms for every surface map in the Orrery") was only a tooltip. It is now a muted line under the file's name, at most three lines, so the Orrery's two documents and the ferry demo's package say what they are. A row's `height` became `min-height` so a caption can grow it; rows are rebuilt only when their markup differs, as before. The Download all link says "Download all N as one zip" ("Download as one zip" for one file) and its tooltip says that a zip in the list stays inside it, matching the file the engine now names "<chat title> - all files.zip" (backend log).
+
+### src/ui/views.ts · Settings, API keys says where keys are kept
+- refers-to: src/ui/views.ts :: SettingsView (`.ft-keys-note`, `InfoLike.keysFile`, `InfoLike.envFile`)
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+The paragraph told everyone to keep keys in `backend/.env`, a path that means nothing in the desktop app. It is now built from `app.info`: it names the file the saved keys are in (`keysFile`); where `envFile` is set (running from source) it says a saved key wins over `backend/.env` and removing it goes back to that file; where it is null (the desktop app) it says FormAT then uses a key from the environment it was started from (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY` or `ELEVENLABS_API_KEY`). The note's HTML is written only when it differs from what is there (`data-v`), and the path is escaped.
+
+### src/ui/native-menu.ts, src/ui/app-menu.ts · View, Menus in Window applies at once on macOS
+- refers-to: src/ui/native-menu.ts :: NativeMenus.apply, release; src/ui/app-menu.ts :: menus-in-window, mountMenus
+- kind: fix
+- logged: v0.26.3 · 2026-11-15
+
+The command only stored the choice and said it took effect at the next start. `NativeMenus` is now created before the commands are registered, so the command can reach it, and the command calls `apply()`: when the choice is "in the window" it runs `release()`, which drops the root's `has-native-menus` class (the in-window bar shows) and gives the system menu bar Tauri's default menu (`Menu.default().setAsAppMenu()`); when it is "in the system bar" it runs `build()` as before. A change that arrives while one is being built is run afterwards, as `build()` already did. Written against the shape of Tauri's menu API and checked in the browser against a stand-in that records calls; never run on a Mac.
+
+### src/demos.ts, src/ui/app-menu.ts, src/app.ts · the demo list comes from the engine
+- refers-to: src/demos.ts :: demoList, setDemoList; src/ui/app-menu.ts :: setDemos, the Help menu; src/app.ts :: load
+- kind: decision
+- logged: v0.26.3 · 2026-11-15
+
+The window kept its own copy of each demo's id, title and blurb. `load` now reads `demo.list` with the other boot commands (a failure gives an empty list and does not stop the load) and calls `setDemos`, which stores the list and registers one command per demo: only when the list differs from the one registered, so a repeat load does not rebuild the macOS menu bar. The Help menu shows its Demos submenu only when the list is not empty. The sidebar's order of demos and the palette follow the same list. Adding a demo is now a folder with an `about.json` and nothing in the window.

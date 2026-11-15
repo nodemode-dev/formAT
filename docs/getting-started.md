@@ -19,7 +19,7 @@ The quickest way in is the desktop app for macOS, Windows or Linux: install it a
 ./format doctor         # checks the toolchain, the installs, the key and the ports
 ```
 
-On Windows run `.\format_oc_install.bat` and `.\format.bat` from the repository folder. Never type a bare `format` outside it: that is Windows' disk formatter.
+On Windows run `.\format_oc_install.bat` and `.\format.bat` from the repository folder; `.\format.bat` has `doctor`, `build`, `serve`, `clean`, `install-voice` and `install-browser` too. Never type a bare `format` outside it: that is Windows' disk formatter.
 
 Two optional parts install separately:
 
