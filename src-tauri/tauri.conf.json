@@ -19,9 +19,11 @@
         "decorations": false,
         "center": true,
         "transparent": true,
-        "shadow": false
+        "shadow": false,
+        "visible": false
       }
     ],
+    "withGlobalTauri": true,
     "macOSPrivateApi": true,
     "security": {
       "csp": null

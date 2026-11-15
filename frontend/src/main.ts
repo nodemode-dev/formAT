@@ -40,6 +40,8 @@ function bootFallback(): void {
 
 function reveal(): void {
   document.body.classList.add('app-ready');
+  const shell = (window as unknown as { __TAURI__?: { core?: { invoke(cmd: string): Promise<unknown> } } }).__TAURI__;
+  if (shell?.core) requestAnimationFrame(() => { void shell.core?.invoke('app_ready').catch(() => undefined); });
 }
 
 const app = new App(host);

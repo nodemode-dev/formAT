@@ -1095,6 +1095,8 @@ dependencies = [
 name = "format"
 version = "0.25.4"
 dependencies = [
+ "objc2",
+ "objc2-app-kit",
  "regex",
  "serde",
  "serde_json",
