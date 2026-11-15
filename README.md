@@ -77,15 +77,15 @@
 
 <table>
   <tr>
-    <td width="33%" valign="top"><h4>Chat</h4>Edit any message and page between versions · Compaction of long chats · Search chats · Code colouring and math · Dictation · Command palette</td>
-    <td width="33%" valign="top"><h4>Workspace</h4>Projects · Artifacts page · Files pane · Memory · Skills · Plugins and marketplaces · Connectors · Scheduled tasks · Built-in browser · Other devices</td>
+    <td width="33%" valign="top"><h4>Chat</h4>Edit any message and page between versions · Compaction of long chats · Search chats · Code colouring and math · Dictation · Command palette · Three demo chats that open without a key</td>
+    <td width="33%" valign="top"><h4>Workspace</h4>Menus for every command (File, Edit, View, Go, Window, Help) · Settings window · Projects · Artifacts page · Files pane · Memory · Skills · Plugins and marketplaces · Connectors · Scheduled tasks · Built-in browser · Other devices</td>
     <td width="33%" valign="top"><h4>Providers and formats</h4>Anthropic API · Claude Code route · OpenAI and Cursor adapters · Exports: <code>.docx</code> · <code>.xlsx</code> · <code>.pptx</code> · PDF</td>
   </tr>
 </table>
 
 ## Built for agents
 
-112 engine commands live in one registry; the window, the CLI and the MCP server call the same ones.
+114 engine commands live in one registry; the window, the CLI and the MCP server call the same ones.
 
 ```sh
 ./format cli list                              # every engine command
@@ -100,8 +100,8 @@
 
 - **Engine:** Python 3.12 and FastAPI on `127.0.0.1:8490`, with a store, an event stream and one module per command group.
 - **Window:** vanilla TypeScript and Vite, with inline SVG icons and no UI framework.
-- **Desktop:** Tauri 2 around the engine frozen with PyInstaller, so the app needs no Python or Node.
-- **Tested:** 63 Python tests (commands, approvals, chat tree, artifacts, MCP, migrations, release profiles).
+- **Desktop:** Tauri 2 around the engine frozen with PyInstaller, so the app needs no Python or Node. It starts behind the family's splash and shows the window once the page has drawn; on macOS the menus are in the system menu bar.
+- **Tested:** 96 engine tests (the local guard, commands, approvals, chat tree, artifacts, the devices gate, MCP, migrations, versions, release profiles) and a window smoke that loads the built window with no error and no layout shift.
 
 ## Download
 

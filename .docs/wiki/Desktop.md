@@ -4,11 +4,12 @@ The desktop app follows formlit and formvis: a Tauri 2 shell in `src-tauri/` and
 
 ## How it starts
 
-1. The shell opens a small undecorated `splash` window (`frontend/public/splash.html`, copied into `frontend/dist`).
+1. The shell shows a small undecorated `splash` window (`frontend/public/splash.html`, copied into `frontend/dist`): the family's card, with a bar that fills over the 2.6 s the splash stays at least.
 2. It spawns the sidecar with `FORMAT_DESKTOP=1` and `FORMAT_PARENT_PID`, and copies every line it prints to `<app log dir>/engine.log`.
 3. `backend/format_engine.py` points `FORMAT_DATA_DIR` at the platform's app-data folder, `FORMAT_DIST` at the bundled window, picks port 8490 or a free one, takes the login shell's PATH (macOS GUI apps get a bare one), starts a thread that exits when the shell's process is gone, and runs uvicorn.
-4. The shell waits for uvicorn's `Uvicorn running on http://127.0.0.1:<port>` line, opens the `main` window on that URL and closes the splash. If the engine exits first, it shows the last 40 lines of its output.
-5. On quit the shell kills the sidecar.
+4. The shell waits for uvicorn's `Uvicorn running on http://127.0.0.1:<port>` line and builds the `main` window on that URL, unseen (on macOS on screen at alpha 0, so the page keeps rendering). If the engine exits first, it hides the splash and shows the last 40 lines of its output.
+5. When the page has drawn it calls the shell command `app_ready` (`frontend/src/main.ts`). The shell (`src-tauri/src/reveal.rs`) waits out the rest of the 2.6 s, lets the splash finish its bar, shows the window whole and closes the splash. If the page never calls, the window is shown after 20 s.
+6. On quit the shell kills the sidecar.
 
 ## What the shell handles
 
@@ -18,10 +19,10 @@ The desktop app follows formlit and formvis: a Tauri 2 shell in `src-tauri/` and
 | New windows (`target=_blank`, `window.open`) | `on_new_window` | opened in the default browser, never a second webview |
 | Downloads and exports | the window and `files.save_download` | in the app the window sends every download to the engine, which saves it to Downloads under the server's name (numbered if taken), reveals it and the window shows a notice; `on_download` in the shell stays as a fallback for downloads started inside an artifact page |
 | Microphone | `on_permission_request` | granted to the page; macOS still asks the person once (Info.plist `NSMicrophoneUsageDescription`, entitlement `device.audio-input`) |
-| Copy, paste, undo on macOS | Tauri's default macOS menu | kept on |
+| Menus on macOS | the page, through `window.__TAURI__.menu` (`frontend/src/ui/native-menu.ts`) | File, Edit, View, Go, Window and Help in the system menu bar, built from the window's command registry; Copy, Paste, Undo and the like are the system's own items. On Windows and Linux the same menus are a bar in the window's title row |
 | Updates | `tauri-plugin-updater` | only when `plugins.updater.pubkey` is set |
 
-The page never calls into the shell (no `remote` capability), so the web build and the app run the same window code.
+The page calls into the shell in two places only, both through the injected global `window.__TAURI__` (no npm package): `app_ready` and, on macOS, the menu and window APIs. The page is a remote origin to Tauri (`http://127.0.0.1:<port>`), so `src-tauri/capabilities/default.json` lists that address and the permissions, and `build.rs` declares `app_ready` so its permission is generated. In a browser the global is absent and the same window code runs without it.
 
 ## Freezing the engine
 

@@ -48,7 +48,8 @@ Open Settings, API keys and paste the key. It is stored in FormAT's data folder,
 
 - **Sidebar** (Mod+B folds it to a narrow rail): New chat, Projects, Artifacts, Scheduled, Customize, More (Terminal, Settings), then your chats grouped by day with pinned chats first. A dot on a chat means Claude is working there, or waiting for you.
 - **Conversation** in the middle, with the composer under it.
-- **Top bar**: the chat's title (click for rename, pin, move to a project, delete), Background work, the terminal, the built-in browser, the chat's files, and Outputs.
+- **Menus**: File, Edit, View, Go, Window and Help, in the top bar on Windows, Linux and in a browser, and in the system menu bar on macOS. Every command with a shortcut shows it there; Help has the shortcuts list and the demo chats.
+- **Top bar**: the chat's title (click for rename, pin, move to a project, delete; delete asks first), Background work, the terminal, the built-in browser, the chat's files, and Outputs.
 - **Side track** beside the chat: an artifact, the chat's files or the browser, one at a time.
 - **Terminal dock** at the bottom (Mod+J).
 
