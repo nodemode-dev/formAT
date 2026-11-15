@@ -12,6 +12,9 @@ Mod is Cmd on macOS and Ctrl elsewhere. Mod+/ shows this list in Format.
 | Mod+U | add files |
 | Mod+F | find in page |
 | Mod+/ | keyboard shortcuts |
+| Alt+Mod+H | Home: a new chat |
+| Mod+, | Settings |
+| F10, or Alt and a menu's first letter | open the menu bar (Windows, Linux and the browser; on macOS the menus are in the system menu bar) |
 | Enter | send (or Mod+Enter, per Settings, Account) |
 | Shift+Enter | new line |
 | Esc | close a menu, dialog or the find bar |

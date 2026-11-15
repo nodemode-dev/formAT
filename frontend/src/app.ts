@@ -22,6 +22,7 @@ import { ArtifactsView, SettingsView, type InfoLike } from './ui/views';
 import { ScheduledView, type ScheduleSummary } from './ui/scheduled-view';
 import { BackgroundPanel } from './ui/background-panel';
 import { FindBar } from './ui/find-bar';
+import { mountMenus, type AppMenus } from './ui/app-menu';
 
 type Layout = 'sidebar' | 'panel' | 'term';
 const PREF: Record<Layout, string> = { sidebar: 'format.sidebar', panel: 'format.panel', term: 'format.terminal' };
@@ -50,12 +51,14 @@ export class App {
   private pages = new Map<View, HTMLElement>();
   private title: HTMLElement;
   private stream = new EventStream();
+  private menus: AppMenus;
 
   constructor(host: HTMLElement) {
     const html = document.documentElement;
     this.shell = el(`<div class="ft-app">
       <div class="ft-main">
         <header class="ft-topbar">
+          <nav class="ft-menubar" aria-label="Main menu"></nav>
           <button type="button" class="ft-crumb" title="Open the project" hidden></button><span class="ft-crumb-sep" aria-hidden="true" hidden>/</span>
           <button type="button" class="ft-title-btn" data-menu-anchor aria-label="Chat options"><span class="ft-title-text">New chat</span>${ui('chevronDown', 14)}</button>
           <span class="ft-topbar-spacer"></span>
@@ -209,6 +212,27 @@ export class App {
       if (pid) this.openProject(pid);
     });
     this.state.on('projects', () => this.renderTitle());
+    this.menus = mountMenus(q(this.shell, '.ft-menubar'), {
+      state: this.state,
+      newChat: () => this.newChat(),
+      newProject: () => { this.setView('projects'); this.projectsView.showList(); q(this.projectsView.root, '.ft-proj-new').click(); },
+      newTask: () => { this.setView('scheduled'); this.scheduledView.showList(); q(this.scheduledView.root, '.ft-sch-new').click(); },
+      setView: (v) => this.setView(v),
+      openSettings: (s) => this.openSettings(s),
+      layout: (w) => this.layout(w),
+      toggle: (w) => this.toggle(w),
+      side: () => this.side(),
+      toggleFiles: () => this.toggleFiles(),
+      toggleBrowser: () => this.toggleBrowser(),
+      toggleBackground: () => this.background.toggle(q(this.shell, '.ft-bg-toggle')),
+      backgroundOpen: () => this.background.open,
+      togglePalette: () => { if (this.palette.isOpen) this.palette.close(); else this.palette.open(); },
+      findOpen: () => this.find.isOpen,
+      openFind: () => this.find.open(),
+      addFiles: () => this.composer.openFilePicker(),
+      compact: () => this.compactNow(),
+      shortcuts: () => this.shortcuts(),
+    });
     document.addEventListener('keydown', (e) => this.keys(e));
     interceptDownloads();
     this.state.on('active', () => this.renderTitle());
@@ -298,7 +322,7 @@ export class App {
   private shortcuts(): void {
     let sheet = document.getElementById('ft-shortcuts');
     if (!sheet) {
-      const rows: Array<[string, string]> = [['New chat', `${modKey}⇧O`], ['Command palette and search', `${modKey}K`], ['Sidebar open or rail', `${modKey}B`], ['Terminal', `${modKey}J`], ['Outputs', `${modKey}.`], ['Add files', `${modKey}U`], ['Find in page', `${modKey}F`], ['Keyboard shortcuts', `${modKey}/`], ['Send', 'Enter'], ['New line', '⇧Enter'], ['Close a menu or dialog', 'Esc']];
+      const rows: Array<[string, string]> = [['New chat', `${modKey}⇧O`], ['Command palette and search', `${modKey}K`], ['Sidebar open or rail', `${modKey}B`], ['Terminal', `${modKey}J`], ['Outputs', `${modKey}.`], ['Add files', `${modKey}U`], ['Find in page', `${modKey}F`], ['Keyboard shortcuts', `${modKey}/`], ['Home', this.menus.keyLabel('home')], ['Settings', this.menus.keyLabel('settings')], ['Send', 'Enter'], ['New line', '⇧Enter'], ['Close a menu or dialog', 'Esc']];
       sheet = el(`<div class="ft-sheet-scrim" id="ft-shortcuts" hidden><div class="ft-sheet" role="dialog" aria-label="Keyboard shortcuts"><h2>Keyboard shortcuts</h2><dl>${rows.map(([a, k]) => `<dt>${a}</dt><dd>${k}</dd>`).join('')}</dl></div></div>`);
       sheet.addEventListener('pointerdown', (e) => { if (e.target === sheet) sheet!.hidden = true; });
       document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet && !sheet.hidden) sheet.hidden = true; });
@@ -717,16 +741,6 @@ export class App {
   }
 
   private keys(e: KeyboardEvent): void {
-    const mod = e.metaKey || e.ctrlKey;
-    if (!mod) return;
-    const k = e.key.toLowerCase();
-    if (k === 'b' && !e.shiftKey) { e.preventDefault(); this.toggle('sidebar'); }
-    else if (k === 'k') { e.preventDefault(); if (this.palette.isOpen) this.palette.close(); else this.palette.open(); }
-    else if (k === 'j') { e.preventDefault(); this.toggle('term'); }
-    else if (k === '.') { e.preventDefault(); this.toggle('panel'); }
-    else if (k === 'o' && e.shiftKey) { e.preventDefault(); this.newChat(); }
-    else if (k === '/') { e.preventDefault(); this.shortcuts(); }
-    else if (k === 'f' && !e.shiftKey && !this.find.isOpen) { e.preventDefault(); this.find.open(); }
-    else if (k === 'u' && !e.shiftKey && this.state.view === 'chat') { e.preventDefault(); this.composer.openFilePicker(); }
+    this.menus.key(e);
   }
 }

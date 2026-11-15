@@ -80,6 +80,7 @@
   root.dataset.ftSidebar = get('format.sidebar', 'open') === 'rail' || window.matchMedia('(max-width: 760px)').matches ? 'rail' : 'open';
   root.dataset.ftPanel = get('format.panel', 'closed') === 'open' ? 'open' : 'closed';
   root.dataset.ftTerm = get('format.terminal', 'closed') === 'open' ? 'open' : 'closed';
+  if ('__TAURI_INTERNALS__' in window && /Mac/.test(navigator.platform) && get('format.menusInWindow', '') !== '1') root.classList.add('has-native-menus');
 })();
   </script>
   <link rel="stylesheet" href="/src/styles/scrollbars.css">
@@ -92,6 +93,7 @@
   <link rel="stylesheet" href="/src/styles/ft-sidebar.css">
   <link rel="stylesheet" href="/src/styles/ft-chat.css">
   <link rel="stylesheet" href="/src/styles/ft-overlays.css">
+  <link rel="stylesheet" href="/src/styles/ft-menubar.css">
   <link rel="stylesheet" href="/src/styles/light-mode.css">
 </head>
 <body>
