@@ -1,0 +1,141 @@
+{
+  "format": "format-demo-chat/1",
+  "title": "Ferry dashboard",
+  "artifact": {
+    "title": "Harbour Ferries, season 2026",
+    "kind": "html",
+    "file": "artifact.html",
+    "version": 1,
+    "toolUseId": "toolu_demo_harbour_ferries",
+    "toolName": "publish_artifact"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "text": "Harbour Ferries is a made-up passenger ferry operator. Invent a realistic summer season for it (five routes, riders for every day, punctuality, the fleet) and build me a live operations dashboard from it. Keep the data as Markdown pages and CSV files, laid out so I can import the whole folder into form.md as a workspace."
+    },
+    {
+      "role": "assistant",
+      "text": "I made the data first and then built the dashboard from it. Everything here is invented: the operator, the routes, the vessels and every number.\n\n**The data** is in `formmd/Harbour Ferries/`, and the same folder zipped is `harbour-ferries-formmd.zip`:\n\n- `Daily ridership.csv`: one row per day, 1 May to 30 September 2026 (153 days), with riders on each of the five routes, the weather, sailings scheduled and run, and on-time counts\n- `Routes.csv`, `Fleet.csv`, `Fare mix.csv` and `Season history.csv`: the five routes with their timetable and season totals, the eight vessels, riders by ticket type, and 2023 to 2026 side by side\n- `index.md`, `Season notes.md` and `About this data.md`: an overview, a month by month reading of the season, and what each column means\n- `Routes/`: one short page per route\n\nThe tables agree with each other: the route columns add up to each day's riders, and the totals in the other tables are sums of the daily rows.\n\n**To import into form.md:** choose Import, pick the zip and leave Format on \"Detect automatically\". Each Markdown file becomes a page and each CSV a database under one Harbour Ferries page. The pages in `Routes/` become the pages of the matching rows, and the links between pages and databases keep working.\n\n**The dashboard** is the page above, **Harbour Ferries, season 2026**:\n\n- **Tiles:** season riders (350,698, up 3.6% on 2025), average per day, the busiest day (4,928 on Sun 12 Jul, the Harbour Regatta) and on-time sailings (95.4%)\n- **Daily riders:** every day of the season with the average and the peak marked. Hover or tap a day for its riders, weather and on-time rate.\n- **On time by week** and **Riders by route:** hover a week for its counts; click a route, or use the route buttons at the top, and the tiles and the daily chart switch to that route\n- **Next departures:** the live part. It runs the season timetable against your own clock and counts down to each route's next sailing every second. It is a timetable clock, not a feed from real boats.\n\nThe dashboard carries its own copy of the same rows as the CSV files and works its figures out from them. If you edit a CSV, the page does not change until it is rebuilt.",
+      "artifacts": [
+        "toolu_demo_harbour_ferries"
+      ],
+      "files": [
+        "harbour-ferries-formmd.zip",
+        "formmd/Harbour Ferries/About this data.md",
+        "formmd/Harbour Ferries/Daily ridership.csv",
+        "formmd/Harbour Ferries/Fare mix.csv",
+        "formmd/Harbour Ferries/Fleet.csv",
+        "formmd/Harbour Ferries/Routes.csv",
+        "formmd/Harbour Ferries/Season history.csv",
+        "formmd/Harbour Ferries/Season notes.md",
+        "formmd/Harbour Ferries/index.md",
+        "formmd/Harbour Ferries/Routes/Eastern Quay.md",
+        "formmd/Harbour Ferries/Routes/Harbour Loop.md",
+        "formmd/Harbour Ferries/Routes/Island Shuttle.md",
+        "formmd/Harbour Ferries/Routes/Lighthouse Run.md",
+        "formmd/Harbour Ferries/Routes/West Sands.md"
+      ]
+    }
+  ],
+  "files": [
+    {
+      "path": "harbour-ferries-formmd.zip",
+      "name": "harbour-ferries-formmd.zip",
+      "mime": "application/zip",
+      "size": 11078,
+      "caption": "The Harbour Ferries workspace for form.md: 3 pages, 5 databases, 5 route pages"
+    },
+    {
+      "path": "formmd/Harbour Ferries/About this data.md",
+      "name": "About this data.md",
+      "mime": "text/markdown",
+      "size": 1512,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Daily ridership.csv",
+      "name": "Daily ridership.csv",
+      "mime": "text/csv",
+      "size": 12066,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Fare mix.csv",
+      "name": "Fare mix.csv",
+      "mime": "text/csv",
+      "size": 134,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Fleet.csv",
+      "name": "Fleet.csv",
+      "mime": "text/csv",
+      "size": 765,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Routes.csv",
+      "name": "Routes.csv",
+      "mime": "text/csv",
+      "size": 787,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Season history.csv",
+      "name": "Season history.csv",
+      "mime": "text/csv",
+      "size": 168,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Season notes.md",
+      "name": "Season notes.md",
+      "mime": "text/markdown",
+      "size": 1115,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/index.md",
+      "name": "index.md",
+      "mime": "text/markdown",
+      "size": 1337,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Routes/Eastern Quay.md",
+      "name": "Eastern Quay.md",
+      "mime": "text/markdown",
+      "size": 697,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Routes/Harbour Loop.md",
+      "name": "Harbour Loop.md",
+      "mime": "text/markdown",
+      "size": 819,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Routes/Island Shuttle.md",
+      "name": "Island Shuttle.md",
+      "mime": "text/markdown",
+      "size": 739,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Routes/Lighthouse Run.md",
+      "name": "Lighthouse Run.md",
+      "mime": "text/markdown",
+      "size": 660,
+      "caption": ""
+    },
+    {
+      "path": "formmd/Harbour Ferries/Routes/West Sands.md",
+      "name": "West Sands.md",
+      "mime": "text/markdown",
+      "size": 659,
+      "caption": ""
+    }
+  ]
+}

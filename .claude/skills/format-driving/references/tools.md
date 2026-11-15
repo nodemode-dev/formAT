@@ -79,7 +79,7 @@ Creates an empty conversation and returns it with its id. Use when you need an e
 
 ### delete_conversation
 
-Deletes a conversation and its messages, and removes its attachments from the Anthropic Files API where they were uploaded. Not undoable. Use only when the person asks to delete a chat; it cannot be undone.
+Deletes a conversation with its messages, its artifacts and its own folder of files, and removes its attachments from the Anthropic Files API where they were uploaded. A reply still running in it is stopped. Not undoable. Use only when the person asks to delete a chat; it cannot be undone.
 
 - changes state · command `conversation.delete` · params: `id` string
 
@@ -564,6 +564,18 @@ Whether the built-in browser is installed and open, and its current page (url, t
 Whether the Claude Code CLI is installed (its path and version) and which engine answers chats now: api (the Anthropic API key) or claude-code (the person's own Claude Code sign-in). Use when chats run without an API key, to see whether Claude Code is installed and whether it or the API key answers.
 
 - read-only · command `claudecode.status` · params: none
+
+### list_demos
+
+The demo chats Format ships with: each one's id, chat title, artifact title, number of output files, and conversationId, which is null when the person deleted that demo. A demo is a recorded chat stored like any other; reading one needs no API key and calls no model. Use to see which demo chats ship with Format and which of them are still in the sidebar.
+
+- read-only · command `demo.list` · params: none
+
+### restore_demo
+
+Returns the conversation of one demo, and puts the demo back first when it was deleted: a new chat with the recorded messages, the artifact page and the output files, made from the data shipped with Format. Calls no model and needs no API key. restored is true when a chat was made, false when the demo was already there, in which case nothing changes. Use when the person wants a demo chat opened or brought back after deleting it; it returns the demo's conversation.
+
+- changes state · command `demo.restore` · params: `id` string
 
 ### forget_devices
 

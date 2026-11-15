@@ -28,9 +28,9 @@ class LocalGuard:
         self.app = app
         self.allowed = {key for key in (_origin_key(o) for o in origins) if key is not None}
 
-    def _permitted(self, headers: dict[str, str]) -> bool:
+    def _permitted(self, headers: dict[str, str], paired: bool = False) -> bool:
         host = headers.get("host", "")
-        if _host_of(host) not in LOOPBACK:
+        if not paired and _host_of(host) not in LOOPBACK:
             return False
         origin = headers.get("origin")
         if origin is None:
@@ -48,7 +48,7 @@ class LocalGuard:
             await self.app(scope, receive, send)
             return
         headers = {k.decode("latin-1").lower(): v.decode("latin-1") for k, v in scope.get("headers", [])}
-        if self._permitted(headers):
+        if self._permitted(headers, scope.get("format.paired") is True):
             await self.app(scope, receive, send)
             return
         if scope["type"] == "websocket":

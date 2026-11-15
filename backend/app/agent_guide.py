@@ -66,6 +66,8 @@ GUIDE: dict[str, tuple[str, str]] = {
     "conversation.allowAll": ("allow_all_in_conversation", "Use when the person wants every tool in one chat to run without approval cards, or to turn that off again."),
     "conversation.setConnector": ("set_connector_in_conversation", "Use when the person wants a connector's tools kept out of one chat, or back in, without disconnecting it everywhere."),
     "conversation.rename": ("rename_conversation", "Use when a chat's title should change."),
+    "demo.list": ("list_demos", "Use to see which demo chats ship with Format and which of them are still in the sidebar."),
+    "demo.restore": ("restore_demo", "Use when the person wants a demo chat opened or brought back after deleting it; it returns the demo's conversation."),
     "files.list": ("list_chat_files", "Use to see the files Claude wrote or changed in a chat's own folder."),
     "files.read": ("read_chat_file", "Use to read one file from a chat's folder, for example code Claude wrote there."),
     "keys.clear": ("clear_key", "Use only when the person asks to remove a saved API key."),

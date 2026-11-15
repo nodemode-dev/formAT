@@ -83,13 +83,13 @@ def begin(row: dict) -> str:
             if not meta.get("registration_endpoint"):
                 raise OAuthError("this server does not register clients automatically; remove the connector and add it again with your own OAuth client")
             try:
-                r = http.post(meta["registration_endpoint"], json={"client_name": "Format", "redirect_uris": [back], "grant_types": ["authorization_code", "refresh_token"],
+                r = http.post(meta["registration_endpoint"], json={"client_name": "FormAT", "redirect_uris": [back], "grant_types": ["authorization_code", "refresh_token"],
                                                                    "response_types": ["code"], "token_endpoint_auth_method": "none"})
                 info = r.json() if r.status_code in (200, 201) else {}
             except (httpx.HTTPError, ValueError):
                 info = {}
             if not info.get("client_id"):
-                raise OAuthError("the server did not register Format as a client; add the connector again with your own OAuth client")
+                raise OAuthError("the server did not register FormAT as a client; add the connector again with your own OAuth client")
             client_id, secret = info["client_id"], info.get("client_secret", "")
     if not client_id:
         raise OAuthError("this connector has no OAuth client ID")
@@ -134,7 +134,7 @@ def finish(state: str, code: str) -> str:
     with _lock:
         pending = _pending.pop(state, None)
     if not pending or time.time() - pending["at"] > PENDING_TTL:
-        raise OAuthError("this sign-in has expired or was already used; start it again from Format")
+        raise OAuthError("this sign-in has expired or was already used; start it again from FormAT")
     row = store.row("SELECT * FROM connectors WHERE id = ?", (pending["cid"],))
     if row is None:
         raise OAuthError("the connector was removed while you signed in")

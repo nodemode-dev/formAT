@@ -13,6 +13,10 @@ Vanilla TypeScript and Vite in `frontend/src`. No framework: each view is a clas
 | `ui/sidebar.ts`, `composer.ts`, `chat-view.ts`, `tool-cards.ts`, `markdown.ts` | the conversation |
 | `ui/artifact-panel.ts`, `doc-view.ts`, `files-pane.ts`, `browser-pane.ts`, `side-panel.ts` | the side track and Outputs |
 | `ui/views.ts`, `customize-view.ts`, `projects-view.ts`, `scheduled-view.ts` | pages |
+| `ui/commands.ts`, `app-menu.ts`, `menubar.ts`, `native-menu.ts` | the command registry (ids, labels, keys, enabled, checked), FormAT's commands and six menus, the bar in the title row, and the same menus in the macOS menu bar |
+| `ui/prefs-window.ts` | the settings window's shell (rail, stacked sections, the wire); its controls are in `views.ts` and `memory-panel.ts` |
+| `ui/confirm.ts` | the confirm sheet |
+| `demos.ts` | the demo chats the window knows by id, and where they sit in the sidebar |
 | `ui/icons-ft.ts` | every icon, inline SVG paths drawn in `currentColor` |
 | `styles/` | the family's vendored Studio Dark sheets unchanged, and Format's `ft-*.css` |
 
@@ -31,4 +35,4 @@ Colours, spacing, radii and z-index come from tokens (`tokens.css`, `ft-tokens.c
 
 ## Adding a pane or view
 
-Add its class in `ui/`, mount it from `app.ts`, add its CSS (display rules keyed on the `data-ft-*` attribute), a palette entry and, if it has a shortcut, the shortcut sheet. Record the reasoning in `frontend/HASHOUT_LOG.md`.
+Add its class in `ui/`, mount it from `app.ts`, add its CSS (display rules keyed on the `data-ft-*` attribute), a palette entry and a command in `ui/app-menu.ts` (with its keys, if it has a shortcut, and its place in a menu; the keyboard handler, the menus and the shortcuts sheet read the registry). Record the reasoning in `frontend/HASHOUT_LOG.md`.

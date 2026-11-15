@@ -1,0 +1,25 @@
+.ft-menubar { display: flex; align-items: center; gap: 2px; flex: none; margin-right: var(--space-2); }
+.ft-menu-btn { flex: none; height: var(--ctl-md); padding: 0 var(--space-2); border: 0; border-radius: var(--radius); background: transparent; color: var(--text-secondary); font: var(--fs-12) var(--font-ui); white-space: nowrap; cursor: default; }
+.ft-menu-btn:hover, .ft-menu-btn.is-open, .ft-menu-btn:focus-visible { background: var(--bg-tertiary); color: var(--text-primary); outline: none; }
+.is-menu-mnemonics .ft-menu-btn::first-letter { text-decoration: underline; }
+.has-native-menus .ft-menubar { display: none; }
+
+.ft-mainmenu { min-width: 232px; max-width: none; max-height: calc(100vh - var(--space-2)); overscroll-behavior: contain; }
+.ft-mainmenu[hidden] { display: none; }
+.ft-mainmenu .ft-menu-item { display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; align-items: center; gap: 0 var(--space-2); min-height: var(--ctl); padding: 0 var(--space-2); color: var(--text-primary); cursor: default; }
+.ft-mainmenu .ft-menu-item:focus:not(:disabled) { background: var(--bg-hover); outline: none; }
+.ft-mainmenu .ft-menu-item:disabled { color: var(--text-muted); opacity: 0.55; }
+.ft-mainmenu .ft-menu-check { visibility: hidden; display: inline-flex; }
+.ft-mainmenu .ft-menu-item.is-checked .ft-menu-check { visibility: visible; }
+.ft-mainmenu .ft-menu-label { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ft-menu-keys { margin-left: var(--space-4); color: var(--text-muted); font-size: var(--fs-11); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.ft-mainmenu .ft-menu-sub.is-open:not(:disabled) { background: var(--bg-hover); }
+.ft-mainmenu .ft-menu-sub .ft-menu-keys { display: inline-flex; margin-right: calc(var(--space-1) * -1); }
+.ft-menu-sep { height: 1px; margin: var(--space-1) var(--space-2); background: var(--glass-highlight); }
+
+.ft-wordmark-home { display: inline-flex; align-items: center; gap: var(--space-2); min-width: 0; border-radius: var(--radius); cursor: pointer; }
+.ft-wordmark-home:focus-visible { outline: var(--ft-focus-ring); outline-offset: 2px; }
+
+@media (max-width: 760px) {
+  .ft-menubar { flex: 0 1 auto; min-width: 0; overflow-x: auto; }
+}

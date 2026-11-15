@@ -40,7 +40,7 @@ Hover a message you sent and choose Edit to change it; Claude answers again and 
 
 ## Long chats
 
-When a chat nears its model's context window, Format summarizes the earlier part (compaction) and carries on. You can also run Summarize earlier messages from the palette. Settings, Long chats sets when it happens or turns it off.
+When a chat nears its model's context window, FormAT summarizes the earlier part (compaction) and carries on. You can also run Summarize earlier messages from the palette. Settings, Long chats sets when it happens or turns it off.
 
 ## Find in page
 

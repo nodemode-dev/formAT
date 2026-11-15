@@ -36,6 +36,8 @@ The engine owns all state:
 | `data/` folders | uploads, memory, skills, plugins, exports, snapshots, the browser profile, the pairing secret, saved keys |
 | `workspace/chats/<id>` | each chat's own folder for Claude's tools |
 
+Demo chats are ordinary rows: at start `engine/demos.py` reads each folder under `app/demos` and, once per data folder, writes its conversation, messages, artifact and output files (`conversations.demo` names the demo; `meta` key `demos.seeded` remembers which were added, so a deleted demo stays deleted until `demo.restore`).
+
 The window keeps only view state, and layout state (sidebar, panel, terminal, side track) as data attributes on `documentElement`, set before first paint by the boot script in `index.html`.
 
 ## The request path

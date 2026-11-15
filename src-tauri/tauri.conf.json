@@ -2,7 +2,7 @@
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "FormAT",
   "mainBinaryName": "format",
-  "version": "0.25.4",
+  "version": "0.26.0",
   "identifier": "ai.nodemode.format",
   "build": {
     "frontendDist": "../frontend/dist"
@@ -19,9 +19,11 @@
         "decorations": false,
         "center": true,
         "transparent": true,
-        "shadow": false
+        "shadow": false,
+        "visible": false
       }
     ],
+    "withGlobalTauri": true,
     "macOSPrivateApi": true,
     "security": {
       "csp": null
@@ -32,7 +34,7 @@
     "targets": "all",
     "category": "DeveloperTool",
     "shortDescription": "A.T, the Agentic Terminal",
-    "longDescription": "Format is a chat and agent workspace on the Claude API: chats, tools with approvals, artifacts, documents and slides, projects, memory, skills, plugins, connectors, a built-in browser, scheduled tasks and real terminals, on your own API key.",
+    "longDescription": "FormAT is a chat and agent workspace on the Claude API: chats, tools with approvals, artifacts, documents and slides, projects, memory, skills, plugins, connectors, a built-in browser, scheduled tasks and real terminals, on your own API key.",
     "copyright": "Copyright 2026 nodemode-ai.",
     "externalBin": ["binaries/format-engine"],
     "resources": { "../LICENSE": "LICENSE", "../NOTICE.md": "NOTICE.md" },

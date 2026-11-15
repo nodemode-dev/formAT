@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the window. Source files stay comment-free (vendored family sheets keep their upstream headers); everything else they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.24.1
-Last updated: 2026-10-22 · v0.24.1: no window change (checks only, releases by formcompiler, version string); v0.24.0: the app icon redrawn as a smiling chat bubble with a sparkle (every Tauri size, the macOS .icns with its margin and shadow, favicon and splash), assets/icon_src to regenerate it, and the compact build's bloom kept; v0.23.0: attachment tiles with real previews (image, SVG, video frame and length, audio length, first lines of text) in the composer and on sent messages, and a full-screen viewer for every kind; v0.22.0: a run of the API's text blocks renders as one Markdown flow (a cited answer no longer breaks into a paragraph per claim), source chips after cited claims (web, document page, search result) live while streaming, punctuation kept before the chips, the caret only on the reply's last text, redacted thinking shown as nothing, KaTeX's operator and AMS faces preloaded; v0.21.1: a whole-app audit (no overflow, scrollbars or errors in 102 states) and five fixes: opening a chat moves the composer at the click, view tabs no longer reset each other, Skills Discover's empty line waits, a plugin connector chip holds still, Customize's message line keeps its height; v0.21.0: Discover for skills and connectors, Skill with Claude, a confirm for command plugins, private marketplace tokens, .plugin uploads; v0.20.0: Create a plugin (editor) and Create with Claude, /plugin:skill in the / menu; v0.19.0: Plugins with Your plugins and Discover, marketplaces with Check for updates and Sync automatically, a plugin page with Skills, Commands, Connectors and Agents tabs; v0.18.0: connector sign-in in the add form, on rows and pages, and the + menu's connector switches per chat; v0.17.0: Customize's list beside the open item on wide windows, Enabled switches, Delete and Remove in "..." menus with a confirm, skills grouped by where they came from; v0.16.0: a connector's page with status, Disconnect, the "..." menu and tool permissions; v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
+Current build version: v0.26.0
+Last updated: 2026-11-15 · v0.26.0: a menu bar from one command registry (File, Edit, View, Go, Window, Help; in the macOS menu bar through the shell's injected API), settings as a window with a rail and a wire, the family look and the name FormAT, demo chats in their own sidebar group that open with their page beside them and at their start, the family splash and the `app_ready` call, and the review's window fixes (the reload loop at boot, focus after load, a failed send keeps its text, the terminal's toggle key and adopted shells, delete asks first, narrow windows); 2026-10-26 · v0.25.0: the window smoke and the splash mark's jump (v0.25.1 to v0.25.4: no window change beyond the icon and the README); 2026-10-25 · v0.24.5: markdown-it 15.0.3 and Vite 8.3.5; 2026-10-22 · v0.24.1: no window change (checks only, releases by formcompiler, version string); v0.24.0: the app icon redrawn as a smiling chat bubble with a sparkle (every Tauri size, the macOS .icns with its margin and shadow, favicon and splash), assets/icon_src to regenerate it, and the compact build's bloom kept; v0.23.0: attachment tiles with real previews (image, SVG, video frame and length, audio length, first lines of text) in the composer and on sent messages, and a full-screen viewer for every kind; v0.22.0: a run of the API's text blocks renders as one Markdown flow (a cited answer no longer breaks into a paragraph per claim), source chips after cited claims (web, document page, search result) live while streaming, punctuation kept before the chips, the caret only on the reply's last text, redacted thinking shown as nothing, KaTeX's operator and AMS faces preloaded; v0.21.1: a whole-app audit (no overflow, scrollbars or errors in 102 states) and five fixes: opening a chat moves the composer at the click, view tabs no longer reset each other, Skills Discover's empty line waits, a plugin connector chip holds still, Customize's message line keeps its height; v0.21.0: Discover for skills and connectors, Skill with Claude, a confirm for command plugins, private marketplace tokens, .plugin uploads; v0.20.0: Create a plugin (editor) and Create with Claude, /plugin:skill in the / menu; v0.19.0: Plugins with Your plugins and Discover, marketplaces with Check for updates and Sync automatically, a plugin page with Skills, Commands, Connectors and Agents tabs; v0.18.0: connector sign-in in the add form, on rows and pages, and the + menu's connector switches per chat; v0.17.0: Customize's list beside the open item on wide windows, Enabled switches, Delete and Remove in "..." menus with a confirm, skills grouped by where they came from; v0.16.0: a connector's page with status, Disconnect, the "..." menu and tool permissions; v0.15.0: the / menu, Customize with tabs, search, Add and a skill file browser; v0.14.1: zero horizontal overflow in the chat and the app at 360 to 1920 px, the streaming caret off its own line; v0.14.0: Allow for this chat on approval cards and in the permission menu, Always allow named for its kind of step; v0.13.0: files dropped anywhere on the chat, /skill in the composer, Allow all, a pinned follow of the reply, user messages on the right, edits as diffs, a quieter thinking row
 
 ---
 
@@ -15,10 +15,12 @@ frontend/
 ├── vite.config.ts                 host false, port 5490 strict, preview 5491, /api proxied with WebSockets
 ├── package.json                   TypeScript 7, Vite 8, Inter, JetBrains Mono, xterm 6 and its fit addon
 ├── oc_install(.bat), boot_frontend(.bat)
-├── public/favicon.svg             Format's mark
+├── public/favicon.svg, favicon.png   FormAT's app icon, as the page icon and as the brand mark in the window
+├── public/splash.html             the desktop splash card (formvis's): icon, "Starting FormAT", a bar that fills
 └── src/
-    ├── main.ts                    entry: App, reveal after fonts and first load; boot frame if the engine is down
+    ├── main.ts                    entry: App, reveal after fonts and first load, app_ready to the desktop shell; boot frame if the engine is down
     ├── app.ts                     App: shell, layout toggles, views, keys, engine events
+    ├── demos.ts                   the demo chats the window knows by id: titles, blurbs, their sidebar group and order
     ├── version.ts                 VERSION
     ├── state/app-state.ts         conversations, active chat, messages, models, settings, view; topics
     ├── engine-client/
@@ -28,6 +30,12 @@ frontend/
     │   ├── dom.ts                 el, esc, q, setText, setAttr, prefs
     │   ├── icons-ft.ts            inline currentColor SVG: the mark and the 20 px UI set
     │   ├── menu.ts                popover menus and submenus in the overlay root
+    │   ├── commands.ts            the window's command registry: ids, labels, keys, enabled and checked, key event to command
+    │   ├── menubar.ts             the in-window menu bar and its popup menus, keyboard and mnemonics
+    │   ├── app-menu.ts            FormAT's commands and its six menus; the one keyboard handler
+    │   ├── native-menu.ts         the same menus in the macOS menu bar, through the shell's menu API
+    │   ├── prefs-window.ts        the settings window's shell: rail, stacked sections, the wire, drag, focus
+    │   ├── confirm.ts             the confirm sheet, and delete-a-chat through it
     │   ├── sidebar.ts             sidebar and mini rail, nav, keyed recents, rename in place
     │   ├── composer.ts            the box, attachments, + menu, model and effort, permission mode
     │   ├── chat-view.ts           greeting, thread, note, pinned follow and scroll-to-bottom, file drop zone; composer docked
@@ -52,7 +60,9 @@ frontend/
         ├── ft-shell.css           grid frame, top bar, buttons, pages, boot frame
         ├── ft-sidebar.css         sidebar and rail
         ├── ft-chat.css            chat, composer, side panel, terminal dock
-        └── ft-overlays.css        menus and the palette
+        ├── ft-overlays.css        menus and the palette
+        ├── ft-menubar.css         the menu bar in the title row and its popups
+        └── ft-prefs.css           the settings window
 ```
 
 ---
@@ -77,6 +87,12 @@ frontend/
 - [src/styles/ft-overlays.css](#src-styles-ft-overlays)
 - [src/styles/ft-tokens.css](#src-styles-ft-tokens)
 - [tests/window](#tests-window)
+- [public/splash.html and the hand-off to the window](#public-splash)
+- [The menu bar: commands.ts, menubar.ts, app-menu.ts, native-menu.ts](#src-ui-menubar)
+- [src/ui/prefs-window.ts and the settings window](#src-ui-prefs-window)
+- [The family look](#family-look)
+- [src/demos.ts and demo chats in the window](#src-demos)
+- [Review fixes in the window, 0.26.0](#review-0-26-0)
 
 ---
 
@@ -930,3 +946,159 @@ FAMILY_TEST_PLAN section 4, F7: the built window (`npm run build`, `frontend/dis
 The splash was a flex column of the mark, a 16 px gap and the line "Starting the Format engine", centred as a stack. The mark is a large inline SVG, so Chromium sometimes painted once after it and before the `p` was parsed: the mark was centred alone at y 418 and moved up 16 px to y 402 when the line arrived (layout shift 4.39e-5, node SVG, seen in 4 of 30 loads at 4x CPU on a loaded machine, 0 of 30 after). The mark and the line are now absolutely placed (`top: calc(50% - 48px)` for the mark, `calc(50% + 32px)` for the line) at the spots the centred stack reached with a one-line caption, so nothing depends on the line being in the document yet and the look is the same to within a pixel. The F7 script now names the shifting nodes in its failure.
 
 A run that failed once with `Page.goto: Page crashed` (renderer gone, a 386 s run with the machine's load average near 19) is the browser dying under memory pressure, not a request or a shift; it is not retried or ignored in the test.
+
+## public/splash.html and the hand-off to the window {#public-splash}
+
+### public/splash.html · the splash is formvis's card
+- refers-to: public/splash.html (whole file); src-tauri/tauri.conf.json :: app.windows[0]
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+The owner asked for the family's splash, so the page is formvis's card with FormAT's icon and words: a 360 by 200 transparent window, a rounded dark card (`#0a0a0a`, 1 px border, radius 16), the 72 px app icon, the line "Starting FormAT" and one bar. The bar is a single element whose `scaleX` runs from 0.04 to 0.92 over 2.6 s, the same length as the shell's minimum splash time, so it reads as progress without knowing any. `window.formatSplashDone()` freezes the bar where it is and lets it run to full in 0.2 s; the shell calls it just before the window appears (backend log, src-tauri/src/reveal.rs). The page has no theme read, no font file and no script besides that function, so it paints in one frame; the card is a column anchored from its top edge (`padding-top: calc(50vh - 64px)`) with fixed heights for the icon and the line, so a part that arrives later cannot move one above it (the 0.25.0 jump), and the window smoke still measures layout shift 0 on it. The old inline SVG mark and its 5 KB comment are gone: the icon is `favicon.png`. The content of this file is owner-approved; change it only on request.
+
+### src/main.ts · the page tells the shell when it can be seen
+- refers-to: src/main.ts :: reveal; src-tauri/tauri.conf.json :: app.withGlobalTauri; src-tauri/capabilities/default.json
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+`reveal()` adds `app-ready` and then, one animation frame later, calls the shell command `app_ready` through `window.__TAURI__.core.invoke`. One frame later because the shell shows the window at that call, and the frame is what puts the first real content on screen. The call goes through the global the shell injects (`withGlobalTauri`) and not through `@tauri-apps/api`, because the job rule is no new npm package and the window must also run in a plain browser, where the global is absent and the call is skipped. The engine-down frame calls `reveal()` as well, so a failed first load still ends the splash; if no call ever comes the shell shows the window by itself after 20 s.
+
+## The menu bar: commands.ts, menubar.ts, app-menu.ts, native-menu.ts {#src-ui-menubar}
+
+### src/ui/commands.ts · one registry instead of three lists
+- refers-to: src/ui/commands.ts :: Commands, comboOf, formatKeys; src/ui/app-menu.ts :: mountMenus; src/app.ts :: keys, shortcuts, the palette's list
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+Before this the window had three hand-kept lists of the same actions: the palette's array, the `keys` handler in `app.ts` and the rows of the shortcuts sheet (plus the manual). A menu bar would have been a fourth. `Commands` is formvis's registry shape: a command has an id, a label, optional keys, `enabled`, `checked` and `run`; `forEvent` turns a key event into a command (by `code` for letters and digits, so layouts do not move shortcuts, and by character for punctuation such as `,` and `/`). The menus, the keyboard handler, the palette hints and the shortcuts sheet all read it, so a shortcut is written once. `Mod` is Cmd on macOS and Ctrl elsewhere; `formatKeys` prints it for the platform. Any element with `data-cmd="<id>"` runs that command on click, which is how the brand mark in the sidebar became Home.
+
+### src/ui/menubar.ts, src/ui/app-menu.ts · File, Edit, View, Go, Window, Help in the title row
+- refers-to: src/ui/menubar.ts :: MenuBar, PopupMenu; src/ui/app-menu.ts :: the `menus` array, textField, edit, paste, dialogOpen; src/styles/ft-menubar.css
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+The bar is built like formvis's: six buttons in the title row, each opening a popup in `#overlay-root` (so it takes `--z-menu` like every other menu), with ticks for `checked`, greyed rows for `enabled` false, key hints, and one level of submenu (File, Settings and Help, Demos). Keyboard: F10 opens the first menu, Alt alone shows the mnemonics and Alt plus a first letter opens that menu (not on macOS, where Alt types characters), arrows move, Escape steps back. The bar ignores those keys while a dialog is open (`dialogOpen`: palette, sheets, the viewer, settings) and while the terminal has focus, so a shell keeps Alt and F10. Popups are built once and patched: `setItems` rebuilds only when the item list itself changes, and opening refreshes ticks and disabled states in place.
+
+Edit holds Undo, Redo, Cut, Copy, Paste and Select All because a menu bar without them reads as broken; they act on the field that had focus before the menu took it (`lastFocus`, recorded on `focusin` outside the bar), through `document.execCommand`, with `navigator.clipboard.readText` as the fallback for Paste. They are disabled when no text field is the target and never act on the terminal. Window, Minimize and Maximize and File, Close Window need the desktop shell and are disabled in a browser.
+
+Shortcuts added with the bar: Alt+Mod+H Home, Mod+, Settings, and Shift+Mod+J and Shift+Mod+K as second keys for the terminal and the palette. Checked with `scratch/formAT/menubar/probe.py` (80 checks: every menu by click and by keyboard, every item, ticks, each shortcut once, terminal focus) at 4x CPU; layout shift 0 with the bar in the row.
+
+### src/ui/native-menu.ts · the macOS menu bar, without a package
+- refers-to: src/ui/native-menu.ts :: NativeMenus, accelerator, OS_ITEMS, wantsNativeMenus; index.html :: the layout boot's `has-native-menus` line; src-tauri/capabilities/default.json
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+On macOS the menus belong in the system menu bar. The page builds them itself from the same `menus` array and registry, through the shell's JavaScript menu API (`Menu`, `Submenu`, `MenuItem`, `CheckMenuItem`, `PredefinedMenuItem`). It reaches that API as `window.__TAURI__.menu`, the global the shell injects, because no npm package may be added on this job and `@tauri-apps/api` would be one; the interfaces at the top of the file are the few shapes used, typed by hand. The page is served by the engine on `http://127.0.0.1:<port>`, which is a remote origin to Tauri, so the capability file lists that address and the window permissions (minimize, toggle maximize, close) the menus need; `core:default` carries the menu permissions.
+
+Undo, Redo, Cut, Copy, Paste, Select All, Minimize, Zoom and Close Window are the system's own predefined items (`OS_ITEMS`), so they act on whatever has focus, including the web view's fields; the window's keyboard handler never takes those keys itself (`OS_ITEMS` is skipped in `key`), so the system's or the browser's own editing applies. An application menu (About FormAT, Settings, Hide, Quit) comes first, as macOS expects. An accelerator the system refuses is retried without one, so one bad key cannot lose the whole menu. Enabled and checked states are pushed after input events and after `view`, `active` and `conversations` changes, coalesced to one pass per 150 ms.
+
+No flash: the layout boot in `index.html` adds `has-native-menus` to `<html>` before first paint when the page is in the desktop shell on macOS, which hides the in-window bar, so the bar never shows and then disappears. If building the native menu fails, the class is removed and the in-window bar is there instead. View, Menus in Window stores `format.menusInWindow`; it is read at the next start.
+
+Not verified on a Mac: there is none here. `scratch/formAT/menubar/native_mock.py` loads the page as macOS with a stand-in for `window.__TAURI__.menu` that records calls, and prints the tree the page asks for (also the fallback when the API is missing and a refused accelerator). It is a stand-in, not Tauri.
+
+### src/ui/terminal-dock.ts, src/app.ts · the terminal hands one key back
+- refers-to: src/ui/terminal-dock.ts :: constructor (appKey), mount (attachCustomKeyEventHandler); src/app.ts :: the TerminalDock construction
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+Mod+J opened the dock and moved focus into the shell, and then the same key could not hide it: xterm handles a key and stops it before the document's handler sees it. The dock now takes a predicate and passes it to xterm's custom key handler; for a matching event xterm does nothing and the event reaches the app. The predicate asks the registry whether the event is the terminal toggle, so a rebound key follows. Only that command is handed back: Ctrl+B, Ctrl+K and the rest are real shell keys and stay with the shell, as the manual says. Seen before and after with `scratch/formAT/bugpass/t4.py`.
+
+## src/ui/prefs-window.ts and the settings window {#src-ui-prefs-window}
+
+### src/ui/prefs-window.ts · settings are a window over the app
+- refers-to: src/ui/prefs-window.ts :: PrefsWindow (add, arrange, show, close, drawWire, queueSpy); src/ui/views.ts :: SettingsView; src/ui/memory-panel.ts; src/styles/ft-prefs.css; src/app.ts :: openSettings
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+Settings were one page about 2,930 px tall with no way to move around it. They are now formvis's Preferences layout: a scrim, a floating rail of categories on the left, a frame on the right with every section stacked in one scrolling column, and a wire drawn from the active category to the frame. `PrefsWindow` is only the shell (`add(name, icon, ...content)`, `arrange(names)`, `show(section)`, `close()`); the controls stay where they were, in `SettingsView` and `MemoryPanel`, which find them with the same selectors under `prefs.pages`. Section identity is the English name in `data-section`. Order: Account, API keys, Tools, Long chats, Memory, Voice, Other devices, Outside agents, About, which also settles the old mismatch where Memory was drawn after About.
+
+The view `settings` is gone from the page set: Settings no longer replaces what you were looking at, it opens over it, and closing returns focus to where it was. It closes by Done, the close button, Escape and a click on the scrim. Tab stays inside. A section's heading folds it; the button under the rail folds the rail to icons (`format.prefsRailCollapsed`); the frame drags by its title bar (`format.prefsSpot`).
+
+### src/ui/prefs-window.ts · the wire is drawn in the same task as show
+- refers-to: src/ui/prefs-window.ts :: show, drawWire, queueWire
+- kind: rationale
+- logged: v0.26.0 · 2026-11-15
+
+`show` un-hides the scrim, scrolls to the asked section and calls `drawWire()` at once, before returning, instead of waiting for an animation frame. A wire drawn a frame later is a window that appears with no wire and gains one, which is a visible flash at 4x CPU. Later changes (scroll, fold, resize, drag) go through `queueWire`, one draw per frame, and `drawWire` writes the path only when its `d` string differs. The scroll spy picks the section nearest the top edge and is muted for a moment after a click on the rail, so the rail does not flicker through the sections the scroll passes. Checked with `scratch/formAT/prefs/probe1.py` to `probe3.py`: the wire path is read in the same task as the key event that opens the window; every entry point, the four ways to close, focus return, Tab containment, one change per control type, reload, resize while open, a short window and 390 px; layout shift 0 and the page behind unchanged.
+
+## The family look {#family-look}
+
+### src/styles/ft-*.css, src/ui/sidebar.ts, src/ui/boot-frame.ts · the window wears the family's tokens and name
+- refers-to: src/styles/ft-tokens.css, ft-shell.css, ft-sidebar.css, ft-chat.css, ft-overlays.css, ft-menubar.css, ft-prefs.css; src/ui/sidebar.ts :: the wordmark; src/ui/boot-frame.ts; src/app.ts :: renderTitle
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+A pass to make the window read as a member of the family, with no change to where things are. The top bar is the family title row, 40 px (`--cv-titlebar-h`) instead of 44, and the sidebar head is the same row, flush to the top, so the two line up. The brand is the app icon (`favicon.png`) with the word FormAT, in the sidebar, the engine-down frame and the page title; the old terminal-prompt mark is no longer drawn, which ends the "two marks" mismatch. Switches, the segmented control, buttons and menus take the family's sizes and tokens. Raw values in the `ft-` sheets were replaced by tokens where a token exists (counts of raw px, hex and ms values: chat 146 to 119, overlays 75 to 57, shell 182 to 158, prefs 67 to 59); what is left is 1 px borders, glyph boxes, layout widths and the 15 px reading size. No raw colour remains except `#000` inside two mask gradients, and no raw z-index. `--ft-sidebar-bg`, which mixed 28% black into the background and turned the light profile's sidebar a muddy grey, is gone; the sidebar and the title row take the surface tokens.
+
+Measured with `scratch/formAT/look/tour.py` and `compare.py`: 57 views shot before and after with the rectangle of every visible `ft-` element. The differences are the ones meant (the 4 px of the title row and what follows from it, the rail's icons 8 px lower so they no longer jump when the sidebar folds, label sizes 14 to 13 px, switch and segmented sizes); every other rectangle is identical, layout shift is 0 in every view, and there are no console errors.
+
+The engine-down frame's text was stale ("Scaffold build", a key "set in backend/.env"); it now says the window is waiting for its engine and opens by itself.
+
+## src/demos.ts and demo chats in the window {#src-demos}
+
+### src/demos.ts, src/ui/sidebar.ts, src/ui/palette.ts · demos are ordinary chats with a mark
+- refers-to: src/demos.ts :: DEMOS, demosFirst, demoPage, demoConversation; src/ui/sidebar.ts :: renderList; src/ui/palette.ts; src/ui/app-menu.ts :: Help, Demos; src/app.ts :: renderTitle (the Demo tag), openDemo
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+The engine seeds the demo chats (backend log, app/engine/demos.py); the window only needs to place them. A conversation carries `demo`, the demo's id. The sidebar lists demos in their own group, Demos, after Pinned and before the date groups, in the order of `DEMOS` (Aurora page, Orrery page, Ferry dashboard), so a first run shows them and a person's own chats still sort by date under them; a pinned demo moves to Pinned like any chat. The title row shows a small Demo tag and the palette marks them. Help, Demos has one command per demo: it opens the chat, and asks the engine to restore it first (`demo.restore`) when the person deleted it. A demo can be renamed, pinned, deleted and, with a key, continued.
+
+`DEMOS` in the window repeats the ids, titles and blurbs so the menu exists before the engine has answered and so a deleted demo still has a menu item; the engine's `demo.list` is the truth for what is bundled.
+
+### src/app.ts · a demo opens with its page already beside it
+- refers-to: src/app.ts :: openListed; src/ui/artifact-panel.ts :: show
+- kind: rationale
+- logged: v0.26.0 · 2026-11-15
+
+A click on a demo opens the side track for the artifact at the click, before the conversation has arrived, and loads the page into it while the chat loads. Two reasons. The page's frame then has its final size when the page first runs: a page that measures itself at load (the aurora canvases, the dashboard's layout, the Orrery's WebGL surface) would otherwise start in a zero-width frame and resize a moment later. And the chat column takes its narrow width once, instead of rendering wide and reflowing when the panel opens. If the page cannot be shown the side track closes again. Below 760 px there is no room for both, so a demo opens as a plain chat with its card. Measured with `scratch/formAT/demo-bundle/frameprobe.py`: the frame sizes a demo goes through while opening and every layout shift of the frame and the window (none).
+
+### src/ui/chat-view.ts · a demo opens at its start
+- refers-to: src/ui/chat-view.ts :: render (fromStart)
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+A chat opens pinned to its end, which is right for a chat in progress and wrong for a recorded one: a demo showed the last paragraph of the reply first. When the chat being switched to is a demo and its last message is still the recorded reply, the view starts at the top and is not pinned. Once the person adds a message of their own the usual rule applies again.
+
+## Review fixes in the window, 0.26.0 {#review-0-26-0}
+
+### src/main.ts · a failing boot command no longer reloads the window forever
+- refers-to: src/main.ts :: bootFallback, probe
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+The engine-down frame reloads the page when the event socket opens, on the reasoning that an open socket means the engine is back. But the frame is shown whenever `app.load()` fails, and with one boot command failing while the engine is otherwise fine the socket opens at once: reproduced with `models.list` answering 500, 6 reloads in 6 s, without end. The reload now happens at most once in 15 s (the time of the last one is kept in `sessionStorage`); a later attempt is scheduled, so a passing failure still recovers. The frame's engine row also printed `127.0.0.1:8490` whatever the port; it prints `location.host`, since the desktop engine takes a free port when 8490 is busy.
+
+### src/main.ts · the composer has focus after load
+- refers-to: src/main.ts :: the `ready.then` success branch
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+After a load or reload focus stayed on `body`, although every later return to the chat focused the composer. Nothing can take focus while `#app` is hidden, so the call has to come after `reveal()`: the success branch now calls `app.setView('chat')`, which is the path that already focuses the composer.
+
+### src/ui/composer.ts, src/app.ts, src/engine-client/api.ts · a send that fails keeps the text
+- refers-to: src/ui/composer.ts :: submit; src/app.ts :: send (returns whether it was sent); src/engine-client/api.ts :: run
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+The composer cleared itself before the send and the send hook swallowed its error, so with the engine gone a typed message vanished and the line under the box said "Failed to fetch". `send` now returns false on failure and `submit` puts the text back if the box is still empty. A request that cannot reach the engine at all is reported as "FormAT's engine is not answering. Try again in a moment." for every command, in place of the browser's own wording. Attachments are not restored. Seen with `scratch/formAT/bugpass/t11.py`: engine killed under an open window, send, engine back, send again.
+
+### src/ui/terminal-dock.ts · a reload adopts the shells that are running
+- refers-to: src/ui/terminal-dock.ts :: ensure
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+`ensure` adopted only the read-only Claude session from `terminal.list` and opened a new shell when it had none of its own, so every reload left the previous shell alive in the engine, unreachable, and showed "Terminal 2". It now mounts every live shell the engine lists; the engine already replays a session's scrollback on attach, so the tab comes back with its screen. A second window, or a paired device, shows the same shells for the same reason.
+
+### src/ui/confirm.ts, src/ui/sidebar.ts, src/app.ts · deleting a chat asks first
+- refers-to: src/ui/confirm.ts :: confirmSheet, deleteChat (new file); src/ui/sidebar.ts :: rowMenu; src/app.ts :: titleMenu
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+Delete in a chat's row menu and in the title menu removed the chat at once, with no way back; with demo chats in the sidebar that is one click from losing them. Both now open a small sheet naming the chat, with Cancel focused, Escape and a click outside cancelling. It reuses the consent sheet's classes, so there is no new CSS and it counts as an open dialog for the menu bar. For a demo it adds that Help, Demos brings it back. Project, task and artifact deletes still do not ask; that is left open.
+
+### src/styles/ft-shell.css, src/app.ts · narrow windows
+- refers-to: src/styles/ft-shell.css :: .ft-title-btn (min-width); src/app.ts :: the `(max-width: 760px)` listener at the end of the constructor
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+At 390 px a chat with a long title pushed the Files and Outputs buttons past the right edge, out of reach. The title button is a flex item whose automatic minimum width is its content's, and its text is `nowrap`, so it could not shrink below the whole title; `min-width: 0` lets it shrink and the text ends in an ellipsis. This was true before the menu bar and worse with the Demo tag. Second: the rule that turns an open sidebar into the rail below 760 px ran only at boot and on a change of view, so dragging a wide window narrow left the sidebar lying over the chat; a media-query listener now applies it at the moment the width crosses.

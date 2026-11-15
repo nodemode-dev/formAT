@@ -2,8 +2,8 @@
 
 Living log of all comment content, explainers, rationale, TODOs and removed code for the engine. Source files stay comment-free; everything they would have said lives here, indexed. Read this first, then edit code surgically.
 
-Current build version: v0.25.2
-Last updated: 2026-10-31 · v0.25.2: .js, .mjs and .css keep their types on Windows (app/main.py) and the Linux packages pull in the media plugins (src-tauri/tauri.conf.json); 2026-10-30 · v0.25.1: no engine change (`format.bat desktop build` passes its arguments to `tauri build`, and the Windows LGPL FFmpeg build runs in its own MSYS2 script with MSVC's linker first); v0.24.3: the desktop freeze takes reportlab's modules only, and voice ships PyAV 18.1.0 built from source against an LGPL FFmpeg 8.0.3 (`setup/build_lgpl_av`, checked by `setup/check_lgpl_av.py`; the PyPI wheel links GPL x264 and x265, and `av` 19 had also dropped the `metadata_errors` argument faster-whisper 1.2.1 passes, so voice was broken on an unpinned install); v0.24.1: no engine change (checks only, releases by formcompiler, version string); v0.24.0: no engine change (the app icon only); v0.23.0: GET /api/uploads/{id} serves an attachment back to the window (ranges, immutable cache, sandboxing CSP); v0.22.0: message.citation sent as each citation streams; v0.21.0: archive, npm and command plugin sources, private marketplaces, .plugin uploads, skills Discover and Skill with Claude, the connector directory, connectors on the Claude Code route; v0.20.0: plugin.create and plugin.files, Create with Claude (output plugin and the add_plugin tool), /plugin:skill invocation; v0.19.0: plugin marketplaces (add, Check for updates, Sync automatically, remove), plugin.install from a marketplace, a plugin's connectors added on request; v0.18.0: signing in to a connector (OAuth with PKCE, registration or your own client, refresh, SSE transport) and connectors on or off per chat; v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
+Current build version: v0.26.0
+Last updated: 2026-11-15 · v0.26.0: demo chats seeded as ordinary records from app/demos (`demo.list`, `demo.restore`, the `demo` column, three demos including the Orrery with NASA maps), the splash hand-off in the shell (src-tauri/src/reveal.rs, the `app_ready` command and its generated permission, the remote capability), and the review's fixes (the events socket that hung shutdown, Other devices through the local guard, chat delete cleaning up, /favicon.ico, the name FormAT where people see it, the engine-failure dialog, build_app's names, the Windows freeze line); v0.25.3 and v0.25.4: no engine change (the icon, the product name FormAT in tauri.conf.json, the README); 2026-10-31 · v0.25.2: .js, .mjs and .css keep their types on Windows (app/main.py) and the Linux packages pull in the media plugins (src-tauri/tauri.conf.json); 2026-10-30 · v0.25.1: no engine change (`format.bat desktop build` passes its arguments to `tauri build`, and the Windows LGPL FFmpeg build runs in its own MSYS2 script with MSVC's linker first); v0.24.3: the desktop freeze takes reportlab's modules only, and voice ships PyAV 18.1.0 built from source against an LGPL FFmpeg 8.0.3 (`setup/build_lgpl_av`, checked by `setup/check_lgpl_av.py`; the PyPI wheel links GPL x264 and x265, and `av` 19 had also dropped the `metadata_errors` argument faster-whisper 1.2.1 passes, so voice was broken on an unpinned install); v0.24.1: no engine change (checks only, releases by formcompiler, version string); v0.24.0: no engine change (the app icon only); v0.23.0: GET /api/uploads/{id} serves an attachment back to the window (ranges, immutable cache, sandboxing CSP); v0.22.0: message.citation sent as each citation streams; v0.21.0: archive, npm and command plugin sources, private marketplaces, .plugin uploads, skills Discover and Skill with Claude, the connector directory, connectors on the Claude Code route; v0.20.0: plugin.create and plugin.files, Create with Claude (output plugin and the add_plugin tool), /plugin:skill invocation; v0.19.0: plugin marketplaces (add, Check for updates, Sync automatically, remove), plugin.install from a marketplace, a plugin's connectors added on request; v0.18.0: signing in to a connector (OAuth with PKCE, registration or your own client, refresh, SSE transport) and connectors on or off per chat; v0.16.0: connector tool permissions (Always allow, Needs approval, Blocked) and request headers; v0.15.0: skill.read for the Customize file viewer; v0.14.0: Allow for this chat (conversations.allow_all, conversation.allowAll) on both routes; v0.13.0: skills invoked by name, Allow all answers what is waiting
 
 ---
 
@@ -47,7 +47,13 @@ backend/
     │   ├── agents.py              outside-agent consent (ask, allowed, blocked), agents.status
     │   ├── schedules.py           scheduled tasks, the scheduler thread, run history, background.list
     │   ├── native.py              the optional wgpu renderer: native.status, terminal snapshots through its binary
-    │   └── cmd_terminal.py        terminal.open, list, write, read, resize, restart, close
+    │   ├── cmd_terminal.py        terminal.open, list, write, read, resize, restart, close
+    │   ├── demos.py               the demo chats: read app/demos, seed once, restore, list
+    │   └── cmd_demo.py            demo.list, demo.restore
+    ├── demos/                     the bundled demo chats, one folder each: chat.json, artifact.html, files/
+    │   ├── northern-light/        Aurora page (the page Northern Light)
+    │   ├── solar-system/          Orrery page (the page Orrery; files/CREDITS.md)
+    │   └── harbour-ferries/       Ferry dashboard (the page Harbour Ferries, season 2026; files/ holds the form.md package and its zip)
     ├── mcp_server.py              Format as an MCP server: a tool per command, resources, prompts
     ├── agent_guide.py             agent-facing tool names (verb_noun) and when-sentences; id rewriting in errors
     ├── mcp_stdio.py               ./format mcp: the same server over stdio, proxied to the running engine
@@ -89,6 +95,9 @@ backend/
 - [app/main.py](#app-main)
 - [src-tauri/tauri.conf.json](#src-tauri-conf)
 - [tests](#tests)
+- [app/engine/demos.py, cmd_demo.py and app/demos](#app-engine-demos)
+- [src-tauri/src/reveal.rs and the splash hand-off](#src-tauri-reveal)
+- [Review fixes in the engine, the shell and the build, 0.26.0](#review-0-26-0)
 
 ---
 
@@ -844,3 +853,143 @@ The window previews video and audio (`frontend/src/ui/attach-view.ts`, `files-pa
 FAMILY_TEST_PLAN v0.3.0 P1 for Format, under the owner rule that the tests observe Format and change none of its shapes. `conftest.py` is the family template with Format's block (port 8490, `/api/health` for health and version, `/api/events` as the websocket, the seven version sites, the MCP tool list from `mcp_server.to_tools`); it points `FORMAT_DATA_DIR` and HOME at a temporary folder for the whole session. `test_f1_guard.py`, `test_f4_versions.py` and `test_f9_release_profiles.py` are the templates unchanged. F3 and F5 are Format's own files because Format writes no `engine.json` and has no `/api/version`: the relay is found through `FORMAT_ENGINE_URL`, and the health route reports the version. Format's MCP answers over server-sent events, so `test_f3_mcp.py` reads the last `data:` line, sends `accept: application/json, text/event-stream`, and keeps the relay's stdin open until its reply arrives (closing it at once ends the stdio server before a call to the engine returns, which reads as "Connection closed"). Every MCP call passes `agents.require`, read-only ones too, so those tests set `outsideAgents` to allowed and put it back.
 
 `_format.py` swaps `providers.PROVIDERS["anthropic"]` for `FakeProvider`, which plays scripted stream events, records every request `harness.build` made and every Files API upload, and never reaches the network; the `fake` fixture sets chatEngine api and the test model, and stops any reply left running. Covered: the request (system prompt blocks, the top-level cache mark, the user turn), attachments of 1 MB or more uploaded once and sent by file id while smaller ones go inline, a stored compaction block starting the next request with its beta; the chat tree (the leaf follows each reply, edit makes a sibling and the next request carries only the new path, branch switches back, retry replaces the reply); approvals (a changing tool waits with nothing run until allow, deny tells Claude, always adds toolAllow, stop denies, plan mode refuses); the artifact CSP (sandbox without allow-same-origin, default-src and connect-src none until artifactNetwork); share links by token only and revoked by unshare; the devices Gate called directly with ASGI scopes (no cookie, a wrong one or a websocket refused; the pairing code sets the cookie; `/s/` passes; forget rotates the code); the same command through the window route, `setup/cli.py` and MCP `run_command`, with the same result and the same refusal; and the migrations, run in a subprocess on a schema 1 file (empty and populated, the parent chain and leaf filled in) and a schema 7 file with a branch and a connector, each opening as schema 8 with every row kept. SCHEMA_1 is the text of `store.py` at ba4f99d; SCHEMA_7_EXTRA adds what a68d3eb's file had beyond it.
+
+## app/engine/demos.py, cmd_demo.py and app/demos {#app-engine-demos}
+
+### app/engine/demos.py · demo chats are seeded as ordinary records
+- refers-to: app/engine/demos.py :: ids, _spec, _build, materialise, seed, restore, list_, _seeded, _remember; app/engine/cmd_demo.py :: demo.list, demo.restore; app/routers/__init__.py :: startup; app/engine/store.py :: conn (the `demo` column); app/agent_guide.py :: GUIDE
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+A new user with no API key opened an empty window. The app now ships recorded chats that open and run without a key. They are not a special kind of thing: at start the engine reads each folder under `app/demos` and writes the same rows a real reply would have left, so everything that works on a chat (open, artifact panel, Outputs, files, rename, pin, delete, continue with a key, MCP resources) works on a demo with no second code path in the window.
+
+From `chat.json` (`format-demo-chat/1`): the conversation with `demo = <folder name>`; the user message as one text block; one assistant message whose content is the `publish_artifact` tool_use with the page as input and its tool_result in the engine's own wording, then a `send_file` tool_use and result for each listed file that has a caption, then the text (the reply says "the card above", so the tool blocks come first); `meta` with status done, the demo id, the tools as done and the `artifacts` map the window reads for the card. No `model` is recorded, so the window shows none: nothing was run. The artifact goes through `artifacts.publish` with the message id, the `files/` folder is copied into the chat's own folder, and every listed file becomes an `outputs.<conversation id>` item with its size read from disk.
+
+`demo` is a new nullable column on `conversations`, added by the same column check as the others; the schema number stays 8, since an old engine reading the file ignores a column it does not know and `test_migrations` (a current database opened again changes nothing) holds. The meta row `demos.seeded` lists the demo ids already added once. That is what makes a deleted demo stay deleted: `seed()` skips an id in that list, so only a demo never seen in this data folder is added at start. `demo.restore` returns the demo's conversation and makes it again only when it is gone; Help, Demos in the window calls it. A demo that fails to build removes its half-made chat, outputs row and folder, logs a warning and does not stop the engine; it is tried again at the next start because it was never remembered. Seeding publishes no events (no window is connected yet) and runs before the scheduler starts.
+
+Two commands, `demo.list` and `demo.restore`, with their MCP names in `GUIDE` (`list_demos`, `restore_demo`); the registry holds 114 commands. Checked on a fresh data folder and on one made by the 0.25.4 engine (three chats, one pinned): the old rows are byte-identical after the first start with demos, restarts change nothing (`scratch/formAT/demo-bundle/dbsum.py`), nothing is written to HOME (`test_f5_boot`), and the window smoke still loads with no failed request.
+
+### setup/freeze_backend(.bat), format_engine.py · the demos travel in the frozen engine
+- refers-to: setup/freeze_backend, setup/freeze_backend.bat :: `--add-data ...app/demos`; format_engine.py :: selfcheck (`demos_bundled`)
+- kind: rationale
+- logged: v0.26.0 · 2026-11-15
+
+`app/demos` is data, not Python, so PyInstaller's `--collect-submodules app` does not take it; both freeze scripts add it with `--add-data` at `app/demos`, the place `demos.ROOT` resolves to under `sys._MEIPASS` (`Path(__file__).parents[1] / "demos"`). The selfcheck reports `demos_bundled` and fails the freeze when it is 0, so a build without demos cannot be packaged: `build_app` runs under `set -euo pipefail` and stops when `setup/freeze_backend` does. The `--add-data` path was proved with a small one-file PyInstaller freeze in a scratch venv (`scratch/formAT/demo-bundle/freeze/`); the real engine was not frozen here.
+
+The Windows script got the flag without a space after its closing quote (`...app\demos"--collect-submodules app`), which makes one malformed argument and turns `app` into a second script to freeze. Found by reading in the review and fixed; not run, there is no Windows here.
+
+### app/engine/cmd_conversation.py · demos are always in the list
+- refers-to: app/engine/cmd_conversation.py :: list_
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+`conversation.list` returns the 200 most recent chats, and the sidebar is filled from it, so a demo older than a person's 200 newest chats dropped out of its own group. With no query and no explicit limit the list now appends the demo chats it did not already hold (at most the number of demos). A caller that passes `limit` gets exactly that many, as before. Checked with 205 chats: 202 returned, the demos among them and in the sidebar.
+
+### app/demos/solar-system · the Orrery
+- refers-to: app/demos/solar-system/artifact.html, chat.json, files/CREDITS.md; NOTICE.md :: the demo chats paragraphs
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+The third demo is a 3D model of the solar system in raw WebGL 1, one self-contained page of 950,640 bytes (the artifact limit is 2 MB), about 865 KB of it surface maps embedded as `data:` JPEGs. The owner rejected a first 2D version. It runs inside the artifact sandbox unchanged: the CSP allows `data:` images, and uploading them as WebGL textures works without `allow-same-origin` (tested with the real header, including the `sandbox` directive); there are no requests and no storage. When WebGL is missing or the context is lost it draws a 2D canvas version.
+
+The photographic maps (Venus, Earth, Mars, Jupiter, Saturn, Neptune and twenty moons) come from NASA's repository `nasa/NASA-3D-Resources`, whose README says its assets are free and without copyright; they are downscaled, in places edited, and credited in `NOTICE.md` and in `files/CREDITS.md`, which the chat lists as an output so the credit is one click from the page. Mercury, Uranus, the Sun, the rings and Earth's clouds are generated in code; the Moon's far side is invented and the page says so. NASA's name identifies the maps and implies no endorsement.
+
+Every figure in the information panel, the notes, the tour captions and the motion periods was checked against NASA's planetary fact sheets and NASA Science pages (`scratch/formAT/demos/solar-system/FIGURES.md`: 184 rows, 39 changed). The check read the pages through a fetch tool that returns a model's summary, not the raw page, so a quoted sentence is that reading. Left unverified or only computed: the light travel times (arithmetic from source distances), the sentence that the tilt and not the distance makes the seasons, Mercury's three-to-two spin and similar ratios (computed from source numbers), Jupiter's moon count (115 on NASA Science, 95 on the fact sheet; the page shows 115), and the short taglines. Sizes and distances are compressed and orbits are circles in one plane; the reply text says so.
+
+The shipped page carries no test hooks: the source template marks test code and the build leaves it out. The source, the build scripts and the texture preparation are in `scratch/formAT/demos/_work/orrery/`, not in the repo; edit the template, never the built file, and change the recorded reply when the page changes. Measured only on a software renderer (no GPU here): 2 to 19 frames a second depending on size under 4x CPU, with the page stepping its resolution down; on a GPU it runs at full resolution, not measured. It draws nothing while the document is hidden and opens paused under reduced motion.
+
+The other two pages (Northern Light, canvas; Harbour Ferries, inline SVG and a canvas chart) are drawn in code with no image or data from anyone else. Harbour Ferries is an invented operator; its form.md package (3 pages, 5 CSV databases, 5 route pages, and the same tree zipped) was imported into a real form.md build to prove it: 8 pages, 175 rows, 0 warnings. The content of all three demos is owner-approved.
+
+## src-tauri/src/reveal.rs and the splash hand-off {#src-tauri-reveal}
+
+### src-tauri/src/reveal.rs, main.rs · the window appears whole, once the page has drawn
+- refers-to: src-tauri/src/reveal.rs (new file) :: mark_launch, conceal, app_ready, show_main, set_seen, round_splash, close_splash, SPLASH_MIN, FALLBACK, BAR_FINISH, BUILD_VISIBLE, BACKGROUND; src-tauri/src/main.rs :: main, open_main; src-tauri/tauri.conf.json :: the splash window (`visible: false`)
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+Before this the shell opened the main window and closed the splash in the same tick, as soon as the engine printed its port, so the window could be seen before the page had painted. The hand-off is now formvis's, by the owner's wish that the family starts the same way. The module was taken from FormWeb's copy of formvis's `reveal.rs` with the one line that places formvis's traffic lights removed (FormAT has a normal title bar), the splash function renamed `formatSplashDone` and the background set to the page's own dark (`rgb(11, 11, 12)`), so no white frame can show.
+
+Order: `mark_launch()` is the first statement of `main`, so the minimum counts from process start. The splash window is declared hidden and `round_splash` shows it in `setup` (on macOS after making the window non-opaque and masking its content layer to the card's 16 px radius, since the web view otherwise painted a square behind the rounded card). When the engine's port is known the main window is built: visible at once on Windows and Linux as before, hidden on macOS, where `conceal` then puts it on screen at alpha 0 and deaf to the mouse, because a hidden window's web view stops its animation frames and the page renders through them. When the page calls `app_ready` (frontend log, src/main.ts), `show_main` runs once: it waits out the rest of the 2.6 s minimum, tells the splash to finish its bar, waits 220 ms for that, shows and focuses the main window, and only then closes the splash, so there is always a window on screen. If the page never calls, a thread started by `conceal` calls `show_main` after 20 s: a page that failed to load must not leave the person with only a splash. The engine-down frame calls `app_ready` like the real page.
+
+macOS needs `objc2` and `objc2-app-kit` for the alpha and the layer mask; they are dependencies for the macOS target only (`Cargo.toml`, `Cargo.lock`), the same two crates and features formvis uses.
+
+### src-tauri/build.rs, capabilities/default.json · the page may call one command
+- refers-to: src-tauri/build.rs :: APP_COMMANDS; src-tauri/capabilities/default.json :: remote, permissions; src-tauri/tauri.conf.json :: app.withGlobalTauri; .gitignore :: src-tauri/permissions/autogenerated/
+- kind: rationale
+- logged: v0.26.0 · 2026-11-15
+
+The main window loads `http://127.0.0.1:<port>/` from the engine. To Tauri that is a remote origin, and a remote origin can call nothing unless a capability names its address and the permission. An app's own command has no permission until the build step is told about it, so `build.rs` now declares `app_ready` in the app manifest (`AppManifest::commands`), which makes Tauri generate `allow-app-ready` (under `permissions/autogenerated/`, ignored by git); the capability lists `http://127.0.0.1:*` as remote and grants that permission, `core:default` (which carries the menu permissions the macOS menu bar needs) and the three window permissions behind Minimize, Zoom and Close Window. `withGlobalTauri` puts the API on `window.__TAURI__`, since the page may not import a package for it. The earlier description, "Nothing in the page calls into the shell", is no longer true and was replaced.
+
+### src-tauri · what was and was not verified
+- refers-to: src-tauri (the crate)
+- kind: warning-context
+- logged: v0.26.0 · 2026-11-15
+
+The crate cannot be built or run on the build machine: the WebKitGTK development libraries are not installed and there is no Mac. Every Rust change in this version was type-checked only: `cargo check` for Linux and `cargo check --target aarch64-apple-darwin`, the second with zig as the C compiler and archiver for the crates that compile C (`tools/shellcheck.sh`), both exit 0, nothing linked. So the splash timing, the alpha-0 window, the rounded splash, the native menu bar and the engine-failure dialog have not been seen on a real build of this version. The behaviour is the reference's (formvis and formdeck ship it); the first desktop build should be watched for: the splash closing and the window appearing, also when the engine fails and when the page shows the engine-down frame.
+
+## Review fixes in the engine, the shell and the build, 0.26.0 {#review-0-26-0}
+
+### app/routers/stream.py · the engine no longer hangs on SIGTERM
+- refers-to: app/routers/stream.py :: stream (outbound task, the receive loop)
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+Once any window had connected, `kill <engine>` printed "Waiting for background tasks to complete" and never returned (reproduced every time with one `/api/events` client, open or already closed: `scratch/formAT/bugpass/sigterm.py`). The handler only ever awaited its queue and sent; it never read the socket. A handler that does not read does not learn that the peer left or that the server is shutting down, so it sat in `queue.get()` until the next event, and uvicorn waits for such tasks without limit. It also meant every closed window left a subscriber behind until the next event. The handler now sends from a task of its own and spends its life in `receive_text()`, which ends on disconnect and on shutdown; then the sender is cancelled and the queue unsubscribed. After: exit in 0.16 s with a client connected, 1.4 to 2.2 s with a real browser attached. This matters beyond scripts: a shutdown that hangs also hangs anything that waits for the engine to stop.
+
+### app/core/local_guard.py, app/engine/devices.py · Other devices works again
+- refers-to: app/core/local_guard.py :: LocalGuard._permitted (paired), __call__; app/engine/devices.py :: Gate.inner, Gate.__call__
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+Since 0.24.6 a paired phone got the window's files and then a 403 for every command: the second server (port 8492) hands its requests to the same app, and `LocalGuard` refuses any Host that is not loopback. The guard was added after the feature, and the test for the gate used a stand-in for the inner app, so nothing saw the two meet. The fix keeps both checks and lets them agree: `Gate.inner`, which runs only after the gate has checked the pairing cookie (or for a share link), passes a copy of the ASGI scope with `format.paired` set, and the guard skips the loopback-Host rule for a scope that carries it. The flag lives in the scope, which only code inside the process can write; no header or URL can set it. It relaxes the Host rule alone: the Origin rule still applies to a paired device, so a request with a foreign Origin or a `cross-site` fetch is still refused (checked: own origin 200, `evil.example` 403, cross-site with no Origin 403, unpaired 401, a rebinding Host on the loopback port still 403).
+
+The gate's exception for share links was any path beginning `/s/`; it is now `/s/<token>` with no further slash, so the open door is exactly the share route. Seen working in a real browser on the LAN address at 390 px: the page, commands and the event socket (`scratch/formAT/bugpass/lan.py`).
+
+### app/engine/cmd_conversation.py, cmd_project.py · deleting, moving and creating chats
+- refers-to: app/engine/cmd_conversation.py :: delete, create; app/engine/cmd_project.py :: move
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+`conversation.delete` removed the rows and left the chat's folder (`workspace/chats/<id>`) and its `outputs.<id>` and `tasks.<id>` meta rows for ever, and a reply still running kept writing. It now stops the reply, deletes the two meta rows and removes the folder; the id comes from the row just read and only its last path part is used, and `rmtree` refuses a symlink. The command's description says so, which is why the agent references were regenerated. `conversation.move` built its event from the raw row, so `connectors_off` reached the window as a JSON string and a chat's switched-off connectors showed as on until a reload; it uses the same reader as the other commands now. `conversation.create` accepted a `projectId` that does not exist and stored it; it answers 404 like `chat.send`.
+
+### app/main.py · /favicon.ico
+- refers-to: app/main.py :: the `_favicon` route before the dist mount
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+A page without an icon link makes a browser ask for `/favicon.ico`; the splash page is one, its content is fixed, and the 404 showed as a console error on a first visit. When the built window is served and holds `favicon.png` but no `favicon.ico`, the engine answers that path with the PNG.
+
+### app/core/config.py and friends · the name a person sees is FormAT
+- refers-to: app/core/config.py :: APP_NAME; app/routers/system.py :: PAGE, oauth_callback; app/engine/devices.py :: the unpaired page; app/engine/oauth.py :: client_name, two errors; app/engine/marketplaces.py, native.py :: errors; src-tauri/src/main.rs :: the update and failure dialogs; src-tauri/Info.plist; src-tauri/tauri.conf.json :: longDescription
+- kind: decision
+- logged: v0.26.0 · 2026-11-15
+
+The window says FormAT; the engine and the shell still said Format in what they show people: the health and `app.info` name, the sign-in pages that open in a browser tab, the page an unpaired device gets, the client name a connector's sign-in screen shows, a few error sentences, the update and engine-failure dialogs, the two macOS permission prompts and the package description. Those changed. Left alone on purpose: identifiers, the `format` command, `FORMAT_` variables, the data folders (`Application Support/Format`, `%APPDATA%\Format`, `~/.local/share/format`, so existing data is found), command descriptions and everything written for the model or for agents.
+
+### src-tauri/src/main.rs · the engine-failure dialog cannot be lost
+- refers-to: src-tauri/src/main.rs :: the `port.is_none()` branch
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+When the engine exits before printing its port the shell closed the splash and then showed a dialog. The splash is the only window at that moment, and closing the last window asks the app to exit, so the dialog raced the exit. The splash is now hidden, not closed, before the dialog; the process exits after it as before. Type-checked only.
+
+### build_app · the macOS build names its output from the config
+- refers-to: build_app :: the `product` variable and every use of it
+- kind: fix
+- logged: v0.26.0 · 2026-11-15
+
+`productName` became FormAT in 0.25.3 and the script still looked for `Format.app`, named the disk image and its volume `Format`, and installed `Format.app`. On a case-sensitive volume the build stopped with "the build finished but ... is missing"; on the usual case-insensitive one it went on and shipped the old spelling. The name is read from `tauri.conf.json` once, like the version beside it. Not run: no Mac.
+
+### Signing without notarization · what was read
+- refers-to: src-tauri/entitlements.plist; src-tauri/Info.plist; src-tauri/tauri.conf.json :: bundle.macOS, bundle.externalBin; setup/freeze_backend
+- kind: warning-context
+- logged: v0.26.0 · 2026-11-15
+
+The owner may ship a macOS build signed with a Developer ID and not notarized. Nothing in the tree should stop such a build from starting; this is from reading, not from a Mac. Tauri signs every external binary with the app's entitlements file and the hardened runtime, inside out, before the app (read in Tauri's sources on GitHub `dev`: the bundler's macOS `app.rs` and `sign.rs`, and `tauri-macos-sign`; the pinned CLI is 2.12.2 and was not read itself). So the one-file engine carries `com.apple.security.cs.disable-library-validation`, which it needs because PyInstaller signs the libraries inside it ad hoc and the engine loads them from its unpack folder. `src-tauri/Info.plist` is merged into the bundle's by name, so the microphone and local-network texts are there, and `audio-input` is in the entitlements. Processes the engine starts (shells, the browser driver, the optional renderer) run under their own signatures, not the app's hardened runtime. Notarization changes only what Gatekeeper says at first launch: on macOS 15 the person must allow the app in System Settings, Privacy and Security (the manual says how). formdeck ships the same shape.
+
+### Left open by the review
+- refers-to: src-tauri/src/main.rs :: kill_backend; format_engine.py; app/engine/devices.py :: _serve; app/engine/chat.py :: start
+- kind: warning-context
+- logged: v0.26.0 · 2026-11-15
+
+Seen and not fixed, with the reason. The shell kills the one-file engine outright on quit, so its launcher cannot delete its unpack folder (`_MEI...` in the temp folder): one folder per launch stays behind. formvis met this (5.3 GB on the owner's Mac) and sweeps stale folders at start (`sweep_stale_unpacks` in its engine entry); not ported, because it cannot be checked without a frozen build. There is no single-instance guard: a second launch on Windows or Linux starts a second engine on the same data folder (two schedulers). Opening to other devices lowers the shared uvicorn log level to warning, so the engine log goes quiet afterwards; the simple fixes would either log the pairing code or silence the main access log. `chat.start` marks a chat as running before it has started the thread, and only one of the possible failures in between clears the mark. A failed spawn of the engine aborts the shell with no dialog.

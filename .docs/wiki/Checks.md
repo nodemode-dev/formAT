@@ -1,6 +1,6 @@
 # Checks
 
-Format carries no test suite in the repository. Each change is verified by driving the real build in a browser and the engine through its API, and the result is written into the release's entry in the planning sidecar's BUILD_NOTES. The check scripts live outside the tree.
+The repository carries the tests CI runs: the engine tests in `backend/tests` (`cd backend && python -m pytest tests -q -p no:cacheprovider`) and the window smoke in `frontend/tests/window` (after a build, from the root: `python -m pytest frontend/tests/window -q -p no:cacheprovider`). Beyond them, each change is verified by driving the real build in a browser and the engine through its API, and the result is written into the release's entry in the planning sidecar's BUILD_NOTES. Those check scripts live outside the tree.
 
 ## What every window change is checked for
 

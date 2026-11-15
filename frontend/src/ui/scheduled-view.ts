@@ -80,7 +80,7 @@ export class ScheduledView {
     this.root = el(`<section class="ft-page ft-scheduled" data-view="scheduled" hidden>
       <div class="ft-sch-list-mode">
         <header class="ft-sch-head"><h1>Scheduled</h1><button type="button" class="ft-btn ft-btn-primary ft-sch-new">${ui('plus', 16)}<span>New task</span></button></header>
-        <p class="ft-set-note ft-sch-lede">Claude runs each task on its schedule while Format is open, every run in a new chat. A run missed while Format was closed runs once when it opens. Runs follow your permission mode; one that needs an answer waits for you in Background.</p>
+        <p class="ft-set-note ft-sch-lede">Claude runs each task on its schedule while FormAT is open, every run in a new chat. A run missed while FormAT was closed runs once when it opens. Runs follow your permission mode; one that needs an answer waits for you in Background.</p>
         <div class="ft-sch-form" hidden>
           <label class="ft-field"><span>Name</span><input class="ft-input" data-f="name" maxlength="80" placeholder="Morning summary"></label>
           <label class="ft-field"><span>What Claude should do</span><textarea class="ft-input" data-f="prompt" rows="4" maxlength="20000" placeholder="Summarize what changed in the workspace since yesterday and list anything that needs me"></textarea></label>

@@ -67,8 +67,8 @@ def move(id: str, projectId: str | None = None) -> dict:
     if projectId:
         _do(projects.get, projectId)
     store.run("UPDATE conversations SET project_id = ? WHERE id = ?", (projectId or None, id))
-    conv = store.row("SELECT * FROM conversations WHERE id = ?", (id,)) or {}
-    conv["pinned"] = bool(conv.get("pinned"))
+    from app.engine.cmd_conversation import _get
+    conv = _get(id)
     events.publish("conversation.updated", conversation=conv)
     for pid in {old["project_id"], projectId} - {None, ""}:
         p = store.row("SELECT * FROM projects WHERE id = ?", (pid,))

@@ -28,7 +28,7 @@ export class TerminalDock {
   private active: string | null = null;
   private ro: ResizeObserver;
 
-  constructor(onClose: () => void) {
+  constructor(onClose: () => void, private appKey: (e: KeyboardEvent) => boolean = () => false) {
     this.root = el(`<section class="ft-dock" aria-label="Terminal">
       <div class="ft-dock-head">
         <div class="ft-dock-tabs" role="tablist"></div>
@@ -49,8 +49,11 @@ export class TerminalDock {
   }
 
   async ensure(): Promise<void> {
-    const listed = await run<{ terminals: Array<{ id: string; title: string; kind?: string }> }>('terminal.list').catch(() => ({ terminals: [] }));
-    for (const t of listed.terminals) if (t.kind === 'agent') this.adopt(t);
+    const listed = await run<{ terminals: Array<{ id: string; title: string; kind?: string; alive?: boolean }> }>('terminal.list').catch(() => ({ terminals: [] }));
+    for (const t of listed.terminals) {
+      if (t.kind === 'agent') this.adopt(t);
+      else if (t.alive !== false && !this.tabs.has(t.id)) this.mount(t, false, true);
+    }
     if (![...this.tabs.values()].some((t) => !t.agent)) await this.open();
     else this.fitActive();
     this.focus();
@@ -98,6 +101,7 @@ export class TerminalDock {
     this.tabsEl.appendChild(tab);
     const t: Tab = { id: info.id, title: info.title, term, fit, host, tab, socket: null, agent };
     this.tabs.set(info.id, t);
+    term.attachCustomKeyEventHandler((e) => !this.appKey(e));
     term.open(host);
     if (agent) term.write('\x1b[?25l');
     if (show) this.select(info.id, !agent);

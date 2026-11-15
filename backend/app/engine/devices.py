@@ -94,14 +94,14 @@ class Gate:
     async def inner(self, scope, receive, send):
         path = scope.get("path") or "/"
         target = self.api if path.startswith(("/api", "/mcp", "/s/")) or self.static is None else self.static
-        return await target(scope, receive, send)
+        return await target(dict(scope) | {"format.paired": True}, receive, send)
 
     async def __call__(self, scope, receive, send):
         if scope["type"] not in ("http", "websocket"):
             return await self.api(scope, receive, send)
         path = scope.get("path") or "/"
         secret = _secret()
-        if path.startswith("/s/") or path in ("/favicon.svg", "/favicon.png"):
+        if (path.startswith("/s/") and "/" not in path[3:]) or path in ("/favicon.svg", "/favicon.png"):
             return await self.inner(scope, receive, send)
         if scope["type"] == "http" and path == "/pair":
             q = dict(p.split("=", 1) for p in (scope.get("query_string") or b"").decode().split("&") if "=" in p)
@@ -115,7 +115,7 @@ class Gate:
         if scope["type"] == "websocket":
             await send({"type": "websocket.close", "code": 4401})
             return
-        body = b"<!doctype html><meta name=viewport content='width=device-width'><body style='font:16px system-ui;background:#111;color:#eee;padding:24px'><h1>Format</h1><p>This device is not paired. On the computer running Format, open Settings, Other devices, and scan the code or open its link here.</p>"
+        body = b"<!doctype html><meta name=viewport content='width=device-width'><body style='font:16px system-ui;background:#111;color:#eee;padding:24px'><h1>FormAT</h1><p>This device is not paired. On the computer running FormAT, open Settings, Other devices, and scan the code or open its link here.</p>"
         await send({"type": "http.response.start", "status": 401, "headers": [(b"content-type", b"text/html; charset=utf-8")]})
         await send({"type": "http.response.body", "body": body})
 

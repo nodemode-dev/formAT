@@ -477,11 +477,16 @@ export class ChatView {
     const msgs = this.state.messages;
     const live = new Set(msgs.map((m) => m.id));
     for (const [id, n] of this.nodes) if (!live.has(id)) { n.remove(); this.nodes.delete(id); this.assistants.delete(id); }
+    const fromStart = switching && !!this.state.conversations.get(this.state.activeId ?? '')?.demo && !!msgs[msgs.length - 1]?.meta?.demo;
     msgs.forEach((m, i) => {
-      if (m.role === 'user' && !this.nodes.has(m.id)) this.pinned = true;
+      if (m.role === 'user' && !this.nodes.has(m.id) && !fromStart) this.pinned = true;
       const n = this.node(m);
       if (this.thread.children[i] !== n) this.thread.insertBefore(n, this.thread.children[i] ?? null);
     });
+    if (fromStart) {
+      this.pinned = false;
+      if (this.scroller.scrollTop !== 0) this.scroller.scrollTop = 0;
+    }
     const busy = !!this.state.activeId && this.state.running.has(this.state.activeId);
     for (const m of msgs) {
       if (m.role !== 'user') continue;

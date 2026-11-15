@@ -136,6 +136,8 @@ def selfcheck() -> int:
     info["command_modules"] = len(COMMAND_MODULES)
     from app.engine.commands import REGISTRY
     info["commands"] = len(REGISTRY)
+    from app.engine import demos
+    info["demos_bundled"] = len(demos.ids())
     try:
         from docx import Document
         from pptx import Presentation
@@ -146,7 +148,7 @@ def selfcheck() -> int:
         info["office_templates"] = f"no: {exc}"
     print(json.dumps(info))
     required = ("fastapi", "uvicorn", "anthropic", "mcp", "segno", "docx", "pptx", "openpyxl", "reportlab")
-    ok = info["dist_bundled"] and info["office_templates"] is True and not any(str(info[k]).startswith("missing") for k in required)
+    ok = info["dist_bundled"] and info["demos_bundled"] > 0 and info["office_templates"] is True and not any(str(info[k]).startswith("missing") for k in required)
     return 0 if ok else 1
 
 

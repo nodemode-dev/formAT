@@ -1,7 +1,10 @@
 import json
 import logging
+import shutil
 import threading
+from pathlib import Path
 
+from app.core import config
 from app.engine import events, store
 from app.engine.commands import CommandError, command
 
@@ -22,9 +25,11 @@ def _get(cid: str) -> dict:
 @command("conversation.create", "New chat", {"title": {"type": "string"}, "projectId": {"type": "string"}},
          description="Creates an empty conversation and returns it with its id.")
 def create(title: str | None = None, projectId: str | None = None) -> dict:
+    if projectId and store.row("SELECT id FROM projects WHERE id = ?", (projectId,)) is None:
+        raise CommandError(f"No project {projectId}; project.list gives the ids", 404)
     cid, t = store.new_id(), store.now()
     store.run("INSERT INTO conversations(id, title, project_id, created, updated) VALUES (?, ?, ?, ?, ?)",
-              (cid, (title or "New chat").strip() or "New chat", projectId, t, t))
+              (cid, (title or "New chat").strip() or "New chat", projectId or None, t, t))
     conv = _get(cid)
     events.publish("conversation.created", conversation=conv)
     return conv
@@ -40,6 +45,9 @@ def list_(query: str | None = None, limit: int | None = None) -> dict:
         args = (like, like)
     sql += " ORDER BY pinned DESC, updated DESC LIMIT ?"
     items = store.rows(sql, args + (max(1, min(int(limit or 200), 1000)),))
+    if not query and limit is None:
+        have = {c["id"] for c in items}
+        items += [c for c in store.rows("SELECT * FROM conversations WHERE demo IS NOT NULL ORDER BY updated DESC") if c["id"] not in have]
     from app.engine import chat, tools
     waiting = {w["conversationId"] for w in tools.pending()}
     for c in items:
@@ -109,9 +117,11 @@ def set_connector(id: str, connector: str, on: bool) -> dict:
 
 
 @command("conversation.delete", "Delete chat", {"id": ID},
-         description="Deletes a conversation and its messages, and removes its attachments from the Anthropic Files API where they were uploaded. Not undoable.")
+         description="Deletes a conversation with its messages, its artifacts and its own folder of files, and removes its attachments from the Anthropic Files API where they were uploaded. A reply still running in it is stopped. Not undoable.")
 def delete(id: str) -> dict:
     _get(id)
+    from app.engine import chat
+    chat.stop(id)
     fids = set()
     for r in store.rows("SELECT meta FROM messages WHERE conversation_id = ?", (id,)):
         try:
@@ -119,6 +129,8 @@ def delete(id: str) -> dict:
         except (TypeError, ValueError):
             continue
     store.run("DELETE FROM conversations WHERE id = ?", (id,))
+    store.run("DELETE FROM meta WHERE key IN (?, ?)", (f"outputs.{id}", f"tasks.{id}"))
+    shutil.rmtree(config.workspace_dir() / "chats" / Path(id).name, ignore_errors=True)
     events.publish("conversation.deleted", id=id)
     if fids:
         threading.Thread(target=_forget_remote, args=(sorted(fids),), name="files-cleanup", daemon=True).start()

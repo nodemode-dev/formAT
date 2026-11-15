@@ -9,7 +9,7 @@ import { SlashMenu, type SlashItem } from './slash-menu';
 import { Dictation } from './dictation';
 
 export interface ComposerHooks {
-  send(text: string, files: FileInfo[], comments: FileComment[]): Promise<void>;
+  send(text: string, files: FileInfo[], comments: FileComment[]): Promise<boolean>;
   edit(text: string, id: string): Promise<void>;
   stop(): void;
   isRunning(): boolean;
@@ -45,6 +45,7 @@ export class Composer {
   private picks: string[] = [];
   private pickRow: HTMLElement;
   private notice: HTMLElement;
+  private alertTimer = 0;
   private attachRow: HTMLElement;
   private files: Pending[] = [];
   private research = false;
@@ -122,7 +123,7 @@ export class Composer {
       <div class="ft-editing" hidden><span>Editing a message; sending adds a new version and keeps the old one.</span><button type="button" class="ft-text-btn ft-edit-cancel">Cancel</button></div>
       <div class="ft-composer-box">
         <div class="ft-attach-row" hidden></div>
-        <textarea class="ft-composer-input" rows="1" placeholder="How can Format help?" aria-label="Message"></textarea>
+        <textarea class="ft-composer-input" rows="1" placeholder="How can FormAT help?" aria-label="Message"></textarea>
         <div class="ft-composer-send-row"><button type="button" class="ft-send" aria-label="Send" title="Send (Enter)" disabled>${ui('send')}</button></div>
       </div>
       <div class="ft-composer-bar">
@@ -230,7 +231,7 @@ export class Composer {
       this.addFiles([...(e.dataTransfer?.files ?? [])]);
     });
     state.on('settings', () => this.renderSettings());
-    state.on('active', () => this.renderSettings());
+    state.on('active', () => this.settle());
     state.on('conversations', () => this.renderSettings());
   }
 
@@ -264,8 +265,16 @@ export class Composer {
 
   private flash(msg: string): void {
     setText(this.notice, msg);
+    setAttr(this.notice, 'title', msg);
     this.notice.classList.add('is-alert');
-    window.setTimeout(() => { this.notice.classList.remove('is-alert'); this.renderSettings(); }, 6000);
+    window.clearTimeout(this.alertTimer);
+    this.alertTimer = window.setTimeout(() => this.settle(), 6000);
+  }
+
+  private settle(): void {
+    window.clearTimeout(this.alertTimer);
+    this.notice.classList.remove('is-alert');
+    this.renderSettings();
   }
 
   renderRunning(): void {
@@ -402,7 +411,11 @@ export class Composer {
       this.renderQueue();
       return;
     }
-    await this.hooks.send(text, files, comments);
+    const ok = await this.hooks.send(text, files, comments);
+    if (!ok && text && !this.input.value) {
+      this.input.value = text;
+      this.autosize();
+    }
   }
 
   nextQueued(): { text: string; files: FileInfo[]; comments: FileComment[] } | undefined {
@@ -619,6 +632,8 @@ export class Composer {
     if (this.modeBtn.dataset.mode !== tone) this.modeBtn.dataset.mode = tone;
     if (this.notice.classList.contains('is-alert')) return;
     const via = this.state.route();
-    setText(this.notice, via === 'api' ? `${name} through the Anthropic API can make mistakes.` : via === 'claude-code' ? `${name} through Claude Code can make mistakes.` : 'Add an Anthropic API key in Settings, or install Claude Code, to start chatting.');
+    const line = via === 'api' ? `${name} through the Anthropic API can make mistakes.` : via === 'claude-code' ? `${name} through Claude Code can make mistakes.` : 'Add an Anthropic API key in Settings, or install Claude Code.';
+    setText(this.notice, line);
+    setAttr(this.notice, 'title', line);
   }
 }

@@ -1,7 +1,9 @@
+import { DEMO_GROUP, demosFirst } from '../demos';
 import { run } from '../engine-client/api';
 import type { Account, AppState, Conversation, View } from '../state/app-state';
+import { deleteChat } from './confirm';
 import { el, esc, modKey, q, setAttr, setText } from './dom';
-import { icon, ui, type UiIcon } from './icons-ft';
+import { ui, type UiIcon } from './icons-ft';
 import { openMenu } from './menu';
 
 export interface SidebarHooks {
@@ -12,7 +14,7 @@ export interface SidebarHooks {
   toggleTerminal(): void;
   openPalette(): void;
   renamed(id: string): void;
-  openSettings(section: 'account' | 'keys' | 'about'): void;
+  openSettings(section?: 'account' | 'keys' | 'about'): void;
 }
 
 const NAV: Array<[View | 'new', string, UiIcon]> = [
@@ -48,7 +50,7 @@ export class Sidebar {
     this.root = el(`<aside class="ft-sidebar" aria-label="Sidebar">
       <div class="ft-side-head">
         <button type="button" class="ft-icon-btn ft-side-toggle" title="Toggle sidebar (${modKey}B)" aria-label="Toggle sidebar">${ui('sidebar')}</button>
-        <span class="ft-wordmark"><span class="ft-wordmark-mark">${icon('mark', 18)}</span><span class="ft-label">Format</span></span>
+        <span class="ft-wordmark"><span class="ft-wordmark-home" data-cmd="home" role="button" tabindex="0" title="Home: a new chat"><img class="ft-wordmark-mark" src="/favicon.png" width="18" height="18" alt="" draggable="false"><span class="ft-label">FormAT</span></span></span>
         <div class="ft-seg ft-label" role="group" aria-label="Mode">
           <button type="button" class="ft-seg-btn is-on" data-mode="chat" title="Chat" aria-pressed="true">${ui('chat', 16)}</button>
           <button type="button" class="ft-seg-btn" data-mode="terminal" title="Terminal (${modKey}J)" aria-pressed="false">${ui('terminal', 16)}</button>
@@ -87,6 +89,7 @@ export class Sidebar {
       if (id === 'new') hooks.newChat();
       else if (id === 'more') this.toggleMore(nav);
       else if (id === 'terminal') hooks.toggleTerminal();
+      else if (id === 'settings') hooks.openSettings();
       else hooks.setView(id as View);
     });
     this.list.addEventListener('click', (e) => {
@@ -173,14 +176,14 @@ export class Sidebar {
   }
 
   private renderList(): void {
-    const ordered = this.state.sortedConversations();
+    const ordered = demosFirst(this.state.sortedConversations());
     const active = this.state.activeId;
     const activeNew = !!active && !this.rows.has(active) && this.state.conversations.has(active);
     const stale = [...this.rows.keys()].some((id) => !this.state.conversations.has(id));
     const wanted: HTMLElement[] = [];
     let last = '';
     for (const c of ordered) {
-      const group = c.pinned ? 'Pinned' : bucket(c.updated);
+      const group = c.pinned ? 'Pinned' : c.demo ? DEMO_GROUP : bucket(c.updated);
       if (group !== last) {
         wanted.push(this.head(group));
         last = group;
@@ -231,7 +234,7 @@ export class Sidebar {
       { label: c.pinned ? 'Unpin' : 'Pin', icon: 'pin', action: () => void run('conversation.pin', { id, pinned: !c.pinned }) },
       { label: 'Rename', icon: 'pencil', action: () => this.rename(id) },
       { divider: true },
-      { label: 'Delete', icon: 'trash', action: () => void run('conversation.delete', { id }) },
+      { label: 'Delete', icon: 'trash', action: () => void deleteChat(c) },
     ], 'down');
   }
 

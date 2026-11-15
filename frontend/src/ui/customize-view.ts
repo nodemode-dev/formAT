@@ -51,7 +51,7 @@ export class CustomizeView {
           <div class="ft-proj-form ft-pl-mform" hidden>
             <label class="ft-field"><span>Marketplace</span><input class="ft-input ft-pl-msource" placeholder="owner/repo, https://github.com/your-org/your-plugins, or a folder" spellcheck="false"></label>
             <label class="ft-field"><span>GitHub access token (only for a private repository)</span><input class="ft-input ft-pl-mtoken" type="password" autocomplete="off" placeholder="A token that can read the repository; your git sign-in also works"></label>
-            <p class="ft-set-note">A marketplace is a Git repository (or a folder) with .claude-plugin/marketplace.json. Format copies its catalog and lists its plugins in Discover; nothing is installed until you add one. Only add marketplaces you trust: their plugins are not reviewed.</p>
+            <p class="ft-set-note">A marketplace is a Git repository (or a folder) with .claude-plugin/marketplace.json. FormAT copies its catalog and lists its plugins in Discover; nothing is installed until you add one. Only add marketplaces you trust: their plugins are not reviewed.</p>
             <div class="ft-set-actions"><button type="button" class="ft-btn ft-btn-primary ft-pl-madd">Add marketplace</button><button type="button" class="ft-btn ft-pl-mcancel">Cancel</button></div>
           </div>
           <div class="ft-proj-form ft-pl-cform" hidden>
@@ -99,7 +99,7 @@ export class CustomizeView {
         <section class="ft-cz-section ft-cn-section" data-sec="connectors">
           <div class="ft-cz-section-head"><div class="ft-pl-views" role="tablist" aria-label="Connectors"><button type="button" role="tab" class="ft-pl-view ft-cn-view" data-cnv="yours" aria-selected="true">Your connectors</button><button type="button" role="tab" class="ft-pl-view ft-cn-view" data-cnv="discover" aria-selected="false">Discover</button></div>
             <div class="ft-cz-actions"><input class="ft-input ft-cz-search" type="search" placeholder="Search connectors" aria-label="Search connectors"><button type="button" class="ft-btn ft-cn-addopen">${ui('plus', 14)}<span>Add custom connector</span></button></div></div>
-          <p class="ft-set-note">A connector is an MCP server that gives Claude more tools. A public https URL goes to Claude through Anthropic's MCP connector; a server on this computer or your network, or one started by a command, runs in Format's engine, and its tools ask before they run in Ask mode. Turn single tools off in a connector's page.</p>
+          <p class="ft-set-note">A connector is an MCP server that gives Claude more tools. A public https URL goes to Claude through Anthropic's MCP connector; a server on this computer or your network, or one started by a command, runs in FormAT's engine, and its tools ask before they run in Ask mode. Turn single tools off in a connector's page.</p>
           <span class="ft-proj-msg ft-cn-msg" aria-live="polite"></span>
           <div class="ft-proj-form ft-cn-form" hidden>
             <label class="ft-field"><span>Name</span><input class="ft-input" data-c="name" maxlength="40" placeholder="lowercase, for example docs or github"></label>
@@ -117,7 +117,7 @@ export class CustomizeView {
           <div class="ft-cn-yours"><div class="ft-cz-list ft-cn-list" role="list"></div>
           <p class="ft-proj-none ft-cn-empty">No connectors yet.</p></div>
           <div class="ft-cn-discover" hidden>
-            <p class="ft-set-note">Remote MCP servers their makers publish, each with the URL from the maker's own page (Docs). They are not reviewed by Anthropic or Format: connect only services you trust.</p>
+            <p class="ft-set-note">Remote MCP servers their makers publish, each with the URL from the maker's own page (Docs). They are not reviewed by Anthropic or FormAT: connect only services you trust.</p>
             <div class="ft-cn-cats" role="group" aria-label="Categories"></div>
             <div class="ft-cz-list ft-cn-dir" role="list"></div>
           </div>
@@ -152,7 +152,7 @@ export class CustomizeView {
         <div class="ft-pl-pane" data-pane="skills"><div class="ft-cz-files ft-pl-skills"></div><p class="ft-proj-none ft-pl-noskills">No skills.</p></div>
         <div class="ft-pl-pane" data-pane="commands" hidden><p class="ft-set-note">In chat a command loads as a skill: pick it from the / menu.</p><div class="ft-cz-files ft-pl-cmds"></div><p class="ft-proj-none ft-pl-nocmds">No commands.</p></div>
         <div class="ft-pl-pane" data-pane="connectors" hidden><p class="ft-set-note">Adding a plugin adds none of its connectors. Add one here, then connect it; its skills load either way.</p><div class="ft-cz-list ft-pl-conns" role="list"></div><p class="ft-proj-none ft-pl-noconns">No connectors.</p></div>
-        <div class="ft-pl-pane" data-pane="agents" hidden><p class="ft-set-note ft-pl-agentnote">Agents run in Cowork and Claude Code; Format lists them but does not run them in chat.</p><div class="ft-cz-files ft-pl-agents"></div><p class="ft-proj-none ft-pl-noagents">No agents.</p></div>
+        <div class="ft-pl-pane" data-pane="agents" hidden><p class="ft-set-note ft-pl-agentnote">Agents run in Cowork and Claude Code; FormAT lists them but does not run them in chat.</p><div class="ft-cz-files ft-pl-agents"></div><p class="ft-proj-none ft-pl-noagents">No agents.</p></div>
       </div>
     </section>`);
     this.main = q(this.root, '.ft-cz-main');
@@ -218,7 +218,7 @@ export class CustomizeView {
     });
     q(this.root, '.ft-cz-delete').addEventListener('click', () => void this.remove());
     q(this.root, '.ft-cz-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
-      { label: 'Delete', desc: 'Remove this skill and its files from Format', icon: 'trash', disabled: !!this.current?.plugin, action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-cz-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
+      { label: 'Delete', desc: 'Remove this skill and its files from FormAT', icon: 'trash', disabled: !!this.current?.plugin, action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-cz-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
       ...(this.current?.plugin ? [{ note: `From the ${this.current.plugin} plugin: remove the plugin to remove it` }] : []),
     ], 'down'));
     this.root.addEventListener('dragover', (e) => e.preventDefault());
@@ -638,7 +638,7 @@ export class CustomizeView {
     const p = this.state.plugins.find((x) => x.name === this.plOpen);
     if (!p) return;
     setText(q(this.root, '.ft-pl-name'), p.name);
-    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.origin?.kind === 'marketplace' ? `from the ${p.origin.marketplace} marketplace` : p.origin?.kind === 'created' ? 'created in Format' : 'uploaded'].filter(Boolean).join(' · '));
+    setText(q(this.root, '.ft-pl-by'), [p.version && `Version ${p.version}`, p.author && `by ${p.author}`, p.origin?.kind === 'marketplace' ? `from the ${p.origin.marketplace} marketplace` : p.origin?.kind === 'created' ? 'created in FormAT' : 'uploaded'].filter(Boolean).join(' · '));
     setText(q(this.root, '.ft-pl-desc'), p.description);
     const on = q<HTMLInputElement>(this.root, '.ft-pl-on');
     if (on.checked !== p.enabled) on.checked = p.enabled;
@@ -676,7 +676,7 @@ export class CustomizeView {
     none('.ft-pl-nocmds', !cmds.size);
     none('.ft-pl-noconns', !servers.length);
     none('.ft-pl-noagents', !agents.length);
-    setText(q(this.root, '.ft-pl-agentnote'), `Agents run in Cowork and Claude Code; Format lists them but does not run them in chat.${p.hooks ? ' This plugin also has hooks, kept but not run.' : ''}`);
+    setText(q(this.root, '.ft-pl-agentnote'), `Agents run in Cowork and Claude Code; FormAT lists them but does not run them in chat.${p.hooks ? ' This plugin also has hooks, kept but not run.' : ''}`);
     const counts: Record<string, number> = { skills: skillNames.length, commands: cmds.size, connectors: servers.length, agents: agents.length };
     for (const [k, n] of Object.entries(counts)) setText(q(this.root, `[data-plcount="${k}"]`), n ? String(n) : '');
   }
@@ -691,7 +691,7 @@ export class CustomizeView {
     const auth = () => (form.querySelector<HTMLInputElement>('input[name=ft-cn-auth]:checked')?.value ?? 'needed');
     const client = () => (form.querySelector<HTMLInputElement>('input[name=ft-cn-client]:checked')?.value ?? 'register');
     const notes: Record<string, string> = {
-      needed: 'Format connects without credentials and asks you to sign in when the server asks for it.',
+      needed: 'FormAT connects without credentials and asks you to sign in when the server asks for it.',
       now: 'You sign in through the server\'s own page before Claude uses the connector.',
       none: 'Anyone with the URL can use it. For an API key, add it as a request header or the access token.',
     };
@@ -797,7 +797,7 @@ export class CustomizeView {
     });
     q(this.root, '.ft-cn-more').addEventListener('click', (e) => openMenu(e.currentTarget as HTMLElement, [
       { label: 'Reconnect', desc: 'Connect again and list its tools', icon: 'retry', action: () => { if (this.cnOpen) void run('connector.connect', { id: this.cnOpen }).catch(() => undefined); } },
-      { label: 'Remove', desc: 'Delete this connector from Format', icon: 'trash', action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-cn-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
+      { label: 'Remove', desc: 'Delete this connector from FormAT', icon: 'trash', action: () => { const del = q<HTMLButtonElement>(this.root, '.ft-cn-delete'); if (del.hidden) del.hidden = false; del.focus(); } },
     ], 'down'));
     q(this.root, '.ft-cn-delete').addEventListener('click', async () => {
       if (this.cnOpen) await run('connector.delete', { id: this.cnOpen }).catch(() => undefined);
@@ -863,7 +863,7 @@ export class CustomizeView {
       setText(q(row, '.ft-cn-badge'), c.route === 'api' ? 'Anthropic' : 'Engine');
       const badge = q(row, '.ft-cn-badge');
       if (badge.dataset.s !== c.status) badge.dataset.s = c.status;
-      setAttr(badge, 'title', c.route === 'api' ? 'Claude reaches this server through Anthropic\'s MCP connector' : 'Format\'s engine runs this server\'s tools; they ask before running in Ask mode');
+      setAttr(badge, 'title', c.route === 'api' ? 'Claude reaches this server through Anthropic\'s MCP connector' : 'FormAT\'s engine runs this server\'s tools; they ask before running in Ask mode');
       const chip = q(row, '.ft-cn-chip');
       setText(chip, this.chipText(c));
       if (chip.dataset.s !== (c.enabled ? c.status : 'off')) chip.dataset.s = c.enabled ? c.status : 'off';
@@ -900,8 +900,8 @@ export class CustomizeView {
     const c = this.state.connectors.find((x) => x.id === this.cnOpen);
     if (!c) return;
     setText(q(this.root, '.ft-cn-name'), c.name);
-    const how = c.auth && c.auth !== 'none' ? ` · ${c.signedIn ? 'signed in' : 'sign-in'} with ${c.oauthClient === 'own' ? 'your OAuth client' : 'a client Format registered'}` : c.hasToken ? ' · with a token' : '';
-    setText(q(this.root, '.ft-cn-where'), `${c.kind === 'url' ? c.url : c.command}${how}${c.transport === 'sse' ? ' · SSE' : ''} · ${c.route === 'api' ? 'through Anthropic\'s MCP connector' : 'run by Format\'s engine'}`);
+    const how = c.auth && c.auth !== 'none' ? ` · ${c.signedIn ? 'signed in' : 'sign-in'} with ${c.oauthClient === 'own' ? 'your OAuth client' : 'a client FormAT registered'}` : c.hasToken ? ' · with a token' : '';
+    setText(q(this.root, '.ft-cn-where'), `${c.kind === 'url' ? c.url : c.command}${how}${c.transport === 'sse' ? ' · SSE' : ''} · ${c.route === 'api' ? 'through Anthropic\'s MCP connector' : 'run by FormAT\'s engine'}`);
     const st = q(this.root, '.ft-cn-state');
     setText(st, c.status === 'needs_auth' && c.error && !this.lost(c) && c.error !== 'Sign in to use it' ? `Sign-in could not start: ${c.error}` : c.status !== 'error' ? this.stateText(c) : c.route === 'api'
       ? `Its tools could not be listed from this computer (${c.error}); Claude still reaches the server through Anthropic.` : `Last connection failed: ${c.error}`);
@@ -928,8 +928,8 @@ export class CustomizeView {
     const head = q(this.cnDetail, '.ft-cn-perm-head');
     if (head.hidden === !c.tools.length) head.hidden = !c.tools.length;
     setText(q(this.cnDetail, '.ft-cn-perm-note'), c.kind === 'url' && c.route === 'local' && !(c.headerNames ?? []).length && kinds.has('ask')
-      ? 'A tool needs approval, so Format runs this server itself and the approval card waits for you; with every tool on Always allow or Blocked, Claude reaches it through Anthropic again.'
-      : c.route === 'api' ? 'Claude reaches this server through Anthropic\'s MCP connector. Set a tool to Needs approval to have Format run the server and ask before each use.'
+      ? 'A tool needs approval, so FormAT runs this server itself and the approval card waits for you; with every tool on Always allow or Blocked, Claude reaches it through Anthropic again.'
+      : c.route === 'api' ? 'Claude reaches this server through Anthropic\'s MCP connector. Set a tool to Needs approval to have FormAT run the server and ask before each use.'
         : 'Always allow runs a tool without a card, Needs approval asks in the chat first (unless Allow all or Allow for this chat is on), Blocked hides it from Claude.');
     const none = q(this.root, '.ft-cn-notools');
     if (none.hidden !== c.tools.length > 0) none.hidden = c.tools.length > 0;

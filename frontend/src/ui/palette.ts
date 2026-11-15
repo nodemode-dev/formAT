@@ -89,7 +89,7 @@ export class Palette {
     const needle = this.input.value.trim().toLowerCase();
     const convs = this.state.sortedConversations();
     const chats: PaletteAction[] = convs.filter((c) => !needle || c.title.toLowerCase().includes(needle) || this.hits.has(c.id))
-      .map((c) => ({ label: c.title, icon: 'chat' as const, hint: needle && !c.title.toLowerCase().includes(needle) ? 'in messages' : undefined, run: () => this.openChat(c.id) }));
+      .map((c) => ({ label: c.title, icon: 'chat' as const, hint: needle && !c.title.toLowerCase().includes(needle) ? 'in messages' : c.demo ? 'Demo' : undefined, run: () => this.openChat(c.id) }));
     const actions = this.actions().filter((a) => !needle || a.label.toLowerCase().includes(needle));
     this.items = [...actions, ...chats].slice(0, 50);
     this.list.innerHTML = this.items.length

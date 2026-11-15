@@ -16,9 +16,9 @@ let frame: ReturnType<typeof mountBootFrame>;
 async function probe(): Promise<void> {
   try {
     const h = await health();
-    frame.set('engine', h.version === VERSION ? 'ok' : 'warn', h.version === VERSION ? `v${h.version} on 127.0.0.1:8490` : `v${h.version}, window is v${VERSION}`);
+    frame.set('engine', h.version === VERSION ? 'ok' : 'warn', h.version === VERSION ? `v${h.version} on ${location.host}` : `v${h.version}, window is v${VERSION}`);
     const info = await run<AppInfo>('app.info');
-    frame.set('anthropic', info.providers.anthropic ? 'ok' : 'warn', info.providers.anthropic ? 'set in backend/.env' : 'not set: backend/.env');
+    frame.set('anthropic', info.providers.anthropic ? 'ok' : 'warn', info.providers.anthropic ? 'set' : 'not set: add one in Settings, API keys');
     frame.set('commands', 'ok', `${info.commands} registered`);
   } catch {
     frame.set('engine', 'bad', 'not answering: ./format backend');
@@ -32,7 +32,13 @@ function bootFallback(): void {
   const stream = new EventStream();
   stream.onState((state) => {
     frame.set('events', state === 'open' ? 'ok' : state === 'connecting' ? 'idle' : 'bad', state === 'open' ? 'connected' : state);
-    if (state === 'open') location.reload();
+    if (state !== 'open') return;
+    let last = 0;
+    try { last = Number(sessionStorage.getItem('format.bootReload')) || 0; } catch { last = 0; }
+    window.setTimeout(() => {
+      try { sessionStorage.setItem('format.bootReload', String(Date.now())); } catch { last = 0; }
+      location.reload();
+    }, Math.max(0, 15000 - (Date.now() - last)));
   });
   stream.start();
   void probe();
@@ -40,11 +46,16 @@ function bootFallback(): void {
 
 function reveal(): void {
   document.body.classList.add('app-ready');
+  const shell = (window as unknown as { __TAURI__?: { core?: { invoke(cmd: string): Promise<unknown> } } }).__TAURI__;
+  if (shell?.core) requestAnimationFrame(() => { void shell.core?.invoke('app_ready').catch(() => undefined); });
 }
 
 const app = new App(host);
 const ready = Promise.all([document.fonts.ready, app.load()]);
-ready.then(reveal, () => {
+ready.then(() => {
+  reveal();
+  app.setView('chat');
+}, () => {
   host.replaceChildren();
   bootFallback();
   void document.fonts.ready.then(reveal);

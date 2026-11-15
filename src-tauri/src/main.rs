@@ -13,6 +13,8 @@ use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_updater::UpdaterExt;
 
+mod reveal;
+
 struct Backend(Mutex<Option<CommandChild>>);
 
 const FALLBACK_LOGICAL: (f64, f64) = (1440.0, 900.0);
@@ -23,12 +25,6 @@ const LOG_TAIL: usize = 40;
 fn kill_backend(handle: &tauri::AppHandle) {
     if let Some(child) = handle.state::<Backend>().0.lock().unwrap().take() {
         let _ = child.kill();
-    }
-}
-
-fn close_splash(handle: &tauri::AppHandle) {
-    if let Some(splash) = handle.get_webview_window("splash") {
-        let _ = splash.close();
     }
 }
 
@@ -55,7 +51,7 @@ fn check_for_updates(handle: tauri::AppHandle) {
         let Ok(Some(update)) = updater.check().await else { return };
         let install = handle
             .dialog()
-            .message(format!("Format {} is available. Install it and restart?", update.version))
+            .message(format!("FormAT {} is available. Install it and restart?", update.version))
             .title("Update available")
             .buttons(MessageDialogButtons::OkCancel)
             .blocking_show();
@@ -101,13 +97,14 @@ fn open_main(handle: &tauri::AppHandle, port: u16) {
     let popup = handle.clone();
     let saver = handle.clone();
     let pending: Arc<Mutex<HashMap<String, PathBuf>>> = Arc::new(Mutex::new(HashMap::new()));
-    let _ = WebviewWindowBuilder::new(handle, "main", WebviewUrl::External(url))
-        .title("Format")
+    let built = WebviewWindowBuilder::new(handle, "main", WebviewUrl::External(url))
+        .title("FormAT")
+        .visible(reveal::BUILD_VISIBLE)
         .inner_size(width.max(MIN_LOGICAL.0), height.max(MIN_LOGICAL.1))
         .min_inner_size(MIN_LOGICAL.0, MIN_LOGICAL.1)
         .center()
         .theme(Some(Theme::Dark))
-        .background_color(tauri::webview::Color(11, 11, 12, 255))
+        .background_color(reveal::BACKGROUND)
         .disable_drag_drop_handler()
         .on_navigation(move |target| {
             if is_engine(target, port) || matches!(target.scheme(), "about" | "blob" | "data") {
@@ -156,17 +153,24 @@ fn open_main(handle: &tauri::AppHandle, port: u16) {
             _ => PermissionResponse::Default,
         })
         .build();
+    match built {
+        Ok(window) => reveal::conceal(&window),
+        Err(_) => reveal::close_splash(handle),
+    }
 }
 
 fn main() {
+    reveal::mark_launch();
     let app = tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(Backend(Mutex::new(None)))
+        .invoke_handler(tauri::generate_handler![reveal::app_ready])
         .setup(|app| {
             let handle = app.handle().clone();
+            reveal::round_splash(&handle);
             let (mut rx, child) = app
                 .shell()
                 .sidecar("format-engine")
@@ -208,17 +212,18 @@ fn main() {
                         port = captures[1].parse().ok();
                         if let Some(found) = port {
                             open_main(&handle, found);
-                            close_splash(&handle);
                             check_for_updates(handle.clone());
                         }
                     }
                 }
                 if port.is_none() {
-                    close_splash(&handle);
+                    if let Some(splash) = handle.get_webview_window("splash") {
+                        let _ = splash.hide();
+                    }
                     handle
                         .dialog()
-                        .message(format!("The Format engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")))
-                        .title("Format")
+                        .message(format!("The FormAT engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")))
+                        .title("FormAT")
                         .blocking_show();
                     kill_backend(&handle);
                     std::process::exit(1);

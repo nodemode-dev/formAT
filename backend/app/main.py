@@ -4,7 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.routing import Route
 
@@ -41,4 +41,9 @@ async def _unhandled(request: Request, exc: Exception) -> JSONResponse:
 
 _dist = config.dist_dir()
 if _dist is not None:
+    if (_dist / "favicon.png").is_file() and not (_dist / "favicon.ico").is_file():
+        @app.get("/favicon.ico", include_in_schema=False)
+        def _favicon() -> FileResponse:
+            return FileResponse(_dist / "favicon.png", media_type="image/png")
+
     app.mount("/", StaticFiles(directory=str(_dist), html=True), name="frontend")

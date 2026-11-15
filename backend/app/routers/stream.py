@@ -1,3 +1,4 @@
+import asyncio
 import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
@@ -12,11 +13,18 @@ router = APIRouter(tags=["events"])
 async def stream(ws: WebSocket) -> None:
     await ws.accept()
     q = events.subscribe()
-    try:
+
+    async def outbound() -> None:
         await ws.send_text(json.dumps({"seq": 0, "type": "hello", "version": config.VERSION}))
         while True:
             await ws.send_text(await q.get())
-    except WebSocketDisconnect:
+
+    sender = asyncio.create_task(outbound())
+    try:
+        while True:
+            await ws.receive_text()
+    except (WebSocketDisconnect, RuntimeError):
         pass
     finally:
+        sender.cancel()
         events.unsubscribe(q)

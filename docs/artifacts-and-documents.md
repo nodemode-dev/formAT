@@ -8,7 +8,7 @@ When Claude publishes a page, an app or a small tool, the reply shows a card. Op
 - **Version** picker: each revision is a new version; the panel follows the latest unless you pick an older one.
 - **Download** (an .html file), **Share** (see below) and **Open in a new tab**.
 
-Pages run in a sandbox: they cannot read Format or your files, and they load scripts only from the common CDNs. Settings, Tools can let them load images and data from the internet.
+Pages run in a sandbox: they cannot read FormAT or your files, and they load scripts only from the common CDNs. Settings, Tools can let them load images and data from the internet.
 
 The Artifacts page in the sidebar lists every artifact from every chat.
 

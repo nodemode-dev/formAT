@@ -20,6 +20,7 @@ const UI: Record<string, string> = {
   customize: `<path d="M4 6h7M14 6h2M4 14h2M9 14h7" ${S}/><circle cx="12.5" cy="6" r="1.5" ${S}/><circle cx="7.5" cy="14" r="1.5" ${S}/>`,
   chevronRight: `<path d="M8 5l5 5-5 5" ${S}/>`,
   chevronLeft: `<path d="M12 5l-5 5 5 5" ${S}/>`,
+  chevronsLeft: `<path d="M10 5l-5 5 5 5M15 5l-5 5 5 5" ${S}/>`,
   compress: `<path d="M6 3.5L10 7.5l4-4M6 16.5l4-4 4 4M4 10h12" ${S}/>`,
   chevronDown: `<path d="M5.5 8l4.5 4.5L14.5 8" ${S}/>`,
   more: `<circle cx="5" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="10" r="1" fill="currentColor"/><circle cx="15" cy="10" r="1" fill="currentColor"/>`,

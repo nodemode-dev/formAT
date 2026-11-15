@@ -160,6 +160,7 @@ export class ArtifactPanel {
     ++this.seq;
     this.current = null;
     this.codeFor = '';
+    setText(this.title, '');
     for (const f of this.frames) {
       f.onload = null;
       if (f.dataset.src) { f.dataset.src = ''; f.src = 'about:blank'; }

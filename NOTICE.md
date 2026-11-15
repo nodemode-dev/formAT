@@ -6,6 +6,36 @@ Format · Copyright 2026 NodeAgentc, Inc. · Licensed under the Apache License, 
 
 `frontend/src/styles/tokens.css`, `scrollbars.css`, `fonts.css`, `light-mode.css`, `shell.css` and `dialogs.css` are the form family's Studio Dark sheets, copied unchanged from formvis v1.66.1 (Apache-2.0, nodemode-ai). The theme boot script in `frontend/index.html` is the family's `theme-boot.js` v1.0.0, as formlit carries it.
 
+## Demo chats
+
+`backend/app/demos/` holds the demo chats Format ships with: `northern-light` (the page Northern Light), `solar-system` (the page Orrery) and `harbour-ferries` (the page Harbour Ferries, season 2026, with a form.md import package of Markdown and CSV files and the same folder as a zip). They are original work made for Format and carry its licence. Northern Light and Harbour Ferries are drawn in code (canvas and inline SVG) and contain no image, font, script or data from anyone else. Harbour Ferries is not a real operator: its routes, vessels and every figure are invented. The messages in the three chats were written for the demos; opening one calls no model.
+
+Orrery is drawn in code with WebGL and embeds surface maps of Venus, Earth, Mars, Jupiter, Saturn, Neptune and twenty moons, downscaled and in places edited, from NASA's repository `github.com/nasa/NASA-3D-Resources` (folder `Images and Textures`, commit `11ebb4ee043715aefbba6aeec8a61746fad67fa7`), whose README says of its assets: "These assets are free and without copyright." Credit: NASA (NASA 3D Resources). NASA's name is used to identify the maps only and implies no endorsement. Mercury, Uranus, the Sun, both ring systems and Earth's clouds are generated in code, and the far side of the Moon is not a real map. The figures in its information panels were checked against NASA's planetary fact sheets and NASA Science pages in November 2026.
+
+### Images used by the demo chats
+
+Northern Light and Harbour Ferries use no image. Orrery embeds the 26 files below (six planet maps and twenty moon maps), and no other image from anyone else. All 26 come from the folder `Images and Textures` of `github.com/nasa/NASA-3D-Resources` at commit `11ebb4ee043715aefbba6aeec8a61746fad67fa7`. Status as the source states it: the repository's README says "These assets are free and without copyright", and its `meta.json` lists the licence of the repository as "NASA Open Source Agreement Version 1.3". Credit: NASA (NASA 3D Resources); the README credits NASA Ames, Goddard, JPL (including the JPL Solar System Simulator) and Johnson as contributors and does not credit individual files. Each file was downscaled and re-encoded as JPEG and embedded in the page as a data URI; no original file is distributed. The same list ships with the demo as `backend/app/demos/solar-system/files/CREDITS.md`.
+
+| Body | Source file in `Images and Textures/` | Embedded as | Changes besides resizing |
+| --- | --- | --- | --- |
+| Earth | `Earth (A)/Earth (A).jpg` | 1024x512 colour | none. This is a shaded-relief colour map without clouds; the clouds on the page are generated |
+| Mars | `Mars/Mars.jpg` | 1024x512 colour | none |
+| Venus | `Venus/Venus.jpg` | 1024x512 colour | none (radar map of the surface) |
+| Jupiter | `Jupiter/Jupiter.jpg` | 1024x512 colour | enlarged from 720x360 |
+| Saturn | `Saturn/Saturn.jpg` | 1024x512 colour | enlarged from 720x360 |
+| Neptune | `Neptune/Neptune.jpg` | 512x256 colour | none |
+| Moon | `Moon/Moon.jpg` | 512x256 colour | the source is a photo of the near side as a disc, not a map. It is projected onto the near hemisphere; the far side, which the photo does not show, is a blurred mirror copy of the near side and is not real |
+| Io | `Jupiter - Io (B)/Jupiter - Io (B).jpg` | 512x256 colour | none |
+| Europa | `Jupiter - Europa/Jupiter - Europa.jpg` | 512x256 grey | tinted on the page; white no-data areas at the poles left as they are |
+| Ganymede | `Jupiter - Ganymede/Jupiter - Ganymede.jpg` | 512x256 grey | white no-data areas filled with the average tone; tinted on the page |
+| Callisto | `Jupiter - Callisto/Jupiter - Callisto.jpg` | 512x256 grey | white no-data areas filled with the average tone; tinted on the page |
+| Phobos | `Mars - Phobos/Mars - Phobos.jpg` | 256x128 grey | tinted; drawn as a squashed sphere |
+| Deimos | `Mars - Deimos/Mars - Deimos.jpg` | 256x128 grey | tinted; drawn as a squashed sphere |
+| Mimas, Enceladus, Tethys, Dione, Rhea, Iapetus | `Saturn - <name>/Saturn - <name>.jpg` | 256x128 grey | none; white areas in the source are unmapped regions |
+| Titan | `Saturn - Titan/Saturn - Titan.jpg` | 256x128 colour | none |
+| Miranda, Ariel, Umbriel, Titania, Oberon | `Uranus - <name>/Uranus - <name>.jpg` | 256x128 grey | the source maps cover the southern half only (black elsewhere); the black is filled with the average tone, so the northern half is blank; tinted on the page |
+| Triton | `Neptune - Triton/Neptune - Triton.jpg` | 256x128 colour | the source covers one region (black elsewhere); the black is filled with the average tone |
+
 ## Third-party packages
 
 | Package | Licence | Where |

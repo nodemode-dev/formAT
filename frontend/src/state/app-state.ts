@@ -9,6 +9,7 @@ export interface Conversation {
   created: number;
   updated: number;
   activity?: 'running' | 'waiting' | null;
+  demo?: string | null;
 }
 
 export interface ContentBlock {
@@ -84,6 +85,7 @@ export interface MessageMeta {
   agents?: Record<string, { model: string; title?: string; blocks: ContentBlock[] }>;
   artifacts?: Record<string, ArtifactRef>;
   comments?: FileComment[];
+  demo?: string;
 }
 
 export interface Message {
@@ -142,7 +144,7 @@ export interface Settings {
   chatEngine?: 'auto' | 'api' | 'claude-code';
 }
 
-export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize' | 'settings';
+export type View = 'chat' | 'projects' | 'artifacts' | 'scheduled' | 'customize';
 
 type Topic = 'conversations' | 'active' | 'messages' | 'settings' | 'view' | 'account' | 'keys' | 'running' | 'models' | 'projects' | 'skills' | 'memory' | 'connectors' | 'plugins' | 'marketplaces';
 

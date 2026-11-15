@@ -95,19 +95,20 @@ rm -f "$tlog"
 
 bundle="$FORMAT_ROOT/src-tauri/target/release/bundle"
 version="$("$py" -c 'import json, sys; print(json.load(open(sys.argv[1]))["version"])' src-tauri/tauri.conf.json)"
+product="$("$py" -c 'import json, sys; print(json.load(open(sys.argv[1]))["productName"])' src-tauri/tauri.conf.json)"
 
 if [ "$os" = macos ]; then
-  app="$bundle/macos/Format.app"
+  app="$bundle/macos/$product.app"
   [ -d "$app" ] || ft_die "the build finished but $app is missing"
   codesign --verify --deep --strict "$app" 2>/dev/null || ft_say "codesign could not verify the app; it is ad-hoc signed, so macOS may ask once before it opens"
   step "packing the disk image"
   mkdir -p "$bundle/dmg"
-  dmg="$bundle/dmg/Format_${version}_$(uname -m).dmg"
+  dmg="$bundle/dmg/${product}_${version}_$(uname -m).dmg"
   stage="$(mktemp -d)"
-  ditto "$app" "$stage/Format.app"
+  ditto "$app" "$stage/$product.app"
   ln -s /Applications "$stage/Applications"
   rm -f "$dmg"
-  hdiutil create -quiet -volname Format -srcfolder "$stage" -ov -format UDZO "$dmg"
+  hdiutil create -quiet -volname "$product" -srcfolder "$stage" -ov -format UDZO "$dmg"
   rm -rf "$stage"
   ft_say "app: $app"
   ft_say "disk image: $dmg"
@@ -116,13 +117,13 @@ if [ "$os" = macos ]; then
     dest=/Applications
     [ -w "$dest" ] || { dest="$HOME/Applications"; mkdir -p "$dest"; }
     if pgrep -x format >/dev/null 2>&1; then
-      osascript -e 'tell application "Format" to quit' >/dev/null 2>&1 || true
+      osascript -e "tell application \"$product\" to quit" >/dev/null 2>&1 || true
       sleep 2
     fi
-    rm -rf "$dest/Format.app"
-    ditto "$app" "$dest/Format.app"
-    xattr -dr com.apple.quarantine "$dest/Format.app" 2>/dev/null || true
-    target_app="$dest/Format.app"
+    rm -rf "$dest/$product.app"
+    ditto "$app" "$dest/$product.app"
+    xattr -dr com.apple.quarantine "$dest/$product.app" 2>/dev/null || true
+    target_app="$dest/$product.app"
     ft_say "installed: $target_app"
   fi
   if [ "$open_app" = 1 ]; then open "${target_app:-$app}"; fi
