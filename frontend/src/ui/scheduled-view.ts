@@ -1,5 +1,6 @@
 import { run } from '../engine-client/api';
 import type { AppState } from '../state/app-state';
+import { askDeleteSchedule } from './confirm';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
@@ -140,7 +141,7 @@ export class ScheduledView {
     q(this.root, '.ft-sch-run').addEventListener('click', () => void this.runNow());
     q(this.root, '.ft-sch-edit').addEventListener('click', () => { if (this.current) { this.showList(); this.openForm(this.current); } });
     q(this.root, '.ft-sch-pause').addEventListener('click', () => { if (this.current) void run('schedule.update', { id: this.current.id, enabled: !this.current.enabled }).catch((err) => this.detailMsg(err)); });
-    q(this.root, '.ft-sch-delete').addEventListener('click', (e) => void this.remove(e.currentTarget as HTMLButtonElement));
+    q(this.root, '.ft-sch-delete').addEventListener('click', () => void this.remove());
     this.history.addEventListener('click', (e) => {
       const id = (e.target as HTMLElement).closest<HTMLElement>('[data-chat]')?.dataset.chat;
       if (id) this.hooks.openChat(id);
@@ -291,12 +292,7 @@ export class ScheduledView {
     const project = s.projectId ? this.state.projects.get(s.projectId)?.name : null;
     setText(q(this.detail, '.ft-sch-project'), project ? `Runs in the project ${project}.` : 'Runs outside any project.');
     setText(q(this.detail, '.ft-sch-pause'), s.enabled ? 'Pause' : 'Resume');
-    if (fresh) {
-      const del = q(this.detail, '.ft-sch-delete');
-      setAttr(del, 'data-armed', null);
-      setText(del, 'Delete');
-      setText(q(this.detail, '.ft-sch-detail-msg'), '');
-    }
+    if (fresh) setText(q(this.detail, '.ft-sch-detail-msg'), '');
     this.renderHistory(s.history);
     if (fresh) {
       if (!this.listMode.hidden) this.listMode.hidden = true;
@@ -339,15 +335,11 @@ export class ScheduledView {
     }
   }
 
-  private async remove(btn: HTMLButtonElement): Promise<void> {
-    if (!this.current) return;
-    if (!btn.hasAttribute('data-armed')) {
-      btn.setAttribute('data-armed', '');
-      setText(btn, 'Delete this task?');
-      return;
-    }
+  private async remove(): Promise<void> {
+    const s = this.current;
+    if (!s || !(await askDeleteSchedule(s.name))) return;
     try {
-      await run('schedule.delete', { id: this.current.id });
+      await run('schedule.delete', { id: s.id });
     } catch (err) {
       this.detailMsg(err);
     }

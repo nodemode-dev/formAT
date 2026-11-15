@@ -16,7 +16,7 @@ Vanilla TypeScript and Vite in `frontend/src`. No framework: each view is a clas
 | `ui/commands.ts`, `app-menu.ts`, `menubar.ts`, `native-menu.ts` | the command registry (ids, labels, keys, enabled, checked), FormAT's commands and six menus, the bar in the title row, and the same menus in the macOS menu bar |
 | `ui/prefs-window.ts` | the settings window's shell (rail, stacked sections, the wire); its controls are in `views.ts` and `memory-panel.ts` |
 | `ui/confirm.ts` | the confirm sheet |
-| `demos.ts` | the demo chats the window knows by id, and where they sit in the sidebar |
+| `demos.ts` | the demo list the window takes from `demo.list` at load (title, blurb, order), and where the demo chats sit in the sidebar and the Help menu |
 | `ui/icons-ft.ts` | every icon, inline SVG paths drawn in `currentColor` |
 | `styles/` | the family's vendored Studio Dark sheets unchanged, and Format's `ft-*.css` |
 

@@ -48,7 +48,7 @@ Summarize long chats automatically, and at what share of the context window (50 
 
 ## API keys
 
-Anthropic (powers chat), OpenAI (optional: dictation) and ElevenLabs (optional: dictation with Scribe v2). Keys are stored in FormAT's data folder with owner-only permissions and never shown again; Remove falls back to `backend/.env`.
+Anthropic (powers chat), OpenAI (optional: dictation) and ElevenLabs (optional: dictation with Scribe v2). Keys are stored in `secrets.json` in FormAT's data folder (the page names the full path) with owner-only permissions and never shown again; Remove falls back to a key in the environment FormAT was started from, and when running from source, to `backend/.env`.
 
 ## Memory
 

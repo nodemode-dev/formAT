@@ -525,7 +525,7 @@ Whether outside agents (coding agents over MCP) may use Format (outsideAgents: a
 
 ### get_app_info
 
-Version, ports, data folder, which provider keys are set and how many commands the engine has. Use first when you need the version, the data folder or whether an Anthropic key is set.
+Version, ports, data folder, which provider keys are set, the file saved keys are stored in (keysFile), the .env file read at start when running from source (envFile, null in the packaged app) and how many commands the engine has. Use first when you need the version, the data folder or whether an Anthropic key is set.
 
 - read-only · command `app.info` · params: none
 
@@ -567,7 +567,7 @@ Whether the Claude Code CLI is installed (its path and version) and which engine
 
 ### list_demos
 
-The demo chats Format ships with: each one's id, chat title, artifact title, number of output files, and conversationId, which is null when the person deleted that demo. A demo is a recorded chat stored like any other; reading one needs no API key and calls no model. Use to see which demo chats ship with Format and which of them are still in the sidebar.
+The demo chats Format ships with: each one's id, chat title, one-line blurb and order (from the demo folder's about.json, which the window reads to list the demos), artifact title, number of output files, and conversationId, which is null when the person deleted that demo. A demo is a recorded chat stored like any other; reading one needs no API key and calls no model. Use to see which demo chats ship with Format and which of them are still in the sidebar.
 
 - read-only · command `demo.list` · params: none
 

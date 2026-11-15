@@ -37,26 +37,38 @@ def start(conversation_id: str) -> dict:
             raise RuntimeError("A reply is already running in this chat; stop it first")
         cancel = threading.Event()
         RUNS[conversation_id] = cancel
-    settings = current() | {"connectorsOff": connectors.chat_off(conversation_id)}
-    model = find_model(settings["model"])
-    path = messages_of(conversation_id)
-    asked = (path[-1].get("meta") or {}) if path and path[-1]["role"] == "user" else {}
-    research = bool(asked.get("research"))
-    if research:
-        settings = settings | {"research": True, "webTools": True, "effort": "high"}
-    if asked.get("output") in ("doc", "sheet", "deck"):
-        settings = settings | {"output": asked["output"], "workspaceTools": True}
-    for mode in ("plugin", "skill"):
-        if any((m.get("meta") or {}).get("output") == mode for m in path if m["role"] == "user"):
-            settings = settings | {"output": mode, "workspaceTools": True}
+    placeholder: dict | None = None
+    meta: dict = {}
     try:
+        settings = current() | {"connectorsOff": connectors.chat_off(conversation_id)}
+        model = find_model(settings["model"])
+        path = messages_of(conversation_id)
+        asked = (path[-1].get("meta") or {}) if path and path[-1]["role"] == "user" else {}
+        research = bool(asked.get("research"))
+        if research:
+            settings = settings | {"research": True, "webTools": True, "effort": "high"}
+        if asked.get("output") in ("doc", "sheet", "deck"):
+            settings = settings | {"output": asked["output"], "workspaceTools": True}
+        for mode in ("plugin", "skill"):
+            if any((m.get("meta") or {}).get("output") == mode for m in path if m["role"] == "user"):
+                settings = settings | {"output": mode, "workspaceTools": True}
         via = claude_code.route(settings)
-    except providers.ProviderError as exc:
-        RUNS.pop(conversation_id, None)
-        raise RuntimeError(str(exc)) from None
-    placeholder = insert(conversation_id, "assistant", [], {"model": model["id"], "status": "streaming"} | ({"research": True} if research else {}) | ({"via": via} if via != "api" else {}))
-    events.publish("message.added", message=placeholder)
-    threading.Thread(target=claude_code.run if via == "claude-code" else _run, args=(conversation_id, placeholder["id"], model, settings, cancel), name=f"chat-{conversation_id[:8]}", daemon=True).start()
+        meta = {"model": model["id"], "status": "streaming"} | ({"research": True} if research else {}) | ({"via": via} if via != "api" else {})
+        placeholder = insert(conversation_id, "assistant", [], meta)
+        events.publish("message.added", message=placeholder)
+        threading.Thread(target=claude_code.run if via == "claude-code" else _run, args=(conversation_id, placeholder["id"], model, settings, cancel), name=f"chat-{conversation_id[:8]}", daemon=True).start()
+    except BaseException as exc:
+        with _lock:
+            if RUNS.get(conversation_id) is cancel:
+                RUNS.pop(conversation_id, None)
+        if placeholder is not None:
+            try:
+                events.publish("message.completed", message=update(placeholder["id"], [], meta | {"status": "error", "error": f"The reply could not start: {exc}"}))
+            except Exception:
+                log.exception("could not mark the reply that failed to start")
+        if isinstance(exc, providers.ProviderError):
+            raise RuntimeError(str(exc)) from None
+        raise
     return placeholder
 
 
@@ -469,17 +481,23 @@ def start_compaction(conversation_id: str) -> dict:
             raise RuntimeError("A reply is already running in this chat; stop it first")
         cancel = threading.Event()
         RUNS[conversation_id] = cancel
-    settings = current()
-    model = find_model(settings["model"])
-    provider = providers.get("anthropic")
-    if not provider.can_compact(model.get("raw") or {"id": model["id"]}):
-        RUNS.pop(conversation_id, None)
-        raise RuntimeError(f"{model['id']} does not support compaction")
-    def work() -> None:
-        try:
-            _compact(conversation_id, model, settings, provider, cancel)
-        finally:
-            RUNS.pop(conversation_id, None)
+    try:
+        settings = current()
+        model = find_model(settings["model"])
+        provider = providers.get("anthropic")
+        if not provider.can_compact(model.get("raw") or {"id": model["id"]}):
+            raise RuntimeError(f"{model['id']} does not support compaction")
 
-    threading.Thread(target=work, name=f"compact-{conversation_id[:8]}", daemon=True).start()
+        def work() -> None:
+            try:
+                _compact(conversation_id, model, settings, provider, cancel)
+            finally:
+                RUNS.pop(conversation_id, None)
+
+        threading.Thread(target=work, name=f"compact-{conversation_id[:8]}", daemon=True).start()
+    except BaseException:
+        with _lock:
+            if RUNS.get(conversation_id) is cancel:
+                RUNS.pop(conversation_id, None)
+        raise
     return {"started": True}

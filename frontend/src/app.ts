@@ -1,5 +1,6 @@
-import { run } from './engine-client/api';
+import { NOT_ANSWERING, run } from './engine-client/api';
 import { EventStream, type EngineEvent } from './engine-client/events';
+import { watchEngine } from './engine-client/watch';
 import { AppState, type Account, type ArtifactRef, type ArtifactSummary, type Citation, type ContentBlock, type FileComment, type MarketplaceInfo, type PluginSummary, type ProjectSummary, type SkillSummary, type ConnectorInfo, type Conversation, type FileInfo, type KeyStatus, type Message, type Model, type Settings, type View } from './state/app-state';
 import { ChatView } from './ui/chat-view';
 import { Composer } from './ui/composer';
@@ -23,9 +24,10 @@ import { ArtifactsView, SettingsView, type InfoLike, type SettingsSection } from
 import { ScheduledView, type ScheduleSummary } from './ui/scheduled-view';
 import { BackgroundPanel } from './ui/background-panel';
 import { FindBar } from './ui/find-bar';
+import { EngineNote } from './ui/engine-note';
 import { mountMenus, type AppMenus } from './ui/app-menu';
 import { formatKeys } from './ui/commands';
-import { demoConversation, demoPage } from './demos';
+import { demoConversation, demoPage, type DemoDef } from './demos';
 import { deleteChat } from './ui/confirm';
 
 type Layout = 'sidebar' | 'panel' | 'term';
@@ -51,6 +53,7 @@ export class App {
   private scheduledView: ScheduledView;
   private background: BackgroundPanel;
   private find: FindBar;
+  private engineNote: EngineNote;
   private outputsSeq = 0;
   private prefs: PrefsWindow;
   private settingsView: SettingsView;
@@ -126,7 +129,6 @@ export class App {
     this.projectsView = new ProjectsView(this.state, {
       openChat: (id) => void this.openChat(id),
       newChatIn: (pid) => { this.newChat(); this.setDraftProject(pid); },
-      showError: (m) => this.composer.showError(m),
     });
     this.artifact = new ArtifactPanel(() => this.closeArtifact(), (c) => this.composer.addComment(c));
     this.filesPane = new FilesPane({ close: () => this.closeSide(), comment: (c) => this.composer.addComment(c) });
@@ -190,6 +192,7 @@ export class App {
     });
     (document.getElementById('overlay-root') as HTMLElement).appendChild(this.find.root);
     this.state.on('view', () => this.find.close());
+    this.engineNote = new EngineNote(this.state);
     this.state.on('active', () => this.find.close());
     this.pages.set('customize', this.customizeView.root);
     center.appendChild(this.customizeView.root);
@@ -251,14 +254,16 @@ export class App {
   }
 
   async load(): Promise<void> {
-    const [list, settings, info, account, keys, voice] = await Promise.all([
+    const [list, settings, info, account, keys, voice, found] = await Promise.all([
       run<{ conversations: Conversation[] }>('conversation.list'),
       run<Settings>('settings.get'),
       run<InfoLike>('app.info'),
       run<Account>('account.get'),
       run<Record<string, KeyStatus>>('keys.status'),
       fetch('/api/voice').then((r) => r.json()).catch(() => ({ engines: undefined })),
+      run<{ demos: DemoDef[] }>('demo.list').catch(() => ({ demos: [] as DemoDef[] })),
     ]);
+    this.menus.setDemos(found.demos);
     const projects = await run<{ projects: ProjectSummary[] }>('project.list').catch(() => ({ projects: [] as ProjectSummary[] }));
     projects.projects.forEach((p) => this.state.projects.set(p.id, p));
     this.state.emit('projects');
@@ -303,6 +308,19 @@ export class App {
         if (!missing.length) return;
         missing.forEach((c) => this.state.conversations.set(c.id, c));
         this.state.emit('conversations');
+      }).catch(() => undefined);
+    });
+    watchEngine(this.stream, (down) => {
+      this.composer.setOffline(down ? NOT_ANSWERING : '');
+      this.engineNote.set(down);
+      if (down) return;
+      void run<{ conversations: Conversation[] }>('conversation.list').then((fresh) => {
+        const live = new Set(fresh.conversations.filter((c) => c.activity).map((c) => c.id));
+        const active = this.state.activeId;
+        const stale = !!active && this.state.running.has(active) && !live.has(active);
+        [...this.state.running].filter((id) => !live.has(id)).forEach((id) => this.setRunning(id, false));
+        [...this.state.waiting.keys()].filter((id) => !live.has(id)).forEach((id) => this.setWaiting(id, null, false));
+        if (stale && active && this.state.view === 'chat') void this.openChat(active).catch(() => undefined);
       }).catch(() => undefined);
     });
     this.stream.start();
@@ -667,7 +685,7 @@ export class App {
 
   private openProject(pid: string): void {
     this.setView('projects');
-    void this.projectsView.open(pid).catch((err) => this.composer.showError(err instanceof Error ? err.message : String(err)));
+    void this.projectsView.open(pid).catch((err) => this.projectsView.say(err));
   }
 
   async openChat(id: string, loaded?: Conversation & { messages: Message[] }): Promise<void> {

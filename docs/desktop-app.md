@@ -35,8 +35,9 @@ The desktop app keeps its own data, separate from a FormAT you run from the repo
 
 ## What is different in the app
 
-- **Starting.** A small card with a progress bar shows while the engine starts; the window appears when it is ready, after at least a couple of seconds. If the engine cannot start, a message with the last lines of its log appears instead.
-- **Menus.** On macOS the menus are in the system menu bar (View, Menus in Window moves them into the window from the next start); on Windows and Linux they are in the window's top bar.
+- **Starting.** A small card with a progress bar shows while the engine starts; the window appears when it is ready, after at least a couple of seconds. If the engine cannot start, a message with the last lines of its log and the log's place appears instead, and the app closes when you dismiss it.
+- **One at a time.** Opening FormAT while it is already open brings the open window forward; a second copy never starts.
+- **Menus.** On macOS the menus are in the system menu bar (View, Menus in Window moves them into the window at once, and back); on Windows and Linux they are in the window's top bar.
 - **Port.** The engine listens on `127.0.0.1:8490` when that port is free (so agents' MCP settings keep working), otherwise on a free port. Other devices still use 8492.
 - **Links.** Links to other sites, Open link and Open in a new tab open in your default browser.
 - **Downloads.** Downloads and exports are saved to your Downloads folder and shown there.

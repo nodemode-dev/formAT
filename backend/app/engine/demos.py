@@ -1,3 +1,4 @@
+import hashlib
 import json
 import logging
 import mimetypes
@@ -10,6 +11,7 @@ log = logging.getLogger("format.demos")
 ROOT = Path(__file__).resolve().parents[1] / "demos"
 FORMAT = "format-demo-chat/1"
 SEEDED = "demos.seeded"
+SHIPPED = "demos.shipped"
 
 
 class DemoError(Exception):
@@ -59,6 +61,142 @@ def _remember(demo_id: str) -> None:
         store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (SEEDED, json.dumps(sorted(done + [demo_id]))))
 
 
+def _shipped_files(demo_id: str) -> list[str]:
+    src = ROOT / demo_id / "files"
+    return sorted(p.relative_to(src).as_posix() for p in src.rglob("*") if p.is_file()) if src.is_dir() else []
+
+
+def _digest(demo_id: str, spec: dict) -> str:
+    base, art = ROOT / demo_id, spec.get("artifact") or {}
+    parts = [("chat.json", base / "chat.json")]
+    if art:
+        parts.append(("page", base / str(art.get("file") or "artifact.html")))
+    parts += [(f"files/{rel}", base / "files" / rel) for rel in _shipped_files(demo_id)]
+    h = hashlib.sha256()
+    for name, path in parts:
+        h.update(name.encode() + b"\0" + path.read_bytes() + b"\0")
+    return h.hexdigest()
+
+
+def _records() -> dict:
+    row = store.row("SELECT value FROM meta WHERE key = ?", (SHIPPED,))
+    try:
+        found = json.loads(row["value"]) if row else {}
+    except (TypeError, ValueError):
+        found = {}
+    return found if isinstance(found, dict) else {}
+
+
+def _record(demo_id: str, spec: dict) -> None:
+    done = _records()
+    done[demo_id] = {"digest": _digest(demo_id, spec), "title": spec["title"].strip()[:120], "files": _shipped_files(demo_id)}
+    store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (SHIPPED, json.dumps(done)))
+
+
+def _on_disk(cid: str) -> set[str]:
+    root = tools.workspace(cid)
+    return {p.relative_to(root).as_posix() for p in root.rglob("*") if p.is_file()}
+
+
+def _untouched(cid: str, demo_id: str, spec: dict, rec: dict | None) -> bool:
+    conv = store.row("SELECT title, leaf_id FROM conversations WHERE id = ?", (cid,))
+    if conv is None or conv["title"] != ((rec or {}).get("title") or spec["title"].strip()[:120]):
+        return False
+    msgs = store.rows("SELECT id, parent_id, role, meta FROM messages WHERE conversation_id = ? ORDER BY created, rowid", (cid,))
+    if not msgs or conv["leaf_id"] != msgs[-1]["id"] or msgs[-1]["role"] != "assistant":
+        return False
+    made: set[str] = set()
+    prev = None
+    for m in msgs:
+        try:
+            meta = json.loads(m["meta"] or "{}")
+        except (TypeError, ValueError):
+            return False
+        if m["parent_id"] != prev or not isinstance(meta, dict):
+            return False
+        if m["role"] == "assistant":
+            if meta.get("demo") != demo_id:
+                return False
+        elif meta:
+            return False
+        prev = m["id"]
+        made |= {str(a.get("id")) for a in (meta.get("artifacts") or {}).values() if isinstance(a, dict)}
+    arts = store.rows("SELECT id FROM artifacts WHERE conversation_id = ?", (cid,))
+    if {a["id"] for a in arts} != made:
+        return False
+    if any((store.row("SELECT COUNT(*) AS n FROM artifact_versions WHERE artifact_id = ?", (a["id"],)) or {}).get("n") != 1 for a in arts):
+        return False
+    return _on_disk(cid) <= set((rec or {}).get("files") or []) | set(_shipped_files(demo_id))
+
+
+def _current(cid: str, demo_id: str, spec: dict) -> bool:
+    if (store.row("SELECT title FROM conversations WHERE id = ?", (cid,)) or {}).get("title") != spec["title"].strip()[:120]:
+        return False
+    texts = []
+    for r in store.rows("SELECT content FROM messages WHERE conversation_id = ? ORDER BY created, rowid", (cid,)):
+        try:
+            blocks = json.loads(r["content"])
+        except (TypeError, ValueError):
+            return False
+        texts.append(next((b.get("text") for b in reversed(blocks) if isinstance(b, dict) and b.get("type") == "text"), None))
+    if texts != [str(m.get("text") or "") for m in spec["messages"]]:
+        return False
+    art = spec.get("artifact") or {}
+    if art:
+        page = (ROOT / demo_id / str(art.get("file") or "artifact.html")).read_text(encoding="utf-8")
+        got = store.row("SELECT v.content FROM artifact_versions v JOIN artifacts a ON a.id = v.artifact_id WHERE a.conversation_id = ?", (cid,))
+        if got is None or got["content"] != page:
+            return False
+    root = tools.workspace(cid)
+    shipped = _shipped_files(demo_id)
+    return _on_disk(cid) == set(shipped) and all((root / rel).read_bytes() == (ROOT / demo_id / "files" / rel).read_bytes() for rel in shipped)
+
+
+def _refresh(demo_id: str, spec: dict, cid: str, rec: dict | None) -> None:
+    c = store.conn()
+    with store._lock:
+        shares = store.rows("SELECT s.token, s.version, s.created FROM shares s JOIN artifacts a ON a.id = s.artifact_id WHERE a.conversation_id = ?", (cid,))
+        updated = (store.row("SELECT updated FROM conversations WHERE id = ?", (cid,)) or {}).get("updated") or store.now()
+        c.execute("BEGIN")
+        try:
+            c.execute("UPDATE conversations SET leaf_id = NULL WHERE id = ?", (cid,))
+            c.execute("DELETE FROM messages WHERE conversation_id = ?", (cid,))
+            c.execute("DELETE FROM artifacts WHERE conversation_id = ?", (cid,))
+            c.execute("DELETE FROM meta WHERE key = ?", (f"outputs.{cid}",))
+            _build(demo_id, spec, cid)
+            fresh = store.row("SELECT id FROM artifacts WHERE conversation_id = ?", (cid,))
+            for s in shares if fresh else []:
+                c.execute("INSERT INTO shares(token, artifact_id, version, created) VALUES (?, ?, ?, ?)", (s["token"], fresh["id"], s["version"], s["created"]))
+            c.execute("UPDATE conversations SET title = ?, updated = ? WHERE id = ?", (spec["title"].strip()[:120], updated, cid))
+            c.execute("COMMIT")
+        except BaseException:
+            c.execute("ROLLBACK")
+            raise
+    root, keep = tools.workspace(cid), set(_shipped_files(demo_id))
+    for rel in set((rec or {}).get("files") or []) - keep:
+        (root / rel).unlink(missing_ok=True)
+
+
+def update_if_stale(demo_id: str) -> bool:
+    spec = _spec(demo_id)
+    found = store.row("SELECT id FROM conversations WHERE demo = ? ORDER BY created LIMIT 1", (demo_id,))
+    if found is None:
+        return False
+    cid, rec = found["id"], _records().get(demo_id)
+    if rec and rec.get("digest") == _digest(demo_id, spec):
+        return False
+    if not _untouched(cid, demo_id, spec, rec):
+        log.info("demo %s changed in the app, but the chat was changed by the person: left as it is", demo_id)
+        return False
+    if _current(cid, demo_id, spec):
+        _record(demo_id, spec)
+        return False
+    _refresh(demo_id, spec, cid, rec)
+    _record(demo_id, spec)
+    log.info("demo %s updated to the app's copy", demo_id)
+    return True
+
+
 def _conversation(cid: str) -> dict:
     from app.engine.cmd_conversation import _get
     return _get(cid)
@@ -67,6 +205,17 @@ def _conversation(cid: str) -> dict:
 def conversation_of(demo_id: str) -> dict | None:
     found = store.row("SELECT id FROM conversations WHERE demo = ? ORDER BY created LIMIT 1", (demo_id,))
     return _conversation(found["id"]) if found else None
+
+
+def _about(demo_id: str) -> tuple[str, int]:
+    try:
+        about = json.loads((ROOT / demo_id / "about.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return "", 1000
+    if not isinstance(about, dict):
+        return "", 1000
+    order = about.get("order")
+    return str(about.get("blurb") or "").strip(), order if isinstance(order, int) and not isinstance(order, bool) else 1000
 
 
 def list_() -> list[dict]:
@@ -78,9 +227,10 @@ def list_() -> list[dict]:
             log.warning("%s", exc)
             continue
         conv = store.row("SELECT id FROM conversations WHERE demo = ? ORDER BY created LIMIT 1", (demo_id,))
-        out.append({"id": demo_id, "title": spec["title"].strip(), "artifact": (spec.get("artifact") or {}).get("title") or None,
+        blurb, order = _about(demo_id)
+        out.append({"id": demo_id, "title": spec["title"].strip(), "blurb": blurb, "order": order, "artifact": (spec.get("artifact") or {}).get("title") or None,
                     "files": len(spec.get("files") or []), "conversationId": conv["id"] if conv else None, "seeded": demo_id in done})
-    return out
+    return sorted(out, key=lambda d: (d["order"], d["title"].lower(), d["id"]))
 
 
 def _build(demo_id: str, spec: dict, cid: str) -> None:
@@ -153,6 +303,7 @@ def materialise(demo_id: str) -> dict:
             raise DemoError(str(exc)) from None
         raise
     _remember(demo_id)
+    _record(demo_id, spec)
     return _conversation(cid)
 
 
@@ -162,6 +313,10 @@ def seed() -> list[str]:
         done = set(_seeded())
         for demo_id in ids():
             if demo_id in done:
+                try:
+                    update_if_stale(demo_id)
+                except Exception as exc:
+                    log.warning("demo %s was not updated: %s", demo_id, exc)
                 continue
             if conversation_of(demo_id) is not None:
                 _remember(demo_id)

@@ -64,11 +64,15 @@ export class SidePanel {
   }
 
   setOutputs(files: OutputFile[], zip: string | null, used: Used): void {
-    const html = files.map((f) => `<li class="ft-panel-file"><span class="ft-panel-file-icon">${ui('file', 16)}</span><button type="button" class="ft-panel-file-name" data-path="${esc(f.path)}" title="Preview ${esc(f.caption || f.path)}">${esc(f.name)}</button><a class="ft-icon-btn" href="${esc(f.url)}" download title="Download ${esc(f.name)}" aria-label="Download ${esc(f.name)}">${ui('arrowDown', 14)}</a></li>`).join('');
+    const html = files.map((f) => `<li class="ft-panel-file"><span class="ft-panel-file-icon">${ui('file', 16)}</span><span class="ft-panel-file-main"><button type="button" class="ft-panel-file-name" data-path="${esc(f.path)}" title="Preview ${esc(f.caption || f.path)}">${esc(f.name)}</button>${f.caption ? `<span class="ft-panel-file-note">${esc(f.caption)}</span>` : ''}</span><a class="ft-icon-btn" href="${esc(f.url)}" download title="Download ${esc(f.name)}" aria-label="Download ${esc(f.name)}">${ui('arrowDown', 14)}</a></li>`).join('');
     if (this.files.dataset.v !== html) { this.files.dataset.v = html; this.files.innerHTML = html; }
     if (this.empty.hidden !== files.length > 0) this.empty.hidden = files.length > 0;
     if (this.all.hidden === !!zip) this.all.hidden = !zip;
-    if (zip) setAttr(this.all, 'href', zip);
+    if (zip) {
+      setAttr(this.all, 'href', zip);
+      setText(this.all, files.length === 1 ? 'Download as one zip' : `Download all ${files.length} as one zip`);
+      setAttr(this.all, 'title', 'Every file in this list in one zip, named after the chat. A zip in the list is its own file and stays inside it.');
+    }
     const row = (k: string, text: string) => setText(q(this.root, `[data-u="${k}"] .ft-muted`), text);
     row('uploads', count(used.uploads, 'file', 'files'));
     row('web', used.web_search + used.web_fetch ? [used.web_search ? count(used.web_search, 'search', 'searches') : '', used.web_fetch ? count(used.web_fetch, 'page', 'pages') : ''].filter(Boolean).join(', ') : 'none');

@@ -264,7 +264,9 @@
 .ft-proj-name { margin: 0 0 var(--space-2); font: 600 22px/1.25 var(--font-ui); overflow-wrap: anywhere; }
 .ft-proj-desc { margin: 0 0 var(--space-4); color: var(--text-secondary); line-height: 1.55; }
 .ft-proj-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin: var(--space-4) 0 var(--space-6); }
-.ft-proj-delete[data-armed] { border-color: var(--danger-fill); color: var(--danger-soft); }
+.ft-proj-toast-wrap { position: sticky; top: 0; height: 0; z-index: var(--z-raised); }
+.ft-proj-toast-wrap .ft-proj-toast[hidden] { display: none; }
+.ft-proj-toast { position: absolute; top: calc(-1 * var(--space-6)); left: 50%; transform: translateX(-50%); box-sizing: border-box; width: max-content; max-width: min(560px, 100%); margin: 0; padding: var(--space-2) var(--space-3); border: 1px solid var(--danger-fill); border-radius: var(--radius-md); background: var(--surface-2); box-shadow: var(--shadow-lg); color: var(--danger-soft); font: var(--fs-13) / 1.45 var(--font-ui); overflow-wrap: anywhere; }
 .ft-proj-sub { margin: 0 0 var(--space-2); font: 600 var(--fs-11) / 16px var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 .ft-proj-chats { display: grid; gap: 2px; }
 .ft-proj-chat-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: var(--space-3); height: var(--ctl-xl); padding: 0 var(--space-3); border: 0; border-radius: var(--radius-md); background: transparent; color: var(--text-primary); font: var(--fs-13) var(--font-ui); text-align: left; cursor: pointer; }
@@ -330,7 +332,6 @@
 .ft-sch-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); margin: var(--space-4) 0 var(--space-6); }
 .ft-sch-sub { margin: 0 0 var(--space-2); font: 600 var(--fs-11) / 16px var(--font-ui); letter-spacing: 0.06em; text-transform: uppercase; color: var(--text-muted); }
 .ft-sch-none { margin: 0; font-size: var(--fs-12); line-height: 1.6; color: var(--text-muted); }
-.ft-sch-delete[data-armed] { border-color: var(--danger-fill); color: var(--danger-soft); }
 .ft-sch-prompt-card { display: grid; gap: var(--space-2); margin-bottom: var(--space-6); padding: var(--space-4); border: 1px solid var(--line-1); border-radius: var(--radius-lg); background: var(--surface-1); }
 .ft-sch-prompt { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-size: var(--fs-14); line-height: 1.6; color: var(--text-primary); }
 .ft-sch-history { display: grid; gap: 2px; }

@@ -244,6 +244,13 @@ def outputs_of(conversation_id: str) -> list[dict]:
         return []
 
 
+def outputs_zip_name(conversation_id: str) -> str:
+    from app.engine import store
+    row = store.row("SELECT title FROM conversations WHERE id = ?", (conversation_id,))
+    base = re.sub(r'[\\/:*?"<>|\x00-\x1f]+', " ", (row or {}).get("title") or "").strip(" .")[:80].strip(" .")
+    return f"{base or 'Chat'} - all files.zip"
+
+
 def _save(key: str, value: object) -> None:
     from app.engine import store
     store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (key, json.dumps(value)))

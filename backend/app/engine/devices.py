@@ -132,7 +132,7 @@ async def _serve() -> None:
     from starlette.staticfiles import StaticFiles
 
     from app.main import app
-    cfg = uvicorn.Config(Gate(app, StaticFiles(directory=str(_dist()), html=True)), host="0.0.0.0", port=LAN_PORT, lifespan="off", log_level="warning")
+    cfg = uvicorn.Config(Gate(app, StaticFiles(directory=str(_dist()), html=True)), host="0.0.0.0", port=LAN_PORT, lifespan="off", log_config=None, log_level=None)
     _server = uvicorn.Server(cfg)
     _server.capture_signals = contextlib.nullcontext
     await _server.serve()

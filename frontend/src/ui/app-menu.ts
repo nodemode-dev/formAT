@@ -1,4 +1,4 @@
-import { DEMOS, demoCommand } from '../demos';
+import { demoCommand, demoList, setDemoList, type DemoDef } from '../demos';
 import type { AppState, View } from '../state/app-state';
 import { Commands, type Command } from './commands';
 import { isMac } from './dom';
@@ -33,6 +33,7 @@ export interface MenuHost {
 export interface AppMenus {
   commands: Commands;
   menus: MenuDef[];
+  setDemos(found: readonly DemoDef[]): void;
   keyLabel(id: string): string;
   key(e: KeyboardEvent): void;
 }
@@ -94,6 +95,7 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
   const view = (v: View) => (): boolean => host.state.view === v;
   const go = (id: string, label: string, v: View): Command => ({ id, label, checked: view(v), run: () => host.setView(v) });
   const inWindow = (): boolean => !!desktopWindow();
+  const native = isMacDesktop() ? new NativeMenus(commands, () => menus) : null;
 
   commands.add(
     { id: 'home', label: 'Home', keys: ['Alt+Mod+H'], run: () => host.newChat() },
@@ -121,7 +123,7 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     { id: 'toggle-files', label: 'Files', checked: () => host.side() === 'files', enabled: () => host.side() === 'files' || !!host.state.activeId, run: () => host.toggleFiles() },
     { id: 'toggle-browser', label: 'Browser', checked: () => host.side() === 'browser', run: () => host.toggleBrowser() },
     { id: 'toggle-background', label: 'Background Work', checked: () => host.backgroundOpen(), run: () => host.toggleBackground() },
-    { id: 'menus-in-window', label: 'Menus in Window', enabled: isMacDesktop, checked: menusInWindow, run: () => { try { localStorage.setItem(MENUS_IN_WINDOW_KEY, menusInWindow() ? '0' : '1'); } catch { return; } } },
+    { id: 'menus-in-window', label: 'Menus in Window', enabled: isMacDesktop, checked: menusInWindow, run: () => { try { localStorage.setItem(MENUS_IN_WINDOW_KEY, menusInWindow() ? '0' : '1'); } catch { return; } void native?.apply().catch(() => undefined); } },
 
     { id: 'palette', label: 'Command Palette', keys: ['Mod+K', 'Shift+Mod+K'], run: () => host.togglePalette() },
     go('go-chat', 'Chat', 'chat'),
@@ -134,7 +136,6 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     { id: 'window-zoom', label: isMac ? 'Zoom' : 'Maximize', enabled: inWindow, run: () => void desktopWindow()?.toggleMaximize().catch(() => undefined) },
 
     { id: 'shortcuts', label: 'Keyboard Shortcuts', keys: ['Mod+/'], run: () => host.shortcuts() },
-    ...DEMOS.map((d) => ({ id: demoCommand(d.id), label: d.title, description: d.blurb, run: () => host.openDemo(d.id) })),
     { id: 'about', label: 'About FormAT', run: () => host.openSettings('about') },
   );
 
@@ -144,7 +145,7 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     { label: 'View', items: () => ['toggle-sidebar', 'toggle-outputs', 'toggle-terminal', '-', 'toggle-files', 'toggle-browser', 'toggle-background', ...(isMacDesktop() ? ['-', 'menus-in-window'] : [])] },
     { label: 'Go', items: ['home', 'palette', '-', 'go-chat', 'go-projects', 'go-artifacts', 'go-scheduled', 'go-customize'] },
     { label: 'Window', items: ['window-minimize', 'window-zoom'] },
-    { label: 'Help', items: ['shortcuts', '-', { label: 'Demos', items: DEMOS.map((d) => demoCommand(d.id)) }, '-', 'about'] },
+    { label: 'Help', items: () => ['shortcuts', '-', ...(demoList().length ? [{ label: 'Demos', items: demoList().map((d) => demoCommand(d.id)) }, '-'] : []), 'about'] },
   ];
 
   const menubar = new MenuBar(bar, commands, menus, dialogOpen);
@@ -160,15 +161,25 @@ export function mountMenus(bar: HTMLElement, host: MenuHost): AppMenus {
     if (e.target.dataset.cmd) commands.run(e.target.dataset.cmd);
   });
 
-  if (wantsNativeMenus()) {
-    const native = new NativeMenus(commands, () => menus);
-    void native.build().catch(() => undefined);
+  if (native) {
+    if (wantsNativeMenus()) void native.build().catch(() => undefined);
     for (const topic of ['view', 'active', 'conversations'] as const) host.state.on(topic, () => native.refresh());
   }
+
+  let demoIds: string[] = [];
 
   return {
     commands,
     menus,
+    setDemos(found: readonly DemoDef[]): void {
+      setDemoList(found);
+      const same = demoList().length === demoIds.length && demoList().every((d, i) => demoCommand(d.id) === demoIds[i] && commands.get(demoIds[i])?.label === d.title && commands.get(demoIds[i])?.description === d.blurb);
+      if (same) return;
+      for (const id of demoIds) commands.remove(id);
+      demoIds = demoList().map((d) => demoCommand(d.id));
+      commands.add(...demoList().map((d): Command => ({ id: demoCommand(d.id), label: d.title, description: d.blurb, run: () => host.openDemo(d.id) })));
+      if (native && wantsNativeMenus()) void native.build().catch(() => undefined);
+    },
     keyLabel(id: string): string {
       const cmd = commands.get(id);
       return cmd ? commands.keyLabel(cmd) : '';
