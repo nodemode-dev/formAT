@@ -79,7 +79,7 @@
   <tr>
     <td width="33%" valign="top"><h4>Chat</h4>Edit any message and page between versions · Compaction of long chats · Search chats · Code colouring and math · Dictation · Command palette · Three demo chats that open without a key</td>
     <td width="33%" valign="top"><h4>Workspace</h4>Menus for every command (File, Edit, View, Go, Window, Help) · Settings window · Projects · Artifacts page · Files pane · Memory · Skills · Plugins and marketplaces · Connectors · Scheduled tasks · Built-in browser · Other devices</td>
-    <td width="33%" valign="top"><h4>Providers and formats</h4>Anthropic API · Claude Code route · OpenAI and Cursor adapters · Exports: <code>.docx</code> · <code>.xlsx</code> · <code>.pptx</code> · PDF</td>
+    <td width="33%" valign="top"><h4>Providers and formats</h4>Chat on the Anthropic API or the Claude Code route · Dictation with ElevenLabs Scribe, OpenAI or local Whisper · Exports: <code>.docx</code> · <code>.xlsx</code> · <code>.pptx</code> · PDF</td>
   </tr>
 </table>
 
