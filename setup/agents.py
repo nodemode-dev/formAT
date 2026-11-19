@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import os
 import re
 import shutil
@@ -9,12 +10,16 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend"))
 
-from app import routers  # noqa: E402
+from app import mcp_server, routers  # noqa: E402
 from app.agent_guide import tool_name, when  # noqa: E402
-from app.engine.commands import REGISTRY  # noqa: E402
+from app.engine import agents as gate  # noqa: E402
+from app.engine.commands import REGISTRY, catalogue  # noqa: E402
 
 SKILLS = ROOT / ".claude" / "skills"
 MIRROR = ROOT / ".agents" / "skills"
+MANIFEST = ROOT / "agents" / "manifest.json"
+APP = "format"
+DOCK = {"present": False, "positions": [], "tabs": []}
 MCP_URL = "http://127.0.0.1:8490/mcp"
 GROUPS = {
     "chat": "Chat with Claude", "conversation": "Chats", "message": "Chats", "artifact": "Artifacts", "files": "Chat files and outputs", "outputs": "Chat files and outputs",
@@ -94,6 +99,39 @@ def generated() -> tuple:
             ("format-harness/references/command-map.md", command_map_md()))
 
 
+def skill_entries() -> list:
+    out = []
+    for folder in sorted(p for p in SKILLS.iterdir() if (p / "SKILL.md").is_file()) if SKILLS.is_dir() else []:
+        subs = folder / "sub-skills"
+        names = sorted(p.name for p in subs.iterdir() if (p / "SUB-SKILL.md").is_file()) if subs.is_dir() else []
+        out.append({"name": folder.name, "sub_skills": names})
+    return out
+
+
+def manifest_text() -> str:
+    from app.main import app
+    rows = catalogue()
+    tools = mcp_server.to_tools(rows)
+    command_of = {t.name: c["id"] for t, c in zip(tools, rows)}
+    transports = (["stdio"] if (ROOT / "backend" / "app" / "mcp_stdio.py").is_file() else []) + (
+        ["http"] if any(getattr(r, "path", None) == "/mcp" for r in app.router.routes) else [])
+    body = {
+        "format": "form-agent-manifest",
+        "version": 1,
+        "app": APP,
+        "mcp": {
+            "tools": [t.name for t in tools],
+            "read_only": [t.name for t in tools if t.annotations.read_only_hint],
+            "approval_gated": [t.name for t in tools if command_of.get(t.name) not in gate.EXEMPT],
+            "transports": transports,
+        },
+        "skills": skill_entries(),
+        "dock": DOCK,
+        "extensions": None,
+    }
+    return json.dumps(body, indent=2) + "\n"
+
+
 def tree(folder: Path) -> dict:
     if not folder.is_dir():
         return {}
@@ -102,6 +140,8 @@ def tree(folder: Path) -> dict:
 
 def check() -> int:
     stale = []
+    if not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != manifest_text():
+        stale.append(MANIFEST.relative_to(ROOT).as_posix())
     for rel, text in generated():
         path = SKILLS / rel
         if (SKILLS / rel.split("/")[0]).is_dir() and (not path.is_file() or path.read_text(encoding="utf-8") != text):
@@ -121,6 +161,8 @@ def check() -> int:
 
 def sync() -> None:
     changed = []
+    if write(MANIFEST, manifest_text()):
+        changed.append(MANIFEST.relative_to(ROOT).as_posix())
     for rel, text in generated():
         if (SKILLS / rel.split("/")[0]).is_dir() and write(SKILLS / rel, text):
             changed.append(rel)

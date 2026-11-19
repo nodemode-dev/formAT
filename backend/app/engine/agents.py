@@ -5,6 +5,7 @@ from app.engine import events
 from app.engine.commands import CommandError, command
 
 WAIT_SECONDS = 120
+EXEMPT: frozenset[str] = frozenset()
 _seen: dict[str, dict] = {}
 _lock = threading.Lock()
 
@@ -43,6 +44,8 @@ def require(client: str, channel: str) -> None:
 
 
 def require_outside(client: str, channel: str, cid: str, params: dict | None) -> None:
+    if cid in EXEMPT:
+        return
     require(client, channel)
     if cid == "settings.set" and isinstance(params, dict) and params.get("key") == "outsideAgents":
         raise CommandError("Only the person, in FormAT's window, can change whether outside agents may use FormAT.", 403)
