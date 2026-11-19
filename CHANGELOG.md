@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.27.0 · 2026-11-19
+
+- Only the FormAT window can change things without asking. Everything else that calls the engine on this computer is an outside agent: a coding agent over MCP, `./format mcp`, `./format cli` and any other program. Their calls follow the choice in Settings, Outside agents: Ask me (the default), Allowed or Blocked. Other devices works as before: a paired phone or computer is the window.
+- Under Ask me the window asks before every call from an outside agent, reads included, with Allow and Block, and the answer holds for every agent on this computer until you change it in Settings. A call that gets no answer within 120 seconds fails and can be tried again. Under Blocked every such call is refused. Only the window can change the choice; an agent or a command that asks for it to be changed is refused.
+- The command line now counts as an outside agent. Under Ask me, a script that uses `./format cli` waits for your answer in the window the first time; choose Allowed in Settings, Outside agents before running scripts unattended.
+- The saved Outside agents choice is protected with a key kept in the system keychain. If the saved choice was changed outside FormAT, or was saved by an older version, FormAT reads it as Ask me, and Settings, Outside agents says so. If you had chosen Allowed before this version, you are asked once more after updating: choose Allowed again in the window. On a computer with no keychain that FormAT can use, the saved choice stands as it is.
+- The engine's live updates and its terminal connections open only for the window and for paired devices, and uploads and dictation are accepted only from them. Changes sent from outside the window that do not go through the outside-agents choice are refused.
+- Commands Claude runs with the bash tool no longer receive FormAT's API keys or anything else from the engine's environment beyond a short list of ordinary variables (the path, your home folder, your language and time zone, the terminal type and the like). Proxy variables are not on that list: behind a proxy, set it in the command or in your login profile.
+- Terminal tabs no longer receive FormAT's API keys, FormAT's own `FORMAT_*` settings or other variables from the engine whose names look like secrets (API key, token, secret, password, credential, cookie). The rest of your shell environment in a terminal tab is unchanged, and whatever your login profile sets is still there.
+- The desktop app gives its engine as long as it needs to start, as before. Once the engine is up it has 10 seconds to hand the window what it needs; if that does not happen, the app shows the "engine failed to start" message with the place of its log, where it would otherwise have waited with no window.
+- MCP: `resources/list` answers with the refusal when an outside agent's call is refused, where it used to answer with an empty list.
+- `./format agents sync` also writes `agents/manifest.json`, which says what FormAT offers agents (its tools, which of them only read, its skills, how to connect). `./format agents sync --check` changes nothing, names the agent files that are out of date and exits 1 when there are any.
+- Documents: the manual, the README and the agent files say how outside agents are asked and what the bash tool and terminal tabs receive. The README's providers box says what FormAT uses: chat on the Anthropic API or through Claude Code, dictation with ElevenLabs Scribe, OpenAI or local Whisper.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`). New dependency in the engine: `keyring` 25.7.0 (MIT), which keeps the key that protects the Outside agents choice in the system keychain.
+
 ## 0.26.3 · 2026-11-15
 
 - The desktop app tidies up after itself. On macOS and Linux, quitting removes the folder the engine unpacks into the temporary folder, where it used to leave one per launch; at every start the engine also removes such folders left by a crash or by an older version, and keeps any that belong to a FormAT that is still running or to another program. On Windows quitting is unchanged, and the clean-up at the next start is new there too.

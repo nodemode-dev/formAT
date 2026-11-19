@@ -1093,7 +1093,7 @@ dependencies = [
 
 [[package]]
 name = "format"
-version = "0.26.3"
+version = "0.27.0"
 dependencies = [
  "objc2",
  "objc2-app-kit",
