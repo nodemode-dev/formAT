@@ -251,12 +251,12 @@ fn main() {
                 let mut log = engine_log(&handle);
                 let mut tail: Vec<String> = Vec::new();
                 let key_pattern = regex::Regex::new(r"format-window-key: ([A-Za-z0-9_-]{32,})").unwrap();
-                let started = std::time::Instant::now();
+                let mut address_at: Option<std::time::Instant> = None;
                 let mut port: Option<u16> = None;
                 let mut key: Option<String> = None;
                 let mut opened = false;
                 loop {
-                    let event = if key.is_some() {
+                    let event = if key.is_some() || port.is_none() {
                         match rx.recv().await {
                             Some(event) => event,
                             None => break,
@@ -264,7 +264,7 @@ fn main() {
                     } else {
                         match rx.try_recv() {
                             Ok(event) => event,
-                            Err(_) if started.elapsed() >= KEY_WAIT => {
+                            Err(_) if address_at.is_some_and(|at| at.elapsed() >= KEY_WAIT) => {
                                 tail.push("the engine did not hand over the window key in time".to_owned());
                                 break;
                             }
@@ -278,12 +278,15 @@ fn main() {
                         CommandEvent::Stdout(bytes) => {
                             let text = String::from_utf8_lossy(&bytes).into_owned();
                             if key.is_none() {
-                                if let Some(found) = key_pattern.captures(&text) {
-                                    key = Some(found[1].to_string());
-                                    continue;
+                                key = key_pattern.captures(&text).map(|found| found[1].to_string());
+                                if key.is_some() {
+                                    String::new()
+                                } else {
+                                    text
                                 }
+                            } else {
+                                text
                             }
-                            text
                         }
                         CommandEvent::Stderr(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
                         CommandEvent::Terminated(status) => {
@@ -298,13 +301,16 @@ fn main() {
                         let _ = file.write_all(line.as_bytes());
                         let _ = file.flush();
                     }
-                    if !opened {
+                    if !opened && !line.is_empty() {
                         tail.push(line.trim_end().to_owned());
                         if tail.len() > LOG_TAIL {
                             tail.remove(0);
                         }
                         if let Some(captures) = pattern.captures(&line) {
                             port = captures[1].parse().ok();
+                            if port.is_some() {
+                                address_at.get_or_insert_with(std::time::Instant::now);
+                            }
                         }
                     }
                     if let (false, Some(found), Some(value)) = (opened, port, key.as_deref()) {
