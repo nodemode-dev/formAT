@@ -51,3 +51,16 @@ def test_the_bash_tool_gives_its_shell_no_secret_from_the_engine(app, monkeypatc
     assert not failed and "done-42" in out
     assert "MARKER-SECRET" not in out and "FORMAT_WINDOW_KEY" not in out
     assert "PATH=" in out and "FORMAT_WORKSPACE=" in out
+
+
+def test_a_terminal_tab_gets_the_persons_environment_without_the_engines_secrets(app, monkeypatch):
+    from app.core import config
+    from app.engine import terminal
+    for name in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY", "ELEVENLABS_API_KEY", "FORMAT_WINDOW_KEY_STDOUT", "MY_TOKEN", "DB_PASSWORD", "LOADED_FROM_ENV_FILE", "FORMAT_PORT"):
+        monkeypatch.setenv(name, "MARKER-SECRET")
+    monkeypatch.setattr(config, "ENV_FILE_KEYS", {*config.ENV_FILE_KEYS, "LOADED_FROM_ENV_FILE"})
+    monkeypatch.setenv("PERSONS_OWN_SETTING", "kept")
+    env = terminal._env()
+    assert "MARKER-SECRET" not in "".join(env.values())
+    assert env["PERSONS_OWN_SETTING"] == "kept" and env["PATH"] and env["TERM"] == "xterm-256color"
+    assert env["FORMAT_TERMINAL"] == "1" and env["FORMAT_ENGINE_URL"].startswith("http://127.0.0.1:")
