@@ -89,10 +89,39 @@ def write(path: Path, text: str) -> bool:
     return True
 
 
+def generated() -> tuple:
+    return (("format-driving/references/tools.md", tools_md()), ("format-harness/references/tool-map.md", tool_map_md()),
+            ("format-harness/references/command-map.md", command_map_md()))
+
+
+def tree(folder: Path) -> dict:
+    if not folder.is_dir():
+        return {}
+    return {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob("*")) if p.is_file()}
+
+
+def check() -> int:
+    stale = []
+    for rel, text in generated():
+        path = SKILLS / rel
+        if (SKILLS / rel.split("/")[0]).is_dir() and (not path.is_file() or path.read_text(encoding="utf-8") != text):
+            stale.append((SKILLS / rel).relative_to(ROOT).as_posix())
+    source, mirror = tree(SKILLS), tree(MIRROR)
+    for rel in sorted(set(source) | set(mirror)):
+        if source.get(rel) != mirror.get(rel):
+            stale.append((MIRROR / rel).relative_to(ROOT).as_posix())
+    if stale:
+        print("[format] out of date (run ./format agents sync):")
+        for rel in stale:
+            print(f"  {rel}")
+        return 1
+    print(f"[format] {len(REGISTRY)} commands; the agent files are up to date")
+    return 0
+
+
 def sync() -> None:
     changed = []
-    for rel, text in (("format-driving/references/tools.md", tools_md()), ("format-harness/references/tool-map.md", tool_map_md()),
-                      ("format-harness/references/command-map.md", command_map_md())):
+    for rel, text in generated():
         if (SKILLS / rel.split("/")[0]).is_dir() and write(SKILLS / rel, text):
             changed.append(rel)
     if MIRROR.exists():
@@ -131,12 +160,14 @@ def install(user: bool) -> None:
 def main() -> None:
     args = sys.argv[1:]
     sub = args[0] if args else "sync"
+    if sub == "sync" and "--check" in args:
+        raise SystemExit(check())
     if sub == "sync":
         sync()
     elif sub == "install":
         install("--user" in args)
     else:
-        raise SystemExit("usage: ./format agents [sync|install [--user]]")
+        raise SystemExit("usage: ./format agents [sync [--check]|install [--user]]")
 
 
 if __name__ == "__main__":

@@ -22,7 +22,7 @@ if /i "%CMD%"=="native" goto native
 if /i "%CMD%"=="agents" goto agents
 if /i "%CMD%"=="doctor" ( call setup\doctor.bat & goto :eof )
 if /i "%CMD%"=="clean" ( call setup\clean.bat %1 & goto :eof )
-echo usage: .\format.bat [boot^|install^|install-voice^|install-browser^|install-desktop^|freeze^|desktop dev^|desktop build^|backend^|frontend^|build^|serve^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync^|install [--user]]^|doctor^|clean [--all]]
+echo usage: .\format.bat [boot^|install^|install-voice^|install-browser^|install-desktop^|freeze^|desktop dev^|desktop build^|backend^|frontend^|build^|serve^|cli ^<command^>^|mcp^|native [build^|info^|window]^|agents [sync [--check]^|install [--user]]^|doctor^|clean [--all]]
 echo Always run it as .\format.bat from this folder: plain "format" elsewhere is Windows' disk formatter.
 exit /b 2
 :boot

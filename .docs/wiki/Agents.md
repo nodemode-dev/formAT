@@ -15,6 +15,7 @@ Their `references/tools.md`, `tool-map.md` and `command-map.md` are generated. A
 
 ```bash
 ./format agents sync      # regenerates the references and mirrors both skills to .agents/skills for Codex
+./format agents sync --check   # changes nothing; exits 1 and names each generated or mirrored file that is out of date
 ```
 
 `./format agents install --user` registers Format with Codex and Claude Code at user scope.
