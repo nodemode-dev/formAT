@@ -2,14 +2,14 @@
 
 ## The MCP server
 
-`backend/app/mcp_server.py` builds the server from the command registry: one tool per command, named and described from `agent_guide.GUIDE` (verb_noun names with a "Use when" sentence; the description ends with the engine command id), plus `run_command`, chat and artifact resources and three prompts. It is served over Streamable HTTP at `/mcp` (`routers/mcp_http.py`) and over stdio by `./format mcp` (`mcp_stdio.py`, a proxy to the running engine with the header `x-format-agent`). Outside agents pass `agents.require`, which follows the `outsideAgents` setting (ask shows a prompt in the window).
+`backend/app/mcp_server.py` builds the server from the command registry: one tool per command, named and described from `agent_guide.GUIDE` (verb_noun names with a "Use when" sentence; the description ends with the engine command id), plus `run_command`, chat and artifact resources and three prompts. It is served over Streamable HTTP at `/mcp` (`routers/mcp_http.py`) and over stdio by `./format mcp` (`mcp_stdio.py`, a proxy to the running engine with the header `x-format-agent`). Outside agents pass `agents.require`, which follows the `outsideAgents` setting (ask shows a prompt in the window and every tool waits for the answer, reads included). A command call on `/api/commands/{id}` without the window key counts as outside too, which includes `./format cli`; `settings.set outsideAgents` from an outside caller is refused, so only the window changes the choice.
 
 ## The skills
 
 | Skill | For |
 | --- | --- |
 | `.claude/skills/format-driving` | an agent using a running Format: ask Claude, publish artifacts, terminals, schedules |
-| `.claude/skills/format-harness` | an agent changing and releasing Format: the orchestrator with twelve specialists and the completion gate |
+| `.claude/skills/format-harness` | an agent changing and releasing Format: the orchestrator, `harness-director`, with its specialists and the completion gate |
 
 Their `references/tools.md`, `tool-map.md` and `command-map.md` are generated. After any command change run:
 

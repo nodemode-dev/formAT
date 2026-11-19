@@ -94,14 +94,14 @@
 ./format mcp                                   # MCP server on stdio for Claude Code, Codex and Cursor
 ```
 
-`.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. See [`AGENTS.md`](AGENTS.md).
+`.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. FormAT's window asks before an outside agent does anything, and the command line counts as one: under the default, Ask me, these calls wait for your answer in the window. `./format agents sync` regenerates the agent files and `agents/manifest.json`, and `--check` reports any that are out of date. See [`AGENTS.md`](AGENTS.md).
 
 ## Under the hood
 
 - **Engine:** Python 3.12 and FastAPI on `127.0.0.1:8490`, with a store, an event stream and one module per command group.
 - **Window:** vanilla TypeScript and Vite, with inline SVG icons and no UI framework.
 - **Desktop:** Tauri 2 around the engine frozen with PyInstaller, so the app needs no Python or Node. It starts behind the family's splash and shows the window once the page has drawn; on macOS the menus are in the system menu bar.
-- **Tested:** 96 engine tests (the local guard, commands, approvals, chat tree, artifacts, the devices gate, MCP, migrations, versions, release profiles) and a window smoke that loads the built window with no error and no layout shift.
+- **Tested:** engine tests (the local guard, commands, approvals, chat tree, artifacts, the devices gate, MCP, migrations, versions, release profiles) and a window smoke that loads the built window with no error and no layout shift.
 
 ## Download
 
