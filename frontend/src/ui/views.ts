@@ -166,6 +166,7 @@ export class SettingsView {
         <h3 class="ft-prefs-label">Access</h3>
         <label class="ft-field"><span>Agents on this computer</span><select class="ft-input" data-g="outsideAgents"><option value="ask">Ask me</option><option value="allowed">Allowed</option><option value="blocked">Blocked</option></select></label>
         <div class="ft-allowed"><span class="ft-allowed-label">Seen:</span><span class="ft-agents-seen">none yet</span></div>
+        <p class="ft-set-note ft-seal-say" aria-live="polite"></p>
       </section>`);
     prefs.add('Long chats', 'compress', `
       <p class="ft-set-note">When a chat fills most of the model's context window, Claude summarizes the earlier messages after a reply and continues from the summary. The earlier messages stay on screen; images and files in them are not carried into the summary. You can also run it from the command palette.</p>
@@ -287,6 +288,7 @@ export class SettingsView {
     const sel = q<HTMLSelectElement>(this.root, '[data-g="outsideAgents"]');
     const want = this.state.settings.outsideAgents ?? 'ask';
     if (sel.value !== want) sel.value = want;
+    setText(q(this.root, '.ft-seal-say'), this.state.settings.sealBroken === true ? 'The saved outside agents choice was changed outside FormAT or saved by an older version, so it is back to Ask.' : '');
     void run<{ clients: Array<{ name: string; channel: string }> }>('agents.status').then((r) => {
       const text = r.clients.length ? r.clients.map((c) => `${c.name} (${c.channel})`).join(', ') : 'none yet';
       setText(q(this.root, '.ft-agents-seen'), text);

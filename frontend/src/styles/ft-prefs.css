@@ -55,6 +55,7 @@
 .ft-prefs-dlg .ft-field.ft-prefs-wide, .ft-prefs-cols > .ft-field { grid-template-columns: minmax(0, 1fr); padding: 0; }
 .ft-prefs-dlg .ft-field.ft-check { align-self: auto; min-height: 30px; padding: 0; }
 .ft-prefs-dlg .ft-set-note { padding: 2px 2px 0; font-size: var(--fs-12); line-height: 1.5; }
+.ft-prefs-dlg .ft-seal-say { min-height: calc(var(--fs-12) * 1.5 + 2px); }
 .ft-prefs-dlg .ft-input { min-height: 0; padding: var(--space-2); border: 1px solid var(--border-color); border-radius: var(--radius); background: var(--bg-tertiary); font-size: var(--fs-12); }
 .ft-prefs-dlg select.ft-input, .ft-prefs-dlg input.ft-input { height: 30px; padding: 0 var(--space-2); }
 .ft-prefs-dlg .ft-input:focus { border-color: var(--accent-color); }

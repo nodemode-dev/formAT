@@ -1,6 +1,7 @@
 from conftest import set_policy
 
 from app.core import window_key
+from app.engine.cmd_settings import current
 from app.engine.commands import catalogue
 
 OPEN = {("POST", "/api/window/key")}
@@ -51,6 +52,46 @@ def test_the_bash_tool_gives_its_shell_no_secret_from_the_engine(app, monkeypatc
     assert not failed and "done-42" in out
     assert "MARKER-SECRET" not in out and "FORMAT_WINDOW_KEY" not in out
     assert "PATH=" in out and "FORMAT_WORKSPACE=" in out
+
+
+def test_a_stored_allowed_without_a_seal_reads_as_ask_and_says_so(app):
+    import json
+
+    import keyring
+    from keyring.backend import KeyringBackend
+
+    from app.core import seal
+    from app.engine import store
+
+    class Stand(KeyringBackend):
+        priority = 1
+        memory: dict = {}
+
+        def get_password(self, service, username):
+            return self.memory.get((service, username))
+
+        def set_password(self, service, username, password):
+            self.memory[(service, username)] = password
+
+        def delete_password(self, service, username):
+            self.memory.pop((service, username), None)
+
+    before = keyring.get_keyring()
+    keyring.set_keyring(Stand())
+    seal.reset()
+    try:
+        store.run("DELETE FROM meta WHERE key = 'setting.seal'")
+        store.run("INSERT INTO meta(key, value) VALUES ('setting.outsideAgents', ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (json.dumps("allowed"),))
+        first = current()
+        assert first["outsideAgents"] == "ask" and first["sealBroken"] is True
+        set_policy("allowed")
+        again = current()
+        assert again["outsideAgents"] == "allowed" and again["sealBroken"] is False
+    finally:
+        keyring.set_keyring(before)
+        seal.reset()
+        store.run("DELETE FROM meta WHERE key = 'setting.seal'")
+        set_policy("allowed")
 
 
 def test_a_terminal_tab_gets_the_persons_environment_without_the_engines_secrets(app, monkeypatch):
