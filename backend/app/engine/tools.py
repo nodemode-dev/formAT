@@ -438,6 +438,23 @@ def run(name: str, args: dict, conversation_id: str, on_output, cancel: threadin
         return f"{type(exc).__name__}: {exc}", True
 
 
+BASH_ENV = ("PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LANGUAGE", "TERM", "COLORTERM", "TZ", "TMPDIR")
+BASH_ENV_WINDOWS = ("SYSTEMROOT", "SYSTEMDRIVE", "WINDIR", "COMSPEC", "PATHEXT", "TEMP", "TMP", "USERPROFILE", "USERNAME",
+                    "USERDOMAIN", "COMPUTERNAME", "HOMEDRIVE", "HOMEPATH", "APPDATA", "LOCALAPPDATA", "PROGRAMDATA",
+                    "PROGRAMFILES", "PROGRAMFILES(X86)", "PROGRAMW6432", "COMMONPROGRAMFILES", "COMMONPROGRAMFILES(X86)",
+                    "COMMONPROGRAMW6432", "ALLUSERSPROFILE", "PUBLIC", "OS", "PROCESSOR_ARCHITECTURE",
+                    "PROCESSOR_IDENTIFIER", "NUMBER_OF_PROCESSORS", "PSMODULEPATH")
+
+
+def bash_env(root: Path) -> dict[str, str]:
+    names = BASH_ENV + (BASH_ENV_WINDOWS if os.name == "nt" else ())
+    env = {k: v for k, v in os.environ.items() if k.upper() in names or k.startswith("LC_")}
+    env.setdefault("TERM", "dumb")
+    env["PWD"] = str(root)
+    env["FORMAT_WORKSPACE"] = str(root)
+    return env
+
+
 def _bash(root: Path, args: dict, on_output, cancel: threading.Event) -> tuple[str, bool]:
     command = args.get("command")
     if not isinstance(command, str) or not command.strip():
@@ -450,7 +467,7 @@ def _bash(root: Path, args: dict, on_output, cancel: threading.Event) -> tuple[s
     s = current()
     if sandbox.status(s)["on"]:
         argv = sandbox.wrap(argv, root, bool(s.get("sandboxNetwork")))
-    env = dict(os.environ, FORMAT_WORKSPACE=str(root))
+    env = bash_env(root)
     proc = subprocess.Popen(argv, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL, env=env,
                             start_new_session=os.name != "nt")
     chunks: list[str] = []

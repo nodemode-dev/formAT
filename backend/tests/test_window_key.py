@@ -38,3 +38,16 @@ def test_a_socket_ticket_needs_the_key_and_is_spent_once(bare, client):
     assert bare.post("/api/window/ticket").status_code == 403
     ticket = client.post("/api/window/ticket").json()["ticket"]
     assert window_key.spend(ticket) and not window_key.spend(ticket)
+
+
+def test_the_bash_tool_gives_its_shell_no_secret_from_the_engine(app, monkeypatch):
+    import threading
+
+    from app.engine import tools
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "MARKER-SECRET-1")
+    monkeypatch.setenv("FORMAT_WINDOW_KEY_STDOUT", "1")
+    monkeypatch.setenv("SOME_SERVICE_TOKEN", "MARKER-SECRET-2")
+    out, failed = tools.run("bash", {"command": "env; echo done-$((40 + 2))"}, "bash-env-check", lambda _: None, threading.Event())
+    assert not failed and "done-42" in out
+    assert "MARKER-SECRET" not in out and "FORMAT_WINDOW_KEY" not in out
+    assert "PATH=" in out and "FORMAT_WORKSPACE=" in out
