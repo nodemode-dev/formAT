@@ -102,6 +102,7 @@ Two page quirks: the Miranda page lists its download under the name `Uranus - Ar
 | Libraries inside the Pillow wheel | libjpeg, libpng, libtiff, libwebp, libavif, OpenJPEG, Little CMS, HarfBuzz, Brotli, zstd, xz, libxcb: permissive (see the wheel's LICENSE); FreeType 2.14.3 used under the FreeType License | Portions of this software are copyright (c) 2026 The FreeType Project (www.freetype.org). All rights reserved. |
 | certifi | MPL-2.0 | engine: its `cacert.pem`, frozen unedited |
 | segno | BSD-3-Clause | the pairing QR code |
+| keyring | MIT | keeps the key that seals the outside-agent choice in the system keychain |
 | FastAPI, Starlette, Pydantic | MIT | engine |
 | Uvicorn, httpx | BSD-3-Clause | engine |
 | wgpu, pollster, bytemuck, sysinfo | MIT or Apache-2.0 | native crate |

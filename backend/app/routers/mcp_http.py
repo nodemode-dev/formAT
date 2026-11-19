@@ -12,7 +12,7 @@ _server = None
 
 async def _call(cid: str, params: dict, client: str):
     def run():
-        agents.require(client, "http")
+        agents.require_outside(client, "http", cid, params)
         return dispatch(cid, params)
     return await anyio.to_thread.run_sync(run)
 

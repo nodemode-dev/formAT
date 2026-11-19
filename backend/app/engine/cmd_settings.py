@@ -1,6 +1,7 @@
 import json
 
 from app import providers
+from app.core import seal
 from app.engine import events, store
 from app.engine.commands import CommandError, command
 from app.harness.request import EFFORT_ORDER, efforts_for
@@ -43,7 +44,7 @@ def current() -> dict:
     out = dict(DEFAULTS)
     for r in store.rows("SELECT key, value FROM meta WHERE key LIKE 'setting.%'"):
         out[r["key"][8:]] = json.loads(r["value"])
-    return out
+    return seal.effective(out)
 
 
 @command("models.list", "Models", mutates=False,
@@ -78,6 +79,12 @@ def set_(key: str, value: object) -> dict:
     if key in CHOICES and value not in CHOICES[key]:
         raise CommandError(f"settings.set: {key} must be one of {', '.join(CHOICES[key])}")
     store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (f"setting.{key}", json.dumps(value)))
+    if key in seal.SEALED:
+        stamp = seal.mark({**current(), key: value})
+        if stamp is None:
+            store.run("DELETE FROM meta WHERE key = ?", (f"setting.{seal.FIELD}",))
+        else:
+            store.run("INSERT INTO meta(key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", (f"setting.{seal.FIELD}", json.dumps(stamp)))
     settings = current()
     events.publish("settings.changed", settings=settings)
     if key == "permissionMode" and value == "auto":

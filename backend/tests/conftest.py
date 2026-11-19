@@ -91,8 +91,17 @@ def app():
 def client(app):
     from fastapi.testclient import TestClient
 
-    with TestClient(app, base_url=own_origin()) as c:
+    from app.core import window_key
+
+    with TestClient(app, base_url=own_origin(), headers={window_key.HEADER: window_key.KEY}) as c:
         yield c
+
+
+@pytest.fixture(scope="session")
+def bare(app, client):
+    from fastapi.testclient import TestClient
+
+    return TestClient(app, base_url=own_origin())
 
 
 @pytest.fixture(scope="session")

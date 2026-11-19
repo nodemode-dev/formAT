@@ -20,7 +20,7 @@ rm -rf build/pyinstaller dist-engine
   --add-data "$FORMAT_ROOT/frontend/dist:frontend_dist" --add-data "$FORMAT_ROOT/backend/app/demos:app/demos" \
   --collect-submodules app --collect-submodules uvicorn --collect-submodules websockets --collect-submodules anthropic \
   --collect-submodules mcp.server --collect-submodules mcp.client --collect-submodules mcp.shared --hidden-import mcp.types --exclude-module mcp.cli --collect-data certifi --collect-data docx --collect-data pptx --collect-submodules reportlab --collect-submodules openpyxl \
-  --hidden-import segno --hidden-import multipart --hidden-import python_multipart \
+  --hidden-import segno --hidden-import multipart --hidden-import python_multipart --collect-submodules keyring --copy-metadata keyring \
   "${optional[@]}" \
   --exclude-module tkinter \
   "$FORMAT_ROOT/backend/format_engine.py"

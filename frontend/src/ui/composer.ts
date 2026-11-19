@@ -1,4 +1,5 @@
 import { run } from '../engine-client/api';
+import { keyHeaders } from '../engine-client/window-key';
 import type { AppState, ConnectorInfo, FileComment, FileInfo, Settings } from '../state/app-state';
 import { guessKind, kindLabel, openViewer, preview, type Shown } from './attach-view';
 import { signIn } from './customize-view';
@@ -456,7 +457,7 @@ export class Composer {
     const form = new FormData();
     form.append('file', f, f.name);
     try {
-      const res = await fetch('/api/uploads', { method: 'POST', body: form });
+      const res = await fetch('/api/uploads', { method: 'POST', body: form, headers: keyHeaders() });
       const body = await res.json();
       if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
       p.file = body.file as FileInfo;

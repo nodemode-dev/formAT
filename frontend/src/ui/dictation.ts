@@ -1,3 +1,5 @@
+import { keyHeaders } from '../engine-client/window-key';
+
 interface DictationHooks {
   state(on: boolean, label: string): void;
   text(t: string): void;
@@ -131,7 +133,7 @@ export class Dictation {
     const pref = this.engine();
     if (pref === 'scribe' || pref === 'local' || pref === 'openai') form.append('engine', pref);
     try {
-      const res = await fetch('/api/voice/transcribe', { method: 'POST', body: form });
+      const res = await fetch('/api/voice/transcribe', { method: 'POST', body: form, headers: keyHeaders() });
       const body = await res.json();
       if (!res.ok || !body.ok) throw new Error(body.error || `transcription failed (${res.status})`);
       if (body.text) this.hooks.text(String(body.text));

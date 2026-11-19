@@ -1,0 +1,40 @@
+from conftest import set_policy
+
+from app.core import window_key
+from app.engine.commands import catalogue
+
+OPEN = {("POST", "/api/window/key")}
+
+
+def test_every_write_route_refuses_a_call_without_the_window_key(app, bare):
+    found = []
+    for path, item in app.openapi()["paths"].items():
+        for method in item:
+            if method.upper() in ("GET", "HEAD", "OPTIONS") or path == "/api/commands/{cid}" or (method.upper(), path) in OPEN:
+                continue
+            r = bare.request(method.upper(), path.replace("{", "x").replace("}", ""))
+            if r.status_code != 403:
+                found.append(f"{method.upper()} {path} {r.status_code}")
+    assert found == []
+
+
+def test_a_command_without_the_window_key_is_an_outside_agent(bare, client):
+    set_policy("blocked")
+    try:
+        answered = [c["id"] for c in catalogue() if bare.post(f"/api/commands/{c['id']}", json={}).status_code != 403]
+        assert answered == []
+        assert client.post("/api/commands/settings.get", json={}).status_code == 200
+    finally:
+        set_policy("allowed")
+
+
+def test_an_outside_caller_cannot_change_the_outside_agent_choice(bare):
+    set_policy("allowed")
+    r = bare.post("/api/commands/settings.set", json={"key": "outsideAgents", "value": "blocked"})
+    assert r.status_code == 403 and "window" in r.json()["error"]
+
+
+def test_a_socket_ticket_needs_the_key_and_is_spent_once(bare, client):
+    assert bare.post("/api/window/ticket").status_code == 403
+    ticket = client.post("/api/window/ticket").json()["ticket"]
+    assert window_key.spend(ticket) and not window_key.spend(ticket)

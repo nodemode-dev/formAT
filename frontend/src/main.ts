@@ -1,6 +1,7 @@
 import { App } from './app';
 import { health, run } from './engine-client/api';
 import { EventStream } from './engine-client/events';
+import { loadWindowKey } from './engine-client/window-key';
 import { mountBootFrame } from './ui/boot-frame';
 import { VERSION } from './version';
 
@@ -51,7 +52,7 @@ function reveal(): void {
 }
 
 const app = new App(host);
-const ready = Promise.all([document.fonts.ready, app.load()]);
+const ready = Promise.all([document.fonts.ready, loadWindowKey().then(() => app.load())]);
 ready.then(() => {
   reveal();
   app.setView('chat');

@@ -1,3 +1,5 @@
+import { socketTicket } from './window-key';
+
 export interface EngineEvent {
   seq: number;
   type: string;
@@ -49,9 +51,16 @@ export class EventStream {
   }
 
   private connect(): void {
-    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     this.setState('connecting');
-    const socket = new WebSocket(`${proto}//${location.host}/api/events`);
+    this.socket = null;
+    void socketTicket().catch(() => '').then((ticket) => {
+      if (!this.stopped) this.open(ticket);
+    });
+  }
+
+  private open(ticket: string): void {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socket = new WebSocket(`${proto}//${location.host}/api/events?ticket=${encodeURIComponent(ticket)}`);
     this.socket = socket;
     socket.addEventListener('open', () => {
       this.retry = 0;

@@ -1173,3 +1173,10 @@ The command only stored the choice and said it took effect at the next start. `N
 - logged: v0.26.3 · 2026-11-15
 
 The window kept its own copy of each demo's id, title and blurb. `load` now reads `demo.list` with the other boot commands (a failure gives an empty list and does not stop the load) and calls `setDemos`, which stores the list and registers one command per demo: only when the list differs from the one registered, so a repeat load does not rebuild the macOS menu bar. The Help menu shows its Demos submenu only when the list is not empty. The sidebar's order of demos and the palette follow the same list. Adding a demo is now a folder with an `about.json` and nothing in the window.
+
+### src/engine-client/window-key.ts, api.ts, events.ts, src/main.ts, src/ui/terminal-dock.ts, composer.ts, dictation.ts, projects-view.ts, customize-view.ts · the window sends its key
+- refers-to: src/engine-client/window-key.ts `loadWindowKey`, `keyHeaders`, `socketTicket`; src/engine-client/api.ts `run`; src/engine-client/events.ts `connect`, `open`; src/main.ts boot; src/ui/terminal-dock.ts `connect`, `attach`; the four `/api/uploads` and `/api/voice/transcribe` fetches
+- kind: decision
+- logged: unreleased · 2026-11-18
+
+The engine now refuses writes without the window key (backend HASHOUT, same date). `loadWindowKey` runs once before `app.load`: the packaged global `__FORMAT_WINDOW_KEY` first (read once, then deleted), then the key kept in sessionStorage (`format-window-key`) if it still gets a socket ticket, and only then the development bootstrap `POST /api/window/key`, so a reload does not ask the bootstrap again. `run` and every raw POST fetch send `X-Format-Window-Key`; the events socket and each terminal tab fetch a one-time ticket before they open (`?ticket=`), and a tab closed while its ticket is pending never opens a socket. A paired device has no key and is let through by the engine's pairing check. Nothing visible changes and no node is rebuilt.
