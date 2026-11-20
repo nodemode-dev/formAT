@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.30.1 · 2026-11-20
+
+- The macOS desktop app builds again. Both macOS builds of 0.30.0 stopped while the engine was being packaged, because the list of packages macOS installs for the engine lacked `keyring`, the package that keeps a key in the system keychain. Linux and Windows install from another list, which had it.
+- Running FormAT from its source on macOS (`./format install`) now installs `keyring` too. From 0.27.0 to 0.30.0 the engine started without it and said nothing: the Outside agents choice in Settings was kept, but without the keychain seal that turns the choice back to Ask when it was changed outside FormAT. Now the choice is sealed in the macOS keychain. If you had chosen Allowed there, it reads as Ask until you choose Allowed again, and Settings says so.
+- A test now keeps the macOS list in step with the main list and with every package the packaged engine needs.
+- Not checked for this version: nothing was run on macOS or Windows, and no packaged engine was built; the macOS list was checked by reading and by the test, not by a macOS install. The desktop app was not built on the build machine.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`).
+
 ## 0.30.0 · 2026-11-20
 
 - On Windows the engine now ends together with the app, however the app ends: closed, crashed or ended in Task Manager. The engine is the helper program behind the window; before, an app ended by force left it to notice on its own.
