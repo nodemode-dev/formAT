@@ -22,10 +22,10 @@ FormAT's window asks before an outside agent does anything. The choice is in Set
 ## Setting up an agent
 
 - **Claude Code**: this repository's `.mcp.json` adds the server (Claude Code asks once before using a project server); `.claude/skills/format-driving` teaches it to use FormAT.
-- **Cursor**: `.cursor/mcp.json`.
 - **Codex**: `.codex/config.toml` (read once you trust the project) and the skills in `.agents/skills`.
+- **Cursor**: `.cursor/mcp.json`.
 - **Antigravity** (Google's `agy` program): `.agents/mcp_config.json` in this repository. Antigravity asks you itself before it uses a tool it has no rule for; FormAT's own question is separate.
-- **Everywhere**: `./format agents install --user` adds FormAT to your user configuration for Codex, Antigravity (`~/.gemini/config/mcp_config.json`, other servers in that file are kept) and Claude Code.
+- **Everywhere**: `./format agents install --user` adds FormAT to your user configuration for Claude Code (when it is installed), Codex and Antigravity (`~/.gemini/config/mcp_config.json`, other servers in that file are kept); Cursor uses this repository's `.cursor/mcp.json`.
 
 FormAT looks for four agent programs on your computer: Claude Code, Codex, Cursor and Antigravity. It finds them however it was started (it also reads the PATH of your login shell), and the `claudecode.status` command says for each whether it runs, where it is and which version. Chats can be answered through Claude Code; the other three use FormAT as an MCP server.
 
