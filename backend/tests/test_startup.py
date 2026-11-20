@@ -153,6 +153,42 @@ def test_the_two_ways_of_reading_a_start_time_agree(monkeypatch):
     assert startup.created(4_000_000) == 0.0
 
 
+def test_a_process_that_ended_and_was_not_collected_counts_as_gone_where_there_is_no_proc(monkeypatch):
+    from app.core import startup
+
+    monkeypatch.setattr(startup, "PROC", "/nonexistent")
+    ended, running = stand_in(), stand_in()
+    try:
+        ended.kill()
+        assert wait_for(lambda: startup.finished(ended.pid), 5.0)
+        assert startup.alive(ended.pid)
+        assert startup.gone_by(ended.pid, 1.0)
+        assert startup.end(ended.pid)
+        assert not startup.finished(running.pid)
+        assert not startup.gone_by(running.pid, 0.3)
+        monkeypatch.setattr(startup, "PROC", "/proc")
+        assert not startup.finished(ended.pid)
+        assert startup.gone_by(ended.pid, 1.0)
+    finally:
+        stop(ended, running)
+
+
+def test_a_holder_whose_shell_is_gone_is_replaced_where_there_is_no_proc(tmp_path, monkeypatch):
+    from app.core import instance, startup
+
+    monkeypatch.setattr(startup, "PROC", "/nonexistent")
+    path = tmp_path / instance.LOCK_NAME
+    engine, shell, mine = holding(path), stand_in(), stand_in()
+    try:
+        path.write_text(record(startup, engine, shell))
+        stop(shell)
+        assert instance.claim(tmp_path, mine.pid, wait=0.3) == engine.pid
+        assert json.loads(path.read_text())["pid"] == os.getpid()
+    finally:
+        instance.release(tmp_path)
+        stop(engine, shell, mine)
+
+
 def test_the_engine_serves_and_logs_with_its_three_streams_closed(tmp_path):
     port = free_port()
     proc = subprocess.Popen(["sh", "-c", 'exec "$0" format_engine.py <&- >&- 2>&-', sys.executable], cwd=BACKEND, env=engine_env(tmp_path, port))
