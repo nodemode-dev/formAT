@@ -209,3 +209,24 @@ def test_a_frozen_engine_started_alone_with_no_app_near_it_says_so_and_serves_no
     assert done.returncode == 4
     assert "serves nothing on its own" in done.stderr
     assert not (data / "engine.lock").exists()
+
+
+def test_a_frozen_engine_started_by_the_released_app_serves_and_opens_nothing(tmp_path):
+    install, data, mark = tmp_path / "install", tmp_path / "data", tmp_path / "opened"
+    install.mkdir()
+    data.mkdir()
+    app = install / "format"
+    app.write_text(f'#!/bin/sh\nprintf "%s" "$(pwd)" > "{mark}"\n')
+    app.chmod(0o755)
+    shell, port = stand_in(), free_port()
+    code = FROZEN.format(engine=str(install / "format-engine"))
+    proc = subprocess.Popen([sys.executable, "-c", code], cwd=BACKEND, env=engine_env(data, port, FORMAT_PARENT_PID=str(shell.pid)), stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    try:
+        assert wait_for(lambda: answers(port))
+        assert json.loads((data / "engine.lock").read_text())["shell"] == shell.pid
+        assert not mark.exists()
+        assert "started without its app" not in (data / "Logs" / "format-engine.log").read_text()
+        stop(shell)
+        assert proc.wait(timeout=10) == 0
+    finally:
+        stop(shell, proc)

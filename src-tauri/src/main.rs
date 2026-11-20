@@ -61,9 +61,6 @@ fn engine_log(handle: &tauri::AppHandle) -> Option<std::fs::File> {
 }
 
 fn engine_failed(handle: &tauri::AppHandle, message: &str) {
-    if let Some(splash) = handle.get_webview_window("splash") {
-        let _ = splash.hide();
-    }
     let place = engine_log_path(handle).map(|p| format!("\n\nThe engine's log is at:\n{}", p.display())).unwrap_or_default();
     handle
         .dialog()
@@ -71,6 +68,9 @@ fn engine_failed(handle: &tauri::AppHandle, message: &str) {
         .title("FormAT")
         .kind(MessageDialogKind::Error)
         .blocking_show();
+    if let Some(splash) = handle.get_webview_window("splash") {
+        let _ = splash.hide();
+    }
     kill_backend(handle);
     handle.exit(1);
 }
@@ -208,7 +208,7 @@ fn open_main(handle: &tauri::AppHandle, port: u16, key: &str) {
         .build();
     match built {
         Ok(window) => reveal::conceal(&window),
-        Err(_) => reveal::close_splash(handle),
+        Err(err) => engine_failed(handle, &format!("FormAT could not open its window ({err}).")),
     }
 }
 
