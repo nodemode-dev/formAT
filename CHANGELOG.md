@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.28.0 · 2026-11-19
+
+- Antigravity (Google's `agy` program) joins Claude Code, Codex and Cursor as the fourth agent program FormAT knows. This repository carries `.agents/mcp_config.json` for it beside the files for the other three, and `./format agents install --user` also adds FormAT to Antigravity's own file, `~/.gemini/config/mcp_config.json`, keeping every other server listed there. If that file already has an entry named `format` that FormAT did not write, it is left alone and you are told.
+- FormAT finds the agent programs however it was started. The desktop app starts with a short list of folders to search, so a Claude Code installed in your own folders could be reported as not installed. FormAT now also looks in the usual install folders and at the folders your login shell searches. To point it at a particular copy, set `FORMAT_CLAUDE_BIN` (or `FORMAT_CODEX_BIN`, `FORMAT_CURSOR_BIN`, `FORMAT_ANTIGRAVITY_BIN`) to its path.
+- The `claudecode.status` command (the `get_claude_code_status` tool) also reports, under `programs`, each of the four agent programs: whether it runs, where it is, its version and the sentence to show. Its existing fields are unchanged.
+- The window no longer has status requests refused while it starts. On a slow start, three requests of the Settings page (Other devices, the agents seen, the sandbox note) went out before the window was ready to identify itself and were refused; every command of the window now waits until it is.
+- The desktop engine starts when it has nowhere to write its log, which is how a Windows app without a console starts its helper programs. This fault stopped the engine of another Form app at start for a tester; FormAT's engine now cannot stop for that reason.
+- Documents: the README, the manual and the agent files name the four agent programs and say where Antigravity's files are.
+- Not checked for this version: nothing was run on Windows or macOS, and the real Claude Code, Codex, Cursor and Antigravity programs were not run (stand-in programs only). Nobody has yet seen a real Antigravity read the two files above.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`). One new file shared by the Form family, the finder for the agent programs, which `./format agents sync` checks against its recorded hash.
+
 ## 0.27.0 · 2026-11-19
 
 - Only the FormAT window can change things without asking. Everything else that calls the engine on this computer is an outside agent: a coding agent over MCP, `./format mcp`, `./format cli` and any other program. Their calls follow the choice in Settings, Outside agents: Ask me (the default), Allowed or Blocked. Other devices works as before: a paired phone or computer is the window.
