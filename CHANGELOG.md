@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.31.0 · 2026-11-20
+
+- FormAT keeps its own chat-first look. Every name of the Form family's shared design vocabulary (the colour, size and layer names FormVis defines) now has a value in FormAT too, so a piece shared across the family finds what it looks for. Nothing you see changes: the window looks the same, pixel for pixel, in the dark and light themes.
+- The README now says FormAT is released, built and bundled for macOS, Windows and Linux, and tested on all three.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`).
+
 ## 0.30.1 · 2026-11-20
 
 - The macOS desktop app builds again. Both macOS builds of 0.30.0 stopped while the engine was being packaged, because the list of packages macOS installs for the engine lacked `keyring`, the package that keeps a key in the system keychain. Linux and Windows install from another list, which had it.

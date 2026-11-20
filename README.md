@@ -11,12 +11,12 @@
 </p>
 
 <p align="center">
-  <img alt="version 0.30.1" src="https://img.shields.io/badge/version-0.30.1-eef0f4?style=flat-square">
+  <img alt="version 0.31.0" src="https://img.shields.io/badge/version-0.31.0-eef0f4?style=flat-square">
   <img alt="TypeScript and Vite" src="https://img.shields.io/badge/TypeScript-Vite-3178c6?style=flat-square&logo=typescript&logoColor=white">
   <img alt="Python and FastAPI" src="https://img.shields.io/badge/Python-FastAPI-009688?style=flat-square">
   <img alt="macOS, Windows and Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
   <img alt="License: Apache-2.0" src="https://img.shields.io/badge/license-Apache--2.0-3a3a3a?style=flat-square">
-  <img alt="Status: active" src="https://img.shields.io/badge/status-active-d69e2e?style=flat-square">
+  <img alt="Status: released" src="https://img.shields.io/badge/status-released-d69e2e?style=flat-square">
 </p>
 
 <p align="center">
@@ -139,7 +139,7 @@ On Windows run `.\format.bat install` then `.\format.bat`, never a bare `format`
 Add `ANTHROPIC_API_KEY` in `backend/.env` or in Settings. No key? If Claude Code is installed and signed in, FormAT answers through it on your Claude plan.
 
 > [!IMPORTANT]
-> **Status:** active, pre-1.0. The native renderer is optional and off by default, and the window's terminal stays the browser one. See [`CHANGELOG.md`](CHANGELOG.md).
+> **Status:** released. FormAT is built and bundled for macOS, Windows and Linux and has been tested on all three. The native renderer is optional and off by default, and the window's terminal stays the browser one. See [`CHANGELOG.md`](CHANGELOG.md).
 
 **Contributing:** branch from `main`, keep changes to source here, and leave packaging and releases to FormCompiler. See [`CONTRIBUTING.md`](CONTRIBUTING.md), [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md), [`BRANCHING.md`](BRANCHING.md) and [`AGENTS.md`](AGENTS.md). Report security issues privately as [`SECURITY.md`](SECURITY.md) describes.
 
