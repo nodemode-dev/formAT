@@ -10,6 +10,7 @@ from starlette.routing import Route
 
 from app.core import config
 from app.core.local_guard import LocalGuard
+from app.core.window_key import WindowKeyGuard
 from app.routers import ROUTERS, mcp_http, shutdown, startup
 
 mimetypes.add_type("text/javascript", ".js")
@@ -27,6 +28,7 @@ async def lifespan(_: FastAPI):
 
 app = FastAPI(title=config.APP_NAME, version=config.VERSION, lifespan=lifespan)
 app.add_middleware(CORSMiddleware, allow_origins=config.cors_origins(), allow_methods=["*"], allow_headers=["*"])
+app.add_middleware(WindowKeyGuard)
 app.add_middleware(LocalGuard, origins=config.cors_origins())
 for router in ROUTERS:
     app.include_router(router)

@@ -16,7 +16,7 @@ A.T, the Agentic Terminal: a chat and agent workspace on the Claude API, in the 
 
 ## Skills
 
-`.claude/skills/format-harness/` is the orchestrator for changing and releasing Format: load its `SKILL.md` for any code change; it routes to twelve specialists and holds the completion gate. `.claude/skills/format-driving/` is for using a running Format over MCP. `./format agents sync` regenerates their tool and command references from the registry and mirrors both into `.agents/skills/`; run it whenever a command is added, renamed or re-described, after adding it to `GUIDE` in `backend/app/agent_guide.py` (its MCP tool name and a "Use when" sentence).
+`.claude/skills/format-harness/` is the orchestrator for changing and releasing Format: load its `SKILL.md` for any code change; it routes to its specialists through `harness-director` and holds the completion gate. `.claude/skills/format-driving/` is for using a running Format over MCP. `./format agents sync` regenerates their tool and command references from the registry, writes `agents/manifest.json` and mirrors both into `.agents/skills/` (`./format agents sync --check` changes nothing and exits 1 if any of it is out of date); run it whenever a command is added, renamed or re-described, after adding it to `GUIDE` in `backend/app/agent_guide.py` (its MCP tool name and a "Use when" sentence).
 
 ## Laws
 

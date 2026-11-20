@@ -17,7 +17,7 @@ None for use. For build work, `engine-builder` and `ui-builder` (Customize page)
 
 1. **Connectors.** `connector.add` (name and url or command), `connector.connect` lists tools, `connector.update` toggles the connector, its tools or its token, `connector.delete`. Public https servers go through the API's MCP connector (beta mcp-client-2025-11-20); everything else runs in the engine with the mcp SDK as client tools named `mcp__[connector]__[tool]`, which ask for approval like commands.
 2. **Skills in Format.** SKILL.md folders in `data/skills`: `skill.add` from an upload, `skill.create`, `skill.enable`, `skill.delete`. The system prompt lists the skills that are on and Claude loads one with the `skill` tool.
-3. **Outside agents.** Setting `outsideAgents` (ask, allowed, blocked). In ask, the first call waits up to 120 s for the window's Allow or Block. `agents.status` lists clients seen. The MCP server's names and descriptions come from `backend/app/agent_guide.py`; after changing it run `./format agents sync`.
+3. **Outside agents.** Setting `outsideAgents` (ask, allowed, blocked). In ask, every outside call waits up to 120 s for the window's Allow or Block, reads included; the command line counts as an outside agent, and only the window can change the setting (`settings.set outsideAgents` from an outside caller is refused). `agents.status` lists clients seen. The MCP server's names and descriptions come from `backend/app/agent_guide.py`; after changing it run `./format agents sync`.
 
 ## Gate
 

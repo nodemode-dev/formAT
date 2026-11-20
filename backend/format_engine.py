@@ -1,8 +1,16 @@
-import json
 import os
+import sys
+
+if sys.stdin is None:
+    sys.stdin = open(os.devnull, encoding="utf-8")
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, "w", encoding="utf-8")
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, "w", encoding="utf-8")
+
+import json
 import socket
 import subprocess
-import sys
 import threading
 import time
 from pathlib import Path
@@ -252,8 +260,12 @@ def main() -> int:
     watch_parent()
     import uvicorn
 
+    from app.core import window_key
     from app.main import app as fastapi_app
 
+    if window_key.stdout_mode():
+        sys.stdout.write(window_key.LINE + window_key.KEY + "\n")
+        sys.stdout.flush()
     uvicorn.run(fastapi_app, host="127.0.0.1", port=int(os.environ["FORMAT_PORT"]), log_level="info")
     return 0
 

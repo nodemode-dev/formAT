@@ -21,6 +21,7 @@ const FALLBACK_LOGICAL: (f64, f64) = (1440.0, 900.0);
 const MIN_LOGICAL: (f64, f64) = (960.0, 620.0);
 const SCREEN_FRACTION: f64 = 0.88;
 const LOG_TAIL: usize = 40;
+const KEY_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
 
 fn kill_backend(handle: &tauri::AppHandle) {
     let child = handle.state::<Backend>().0.lock().ok().and_then(|mut slot| slot.take());
@@ -128,7 +129,7 @@ fn unique_in(dir: &PathBuf, name: &str) -> PathBuf {
         .unwrap_or(first)
 }
 
-fn open_main(handle: &tauri::AppHandle, port: u16) {
+fn open_main(handle: &tauri::AppHandle, port: u16, key: &str) {
     let url: Url = format!("http://127.0.0.1:{port}/").parse().expect("loopback url");
     let (width, height) = handle
         .primary_monitor()
@@ -146,6 +147,11 @@ fn open_main(handle: &tauri::AppHandle, port: u16) {
     let pending: Arc<Mutex<HashMap<String, PathBuf>>> = Arc::new(Mutex::new(HashMap::new()));
     let built = WebviewWindowBuilder::new(handle, "main", WebviewUrl::External(url))
         .title("FormAT")
+        .initialization_script(format!(
+            "if (window.location.origin === {:?}) {{ window.__FORMAT_WINDOW_KEY = {:?}; }}",
+            format!("http://127.0.0.1:{port}"),
+            key
+        ))
         .visible(reveal::BUILD_VISIBLE)
         .inner_size(width.max(MIN_LOGICAL.0), height.max(MIN_LOGICAL.1))
         .min_inner_size(MIN_LOGICAL.0, MIN_LOGICAL.1)
@@ -223,6 +229,7 @@ fn main() {
                 command
                     .env("FORMAT_DESKTOP", "1")
                     .env("FORMAT_PARENT_PID", std::process::id().to_string())
+                    .env("FORMAT_WINDOW_KEY_STDOUT", "1")
                     .spawn()
             });
             let (mut rx, child) = match spawned {
@@ -243,12 +250,47 @@ fn main() {
                 let pattern = regex::Regex::new(r"Uvicorn running on http://127\.0\.0\.1:(\d+)").unwrap();
                 let mut log = engine_log(&handle);
                 let mut tail: Vec<String> = Vec::new();
+                let key_pattern = regex::Regex::new(r"format-window-key: ([A-Za-z0-9_-]{32,})").unwrap();
+                let mut address_at: Option<std::time::Instant> = None;
                 let mut port: Option<u16> = None;
-                while let Some(event) = rx.recv().await {
+                let mut key: Option<String> = None;
+                let mut opened = false;
+                loop {
+                    let event = if key.is_some() || port.is_none() {
+                        match rx.recv().await {
+                            Some(event) => event,
+                            None => break,
+                        }
+                    } else {
+                        match rx.try_recv() {
+                            Ok(event) => event,
+                            Err(_) if address_at.is_some_and(|at| at.elapsed() >= KEY_WAIT) => {
+                                tail.push("the engine did not hand over the window key in time".to_owned());
+                                break;
+                            }
+                            Err(_) => {
+                                let _ = tauri::async_runtime::spawn_blocking(|| std::thread::sleep(std::time::Duration::from_millis(20))).await;
+                                continue;
+                            }
+                        }
+                    };
                     let line = match event {
-                        CommandEvent::Stdout(bytes) | CommandEvent::Stderr(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
+                        CommandEvent::Stdout(bytes) => {
+                            let text = String::from_utf8_lossy(&bytes).into_owned();
+                            if key.is_none() {
+                                key = key_pattern.captures(&text).map(|found| found[1].to_string());
+                                if key.is_some() {
+                                    String::new()
+                                } else {
+                                    text
+                                }
+                            } else {
+                                text
+                            }
+                        }
+                        CommandEvent::Stderr(bytes) => String::from_utf8_lossy(&bytes).into_owned(),
                         CommandEvent::Terminated(status) => {
-                            if port.is_none() {
+                            if !opened {
                                 tail.push(format!("engine exited ({:?})", status.code));
                             }
                             break;
@@ -259,22 +301,25 @@ fn main() {
                         let _ = file.write_all(line.as_bytes());
                         let _ = file.flush();
                     }
-                    if port.is_some() {
-                        continue;
-                    }
-                    tail.push(line.trim_end().to_owned());
-                    if tail.len() > LOG_TAIL {
-                        tail.remove(0);
-                    }
-                    if let Some(captures) = pattern.captures(&line) {
-                        port = captures[1].parse().ok();
-                        if let Some(found) = port {
-                            open_main(&handle, found);
-                            check_for_updates(handle.clone());
+                    if !opened && !line.is_empty() {
+                        tail.push(line.trim_end().to_owned());
+                        if tail.len() > LOG_TAIL {
+                            tail.remove(0);
+                        }
+                        if let Some(captures) = pattern.captures(&line) {
+                            port = captures[1].parse().ok();
+                            if port.is_some() {
+                                address_at.get_or_insert_with(std::time::Instant::now);
+                            }
                         }
                     }
+                    if let (false, Some(found), Some(value)) = (opened, port, key.as_deref()) {
+                        opened = true;
+                        open_main(&handle, found, value);
+                        check_for_updates(handle.clone());
+                    }
                 }
-                if port.is_none() {
+                if !opened {
                     engine_failed(&handle, &format!("The FormAT engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")));
                 }
             });

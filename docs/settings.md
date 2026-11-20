@@ -40,7 +40,7 @@ Open or close FormAT to your network, the pairing code and link, and Forget pair
 
 ## Outside agents
 
-Whether coding agents on this computer may use FormAT over MCP: Ask me, Allowed or Blocked, and which agents have called. See [Agents and MCP](agents-and-mcp.md).
+Whether coding agents on this computer may use FormAT: Ask me (the default; every call waits for your answer in the window, reads included), Allowed or Blocked, and which agents have called. The command line counts as an outside agent. Only this page can change the choice, never an agent. If the saved choice was edited by hand or saved by an older version, the page says it was reset to Ask me. See [Agents and MCP](agents-and-mcp.md).
 
 ## Long chats
 

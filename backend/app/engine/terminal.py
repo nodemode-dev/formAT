@@ -1,11 +1,13 @@
 import asyncio
 import os
+import re
 import shutil
 import threading
 import uuid
 from collections import deque
 
-from app.core import config
+from app.core import config, window_key
+from app.core.secrets import PROVIDERS
 from app.engine import events
 
 if os.name == "nt":
@@ -64,8 +66,18 @@ def _shell() -> list[str]:
     return [shell, "-l"]
 
 
+SECRET_NAME = re.compile(r"API_?KEY|ACCESS_?KEY|AUTH_?KEY|PRIVATE_?KEY|WINDOW_?KEY|SECRET|TOKEN|PASSW(OR)?D|PASSPHRASE|CREDENTIAL|COOKIE", re.I)
+
+
+def engine_own_names() -> set[str]:
+    names = set(PROVIDERS.values()) | set(config.ENV_FILE_KEYS) | {window_key.STDOUT_ENV}
+    names |= {k for k in os.environ if k.upper().startswith("FORMAT_")}
+    return {n.upper() for n in names}
+
+
 def _env() -> dict:
-    env = dict(os.environ)
+    own = engine_own_names()
+    env = {k: v for k, v in os.environ.items() if k.upper() not in own and not SECRET_NAME.search(k)}
     env["TERM"] = "xterm-256color"
     env["COLORTERM"] = "truecolor"
     env["FORMAT_TERMINAL"] = "1"

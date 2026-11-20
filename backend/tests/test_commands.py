@@ -8,8 +8,19 @@ from conftest import BACKEND, MCP_PATH, REPO, set_policy
 from app.engine.commands import REGISTRY, catalogue
 
 
+_KEYS: dict = {}
+
+
+def _key(base):
+    if base not in _KEYS:
+        with urllib.request.urlopen(urllib.request.Request(f"{base}/api/window/key", method="POST"), timeout=30) as r:
+            _KEYS[base] = json.loads(r.read())["key"]
+    return _KEYS[base]
+
+
 def _window(base, cid, params):
-    req = urllib.request.Request(f"{base}/api/commands/{cid}", data=json.dumps(params).encode(), method="POST", headers={"content-type": "application/json"})
+    req = urllib.request.Request(f"{base}/api/commands/{cid}", data=json.dumps(params).encode(), method="POST",
+                                 headers={"content-type": "application/json", "x-format-window-key": _key(base)})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
             return r.status, json.loads(r.read())
@@ -39,6 +50,7 @@ def test_every_command_is_in_the_catalogue_with_a_description():
 def test_the_window_route_the_cli_and_mcp_return_the_same_result(client, engine):
     set_policy("allowed")
     base = engine["base"]
+    _window(base, "settings.set", {"key": "outsideAgents", "value": "allowed"})
     status, window = _window(base, "settings.set", {"key": "effort", "value": "high"})
     assert status == 200 and window["ok"]
     code, out = _cli(base, "settings.get", {})
@@ -55,6 +67,7 @@ def test_the_window_route_the_cli_and_mcp_return_the_same_result(client, engine)
 
 def test_a_bad_call_fails_the_same_way_everywhere(client, engine):
     set_policy("allowed")
+    _window(engine["base"], "settings.set", {"key": "outsideAgents", "value": "allowed"})
     status, window = _window(engine["base"], "settings.set", {"key": "effort", "value": "loud"})
     assert status == 400 and not window["ok"]
     message = window["error"]

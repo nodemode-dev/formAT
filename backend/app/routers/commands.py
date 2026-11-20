@@ -1,9 +1,10 @@
 import logging
 from typing import Any
 
-from fastapi import APIRouter, Body, Header
+from fastapi import APIRouter, Body, Header, Request
 from fastapi.responses import JSONResponse
 
+from app.core import window_key
 from app.engine import agents
 from app.engine.commands import REGISTRY, CommandError, catalogue, dispatch
 
@@ -39,10 +40,10 @@ def describe(cid: str) -> Any:
 
 
 @router.post("/commands/{cid}")
-def run(cid: str, params: dict | None = Body(default=None), x_format_agent: str | None = Header(default=None)) -> Any:
-    if x_format_agent:
+def run(request: Request, cid: str, params: dict | None = Body(default=None), x_format_agent: str | None = Header(default=None)) -> Any:
+    if x_format_agent or not window_key.is_window(request.scope):
         try:
-            agents.require(x_format_agent, "stdio")
+            agents.require_outside(x_format_agent or "", "stdio" if x_format_agent else "rest", cid, params)
         except CommandError as exc:
             return JSONResponse({"ok": False, "command": cid, "error": str(exc)}, status_code=exc.status)
     status, body = _run(cid, params)

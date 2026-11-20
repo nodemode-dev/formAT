@@ -11,8 +11,8 @@ The full tool reference, generated from the engine, is `references/tools.md`. Re
 
 ## Before the first call
 
-1. Check that the tools exist. In Claude Code they appear as `mcp__format__send_message` and so on; in other clients as `send_message`. If there are none, Format is not connected: the repo's `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor) or `.codex/config.toml` (Codex) adds it, the engine must be running (`./format` in the repo), and Claude Code asks once before using a project server.
-2. The first call may wait. Format asks the person in its window whether to let outside agents in. The call returns once they press Allow; if it fails with a message about outside agents, tell the person it is waiting for them in Format (or Settings, Outside agents) and stop. Do not retry in a loop.
+1. Check that the tools exist. In Claude Code they appear as `mcp__format__send_message` and so on; in other clients as `send_message`. If there are none, Format is not connected: the repo's `.mcp.json` (Claude Code), `.cursor/mcp.json` (Cursor), `.codex/config.toml` (Codex) or `.agents/mcp_config.json` (Antigravity) adds it, the engine must be running (`./format` in the repo), and Claude Code asks once before using a project server.
+2. Calls may wait. Under the default, Ask, Format asks the person in its window whether to let outside agents in, and every call (reads included) waits until they press Allow. If a call fails with a message about outside agents, tell the person it is waiting for them in Format (or Settings, Outside agents) and stop. Do not retry in a loop, and do not try to change the choice yourself: only the window can. The command line, `./format cli`, is an outside agent too and follows the same choice.
 3. If a reply fails with a message about a missing key, the person has to add an Anthropic key in Format's Settings, API keys. Call `get_key_status` to confirm, then tell them; never ask them to paste a key to you.
 
 ## Core workflows

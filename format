@@ -21,7 +21,7 @@ usage: ./format [command] [options]
   cli <command> ...   run any engine command from the terminal (./format cli list)
   mcp                 Format as an MCP server over stdio, for coding agents (needs the engine running)
   native [build|info|window]  the optional wgpu renderer: build it, show its GPU, or open its demo window
-  agents [sync|install [--user]]  regenerate the agent tool reference and the .agents/skills mirror; install also registers Format
+  agents [sync [--check]|install [--user]]  regenerate agents/manifest.json, the agent tool reference and the .agents/skills mirror (--check only reports what is out of date); install also registers Format
   doctor             check the toolchain, installs and ports
   clean [--all]       remove build output (--all also venv and node_modules)
   help                this text

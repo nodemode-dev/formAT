@@ -141,6 +141,7 @@ export interface Settings {
   artifactNetwork?: boolean;
   memory?: boolean;
   outsideAgents?: 'ask' | 'allowed' | 'blocked';
+  sealBroken?: boolean;
   chatEngine?: 'auto' | 'api' | 'claude-code';
 }
 

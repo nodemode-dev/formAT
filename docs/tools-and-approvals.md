@@ -20,6 +20,8 @@ Claude in FormAT can act, not only talk. Each step it takes shows in the reply a
 
 Settings, Tools turns groups off: workspace tools, web tools, the browser.
 
+Claude's bash tool runs with a small environment: PATH, HOME, USER, LANG and a few other basics, and none of FormAT's own keys or other secrets. Behind a proxy, set the proxy in the command itself or in your login profile, because proxy variables are not passed on. A plain shell in the terminal dock gets your environment minus FormAT's provider keys, `FORMAT_*` settings and any variable whose name contains API_KEY, ACCESS_KEY, AUTH_KEY, PRIVATE_KEY, SECRET, TOKEN, PASSWORD, PASSPHRASE, CREDENTIAL or COOKIE, so a variable such as `ANTHROPIC_API_KEY` is not there.
+
 ## Ask, Allow all and Plan
 
 The permission menu in the composer sets how much Claude may do without you:

@@ -3,13 +3,17 @@ import json
 
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.core import window_key
 from app.engine import terminal
 
 router = APIRouter(tags=["terminal"])
 
 
 @router.websocket("/api/terminal/{sid}")
-async def attach(ws: WebSocket, sid: str) -> None:
+async def attach(ws: WebSocket, sid: str, ticket: str = "") -> None:
+    if not window_key.paired(ws.scope) and not window_key.spend(ticket):
+        await ws.close(code=4403)
+        return
     await ws.accept()
     try:
         session = terminal.get(sid)

@@ -1,4 +1,5 @@
 import { run } from '../engine-client/api';
+import { keyHeaders } from '../engine-client/window-key';
 import type { AppState, FileInfo, ProjectDetail, ProjectSummary } from '../state/app-state';
 import { askDeleteProject } from './confirm';
 import { el, esc, q, setAttr, setText } from './dom';
@@ -321,7 +322,7 @@ export class ProjectsView {
       const form = new FormData();
       form.append('file', f, f.name);
       try {
-        const res = await fetch('/api/uploads', { method: 'POST', body: form });
+        const res = await fetch('/api/uploads', { method: 'POST', body: form, headers: keyHeaders() });
         const body = await res.json();
         if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
         await run('project.addFile', { id: pid, uploadId: (body.file as FileInfo).id });

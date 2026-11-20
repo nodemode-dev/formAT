@@ -561,7 +561,7 @@ Whether the built-in browser is installed and open, and its current page (url, t
 
 ### get_claude_code_status
 
-Whether the Claude Code CLI is installed (its path and version) and which engine answers chats now: api (the Anthropic API key) or claude-code (the person's own Claude Code sign-in). Use when chats run without an API key, to see whether Claude Code is installed and whether it or the API key answers.
+Whether the Claude Code CLI is installed (its path and version) and which engine answers chats now: api (the Anthropic API key) or claude-code (the person's own Claude Code sign-in). programs says the same for each agent program FormAT looks for: claude, codex, cursor and antigravity (finding is runs, broken or missing; said is the sentence to show). Use when chats run without an API key, to see whether Claude Code is installed and whether it or the API key answers.
 
 - read-only · command `claudecode.status` · params: none
 

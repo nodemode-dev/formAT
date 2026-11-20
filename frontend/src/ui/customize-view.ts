@@ -1,4 +1,5 @@
 import { run } from '../engine-client/api';
+import { keyHeaders } from '../engine-client/window-key';
 import type { AppState, ConnectorInfo, FileInfo, MarketplaceInfo, PluginSummary, SkillSummary } from '../state/app-state';
 import { el, esc, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
@@ -341,7 +342,7 @@ export class CustomizeView {
       const form = new FormData();
       form.append('file', f, f.name);
       try {
-        const res = await fetch('/api/uploads', { method: 'POST', body: form });
+        const res = await fetch('/api/uploads', { method: 'POST', body: form, headers: keyHeaders() });
         const body = await res.json();
         if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
         const p = await run<PluginSummary>('plugin.add', { uploadId: (body.file as FileInfo).id });
@@ -1030,7 +1031,7 @@ export class CustomizeView {
     const form = new FormData();
     form.append('file', f, f.name);
     try {
-      const res = await fetch('/api/uploads', { method: 'POST', body: form });
+      const res = await fetch('/api/uploads', { method: 'POST', body: form, headers: keyHeaders() });
       const body = await res.json();
       if (!res.ok || !body.ok) throw new Error(body.error || `upload failed (${res.status})`);
       const s = await run<SkillDetail>('skill.add', { uploadId: (body.file as FileInfo).id });

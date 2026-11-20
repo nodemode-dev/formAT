@@ -1,14 +1,11 @@
 import json
 import logging
-import os
-import shutil
 import subprocess
 import threading
 import time
-from pathlib import Path
 
 from app import providers
-from app.engine import events, projects, skills, tools, uploads
+from app.engine import agent_lookup, events, projects, skills, tools, uploads
 from app.engine.cmd_account import account
 from app.engine.cmd_message import messages_of, update
 from app.engine.cmd_settings import current
@@ -17,9 +14,9 @@ from app.engine.commands import command
 from app.harness import content
 
 log = logging.getLogger("format.claude_code")
-KEEP_ENV = {"CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CONFIG_DIR"}
-CANDIDATES = (".claude/local/claude", ".local/bin/claude", ".npm-global/bin/claude", ".bun/bin/claude", ".volta/bin/claude")
-SYSTEM_PATHS = ("/opt/homebrew/bin/claude", "/usr/local/bin/claude", "/usr/bin/claude")
+KEEP_ENV = frozenset({"CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CONFIG_DIR"})
+PROGRAMS = ("claude", "codex", "cursor", "antigravity")
+OVERRIDES = {"claude": ("FORMAT_CLAUDE_BIN",), "codex": ("FORMAT_CODEX_BIN",), "cursor": ("FORMAT_CURSOR_BIN",), "antigravity": ("FORMAT_ANTIGRAVITY_BIN",)}
 ALLOW_NAMES = {"Bash": "bash", "Write": "write", "Edit": "edit", "MultiEdit": "edit", "NotebookEdit": "edit"}
 FILE_TOOLS = {"Bash", "Write", "Edit", "MultiEdit", "NotebookEdit"}
 MODES = {"ask": "manual", "auto": "acceptEdits", "plan": "plan"}
@@ -50,33 +47,37 @@ def view_of(name: str, inp: dict) -> tuple[str, dict]:
     return short, out
 
 
-def child_env() -> dict:
-    return {k: v for k, v in os.environ.items() if not k.startswith("CLAUDE") or k in KEEP_ENV}
+def child_env(path: str | None = None) -> dict:
+    return agent_lookup.child_env(path, keep=KEEP_ENV)
+
+
+def located(kind: str, fresh: bool = False) -> agent_lookup.Found:
+    found = agent_lookup.find(kind, override_vars=OVERRIDES.get(kind, ()), fresh=fresh)
+    return agent_lookup.check(found, child_env(found.path), 15.0, fresh)
 
 
 def cli() -> str | None:
-    found = os.environ.get("FORMAT_CLAUDE_BIN") or shutil.which("claude")
-    if found:
-        return found
-    home = Path.home()
-    for p in [home / c for c in CANDIDATES] + [Path(s) for s in SYSTEM_PATHS]:
-        if p.is_file() and os.access(p, os.X_OK):
-            return str(p)
-    return None
+    return located("claude").path
+
+
+def _answer(kind: str, fresh: bool = False) -> dict:
+    install = agent_lookup.install(kind)
+    return agent_lookup.answer(located(kind, fresh), install, f"set {OVERRIDES[kind][0]} to its path") | {"install": install}
 
 
 def info(fresh: bool = False) -> dict:
     if not fresh and _cache["value"] is not None and time.time() - _cache["at"] < 60:
         return _cache["value"]
-    path, version = cli(), None
-    if path:
-        try:
-            out = subprocess.run([path, "--version"], capture_output=True, text=True, timeout=15, env=child_env())
-            version = (out.stdout.strip().split() or [None])[0]
-        except (OSError, subprocess.SubprocessError):
-            path = None
-    _cache["value"], _cache["at"] = {"installed": bool(path), "path": path, "version": version}, time.time()
+    _cache["value"], _cache["at"] = _answer("claude", fresh), time.time()
     return _cache["value"]
+
+
+def programs(fresh: bool = False) -> dict:
+    out = {}
+    for kind in PROGRAMS:
+        row = info(fresh) if kind == "claude" else _answer(kind)
+        out[kind] = row | {"title": agent_lookup.PROGRAMS[kind]["title"], "signedIn": None}
+    return out
 
 
 def route(settings: dict) -> str:
@@ -91,14 +92,14 @@ def route(settings: dict) -> str:
 
 
 @command("claudecode.status", "Claude Code", mutates=False,
-         description="Whether the Claude Code CLI is installed (its path and version) and which engine answers chats now: api (the Anthropic API key) or claude-code (the person's own Claude Code sign-in).")
+         description="Whether the Claude Code CLI is installed (its path and version) and which engine answers chats now: api (the Anthropic API key) or claude-code (the person's own Claude Code sign-in). programs says the same for each agent program FormAT looks for: claude, codex, cursor and antigravity (finding is runs, broken or missing; said is the sentence to show).")
 def status() -> dict:
     found = info(fresh=True)
     try:
         now = route(current())
     except providers.ProviderError:
         now = None
-    return found | {"route": now, "chatEngine": current().get("chatEngine", "auto")}
+    return found | {"route": now, "chatEngine": current().get("chatEngine", "auto"), "programs": programs()}
 
 
 def _previous_session(path: list[dict]) -> str | None:
@@ -380,8 +381,8 @@ def run(conversation_id: str, mid: str, model: dict, settings: dict, cancel: thr
 
     try:
         if not found["installed"]:
-            raise providers.ProviderError("Claude Code is not installed: install it from https://claude.com/claude-code and sign in once with `claude`")
-        proc = subprocess.Popen(args, cwd=folder, env=child_env(), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
+            raise providers.ProviderError(found.get("said") or "Claude Code is not installed: install it from https://claude.com/claude-code and sign in once with `claude`")
+        proc = subprocess.Popen(agent_lookup.start_argv(args), cwd=folder, env=child_env(found["path"]), stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, bufsize=1)
         threading.Thread(target=drain, daemon=True).start()
         threading.Thread(target=watch, daemon=True).start()
         send({"type": "control_request", "request_id": "format-init", "request": {"subtype": "initialize", "hooks": None}})

@@ -17,7 +17,7 @@
 1. HASHOUT entries for every file touched (refers-to, kind, logged).
 2. `CHANGELOG.md`: what changed for people using Format, then an Engine line with new commands and the command count.
 3. README, CLAUDE.md, NOTICE.md (any new dependency with its licence) and the manual in `docs/` where the change shows.
-4. `./format agents sync` if any command changed.
+4. `./format agents sync` if any command changed; `./format agents sync --check` must then exit 0.
 5. The checks in [Checks](Checks.md).
 
 ## Commits and tags

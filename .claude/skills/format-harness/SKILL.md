@@ -1,6 +1,6 @@
 ---
 name: format-harness
-description: "Use when changing Format's code or docs in this repo (engine commands, the tool loop, artifacts, projects, memory, skills, connectors, scheduled tasks, the window, the terminal, the native renderer), when releasing a Format version, or when using Format's own features from inside the repo. Format (A.T, the Agentic Terminal) is the claude.ai-style chat and agent workspace here: a FastAPI engine with one command registry, a vanilla TypeScript window, an MCP server, PTY terminals and an optional wgpu crate. Routes to twelve specialists and enforces the repo's laws: single-region hand edits, zero layout shift, hidden scrollbars, HASHOUT logs. Not for an outside agent that only drives a running Format (that is format-driving)."
+description: "Use when changing Format's code or docs in this repo (engine commands, the tool loop, artifacts, projects, memory, skills, connectors, scheduled tasks, the window, the terminal, the native renderer), when releasing a Format version, or when using Format's own features from inside the repo. Format (A.T, the Agentic Terminal) is the claude.ai-style chat and agent workspace here: a FastAPI engine with one command registry, a vanilla TypeScript window, an MCP server, PTY terminals and an optional wgpu crate. Routes to its specialists and enforces the repo's laws: single-region hand edits, zero layout shift, hidden scrollbars, HASHOUT logs. Not for an outside agent that only drives a running Format (that is format-driving)."
 ---
 
 # Format harness
@@ -16,7 +16,7 @@ format-harness/
   references/architecture.md   engine, commands, events, tool loop, stores, window, MCP, native
   references/tool-map.md       every MCP tool, its command and its file (generated)
   references/command-map.md    every engine command in REST, CLI and MCP form (generated)
-  sub-skills/[name]/SUB-SKILL.md   twelve specialists, listed below
+  sub-skills/[name]/SUB-SKILL.md   the director and the specialists, listed below
 ```
 
 Paths inside a sub-skill resolve from this pack's root, so `references/architecture.md` is always the file above. The two generated references are rewritten by `./format agents sync`; never edit them by hand.

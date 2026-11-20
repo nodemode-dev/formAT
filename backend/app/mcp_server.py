@@ -117,8 +117,8 @@ def build(call: Caller, catalogue: Catalogue) -> Server:
         try:
             convs = (await call("conversation.list", {"limit": 50}, client_of(ctx)))["conversations"]
             arts = (await call("artifact.list", {}, client_of(ctx)))["artifacts"][:50]
-        except Exception:
-            return types.ListResourcesResult(resources=[])
+        except Exception as exc:
+            raise ValueError(for_agents(str(exc))) from None
         out += [types.Resource(uri=f"format://conversation/{c['id']}", name=c["title"], title=c["title"], mime_type="text/markdown",
                                description="Transcript of a Format chat") for c in convs]
         out += [types.Resource(uri=f"format://artifact/{a['id']}", name=a["title"], title=a["title"], mime_type="text/html",

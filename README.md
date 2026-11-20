@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img alt="version 0.26.3" src="https://img.shields.io/badge/version-0.26.3-eef0f4?style=flat-square">
+  <img alt="version 0.28.0" src="https://img.shields.io/badge/version-0.28.0-eef0f4?style=flat-square">
   <img alt="TypeScript and Vite" src="https://img.shields.io/badge/TypeScript-Vite-3178c6?style=flat-square&logo=typescript&logoColor=white">
   <img alt="Python and FastAPI" src="https://img.shields.io/badge/Python-FastAPI-009688?style=flat-square">
   <img alt="macOS, Windows and Linux" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux-native-2f7bf5?style=flat-square">
@@ -79,7 +79,7 @@
   <tr>
     <td width="33%" valign="top"><h4>Chat</h4>Edit any message and page between versions · Compaction of long chats · Search chats · Code colouring and math · Dictation · Command palette · Three demo chats that open without a key</td>
     <td width="33%" valign="top"><h4>Workspace</h4>Menus for every command (File, Edit, View, Go, Window, Help) · Settings window · Projects · Artifacts page · Files pane · Memory · Skills · Plugins and marketplaces · Connectors · Scheduled tasks · Built-in browser · Other devices</td>
-    <td width="33%" valign="top"><h4>Providers and formats</h4>Anthropic API · Claude Code route · OpenAI and Cursor adapters · Exports: <code>.docx</code> · <code>.xlsx</code> · <code>.pptx</code> · PDF</td>
+    <td width="33%" valign="top"><h4>Providers and formats</h4>Chat on the Anthropic API or the Claude Code route · Dictation with ElevenLabs Scribe, OpenAI or local Whisper · Exports: <code>.docx</code> · <code>.xlsx</code> · <code>.pptx</code> · PDF</td>
   </tr>
 </table>
 
@@ -91,17 +91,17 @@
 ./format cli list                              # every engine command
 ./format cli chat.send text="..."              # chat from a terminal or an agent
 ./format cli chat.wait conversationId=...      # wait for the reply
-./format mcp                                   # MCP server on stdio for Claude Code, Codex and Cursor
+./format mcp                                   # MCP server on stdio for Claude Code, Codex, Cursor and Antigravity
 ```
 
-`.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. See [`AGENTS.md`](AGENTS.md).
+`.mcp.json`, `.codex/config.toml`, `.cursor/mcp.json` and `.agents/mcp_config.json` (Antigravity) are already wired in this repo. FormAT's window asks before an outside agent does anything, and the command line counts as one: under the default, Ask me, these calls wait for your answer in the window. `./format agents sync` regenerates the agent files and `agents/manifest.json`, and `--check` reports any that are out of date. See [`AGENTS.md`](AGENTS.md).
 
 ## Under the hood
 
 - **Engine:** Python 3.12 and FastAPI on `127.0.0.1:8490`, with a store, an event stream and one module per command group.
 - **Window:** vanilla TypeScript and Vite, with inline SVG icons and no UI framework.
 - **Desktop:** Tauri 2 around the engine frozen with PyInstaller, so the app needs no Python or Node. It starts behind the family's splash and shows the window once the page has drawn; on macOS the menus are in the system menu bar.
-- **Tested:** 96 engine tests (the local guard, commands, approvals, chat tree, artifacts, the devices gate, MCP, migrations, versions, release profiles) and a window smoke that loads the built window with no error and no layout shift.
+- **Tested:** engine tests (the local guard, commands, approvals, chat tree, artifacts, the devices gate, MCP, migrations, versions, release profiles) and a window smoke that loads the built window with no error and no layout shift.
 
 ## Download
 
