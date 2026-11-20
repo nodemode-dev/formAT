@@ -48,6 +48,7 @@ def test_the_bash_tool_gives_its_shell_no_secret_from_the_engine(app, monkeypatc
     monkeypatch.setenv("ANTHROPIC_API_KEY", "MARKER-SECRET-1")
     monkeypatch.setenv("FORMAT_WINDOW_KEY_STDOUT", "1")
     monkeypatch.setenv("SOME_SERVICE_TOKEN", "MARKER-SECRET-2")
+    monkeypatch.delenv("SHELL", raising=False)
     out, failed = tools.run("bash", {"command": "env; echo done-$((40 + 2))"}, "bash-env-check", lambda _: None, threading.Event())
     assert not failed and "done-42" in out
     assert "MARKER-SECRET" not in out and "FORMAT_WINDOW_KEY" not in out
