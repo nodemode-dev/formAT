@@ -1,4 +1,4 @@
-import { keyHeaders } from './window-key';
+import { windowHeaders } from './window-key';
 
 export interface CommandReply<T> {
   ok: boolean;
@@ -22,9 +22,10 @@ export async function health(): Promise<{ ok: boolean; name: string; version: st
 }
 
 export async function run<T>(id: string, params: Record<string, unknown> = {}): Promise<T> {
+  const own = await windowHeaders();
   const res = await fetch(`/api/commands/${encodeURIComponent(id)}`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...keyHeaders() },
+    headers: { 'Content-Type': 'application/json', ...own },
     body: JSON.stringify(params),
   }).catch(() => {
     throw new EngineError(NOT_ANSWERING, id, 0);
