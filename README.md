@@ -91,10 +91,10 @@
 ./format cli list                              # every engine command
 ./format cli chat.send text="..."              # chat from a terminal or an agent
 ./format cli chat.wait conversationId=...      # wait for the reply
-./format mcp                                   # MCP server on stdio for Claude Code, Codex and Cursor
+./format mcp                                   # MCP server on stdio for Claude Code, Codex, Cursor and Antigravity
 ```
 
-`.mcp.json`, `.codex/config.toml` and `.cursor/mcp.json` are already wired in this repo. FormAT's window asks before an outside agent does anything, and the command line counts as one: under the default, Ask me, these calls wait for your answer in the window. `./format agents sync` regenerates the agent files and `agents/manifest.json`, and `--check` reports any that are out of date. See [`AGENTS.md`](AGENTS.md).
+`.mcp.json`, `.codex/config.toml`, `.cursor/mcp.json` and `.agents/mcp_config.json` (Antigravity) are already wired in this repo. FormAT's window asks before an outside agent does anything, and the command line counts as one: under the default, Ask me, these calls wait for your answer in the window. `./format agents sync` regenerates the agent files and `agents/manifest.json`, and `--check` reports any that are out of date. See [`AGENTS.md`](AGENTS.md).
 
 ## Under the hood
 

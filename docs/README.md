@@ -17,7 +17,7 @@ This manual is for people using FormAT. People changing FormAT's code want the d
 | [The built-in browser](browser.md) | browsing in FormAT, and Claude using the same browser |
 | [Other devices](other-devices.md) | pairing a phone or another computer, share links on your network |
 | [Terminal, scheduled tasks and background work](terminal-and-scheduled.md) | the terminal dock, Claude's tab, scheduled tasks, the Background list |
-| [Agents and MCP](agents-and-mcp.md) | using FormAT from Claude Code, Codex and Cursor |
+| [Agents and MCP](agents-and-mcp.md) | using FormAT from Claude Code, Codex, Cursor and Antigravity |
 | [Settings](settings.md) | every setting and what it changes |
 | [Keyboard shortcuts](shortcuts.md) | the full list |
 | [Troubleshooting](troubleshooting.md) | common problems and what to do |

@@ -1,7 +1,7 @@
 # Architecture
 
 ```
- window (frontend/, Vite, vanilla TS)          agents (Claude Code, Codex, Cursor)        ./format cli
+ window (frontend/, Vite, vanilla TS)          agents (Claude Code, Codex, Cursor, agy)   ./format cli
         |  POST /api/commands/{id}                   |  MCP /mcp or ./format mcp                |
         |  WS /api/events                            |                                          |
         +--------------------------------------------+------------------------------------------+

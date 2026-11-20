@@ -18,4 +18,4 @@ Their `references/tools.md`, `tool-map.md` and `command-map.md` are generated. A
 ./format agents sync --check   # changes nothing; exits 1 and names each generated or mirrored file that is out of date
 ```
 
-`./format agents install --user` registers Format with Codex and Claude Code at user scope.
+`./format agents install --user` registers Format with Codex, Antigravity and Claude Code at user scope. The four agent programs Format looks for are Claude Code, Codex, Cursor and Antigravity; `claudecode.status` reports each under `programs`.

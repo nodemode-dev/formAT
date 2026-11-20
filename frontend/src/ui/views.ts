@@ -161,7 +161,7 @@ export class SettingsView {
         <div class="ft-dev-pair" hidden><div class="ft-dev-qr" aria-label="Pairing code"></div><div class="ft-dev-text"><small>Open on the other device:</small><code class="ft-dev-url"></code><small class="ft-dev-also"></small></div></div>
       </section>`);
     prefs.add('Outside agents', 'plug', `
-      <p class="ft-set-note">While FormAT runs it is an MCP server at <code>http://127.0.0.1:8490/mcp</code>, and <code>./format mcp</code> serves the same over stdio, so Claude Code, Codex, Cursor and other agents on this computer can chat, publish artifacts and run any FormAT command. Ask shows a prompt here the first time an agent calls.</p>
+      <p class="ft-set-note">While FormAT runs it is an MCP server at <code>http://127.0.0.1:8490/mcp</code>, and <code>./format mcp</code> serves the same over stdio, so Claude Code, Codex, Cursor, Antigravity and other agents on this computer can chat, publish artifacts and run any FormAT command. Ask shows a prompt here the first time an agent calls.</p>
       <section class="ft-prefs-group">
         <h3 class="ft-prefs-label">Access</h3>
         <label class="ft-field"><span>Agents on this computer</span><select class="ft-input" data-g="outsideAgents"><option value="ask">Ask me</option><option value="allowed">Allowed</option><option value="blocked">Blocked</option></select></label>
