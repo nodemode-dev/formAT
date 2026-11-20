@@ -15,6 +15,7 @@ set "PATH=%LGPL_FFMPEG_PREFIX%\bin;%PATH%"
 python -c "import faster_whisper" >nul 2>nul && ( python "%ROOT%\setup\check_lgpl_av.py" "%LGPL_FFMPEG_PREFIX%" || ( echo [format] voice needs PyAV built against an LGPL FFmpeg, run setup\build_lgpl_av.bat & exit /b 1 ) )
 python -c "import faster_whisper" >nul 2>nul && set "OPTIONAL=!OPTIONAL! --collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all tokenizers"
 python -c "import winpty" >nul 2>nul && set "OPTIONAL=!OPTIONAL! --collect-all winpty"
+if not "%FORMAT_ENGINE_WINDOWED%"=="0" set "OPTIONAL=!OPTIONAL! --noconsole"
 cd backend
 if exist build\pyinstaller rmdir /s /q build\pyinstaller
 if exist dist-engine rmdir /s /q dist-engine

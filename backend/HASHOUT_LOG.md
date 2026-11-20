@@ -1280,3 +1280,12 @@ The dialog keeps what FormAT's had: the engine's last 40 lines (the window key n
 The variable. The shell still gives the engine its process id in `FORMAT_PARENT_PID` (`SHELL_ENV`), the name `format_engine.py` reads for its watch on the shell; it was not renamed to the family's `*_SHELL_PID`.
 
 Proved here: the two files compile for x86_64-pc-windows-msvc in a scratch crate with no warning; `cargo test` there passes the 4 tests of `engine_start.rs` and 4 tests of the wait loop as written in `main.rs` (a closed channel ends the wait at once and keeps what was sent, a late line within the limit is read, a silent engine runs into the address limit, an engine that gave its address and no key runs into the key limit). The shell itself was not built and nothing ran on Windows.
+
+### setup/freeze_backend.bat and setup/freeze_backend · the Windows engine is built with no console window unless FORMAT_ENGINE_WINDOWED is 0
+- refers-to: setup/freeze_backend.bat :: the line after the winpty check; setup/freeze_backend :: the line after the ptyprocess check; format_engine.py :: the stream lines at its top
+- kind: change
+- logged: v0.30.0 · 2026-11-20
+
+By the owner's decision for every app of the family, a Windows engine is packaged with no console window, as FormWeb's is. FormAT's freeze scripts had no switch, so the switch is new and on by default: a Windows build gives PyInstaller `--noconsole` unless `FORMAT_ENGINE_WINDOWED=0`. Unset, empty, `1` or anything else that is not `0`: no console. The batch file adds the flag to `OPTIONAL`, which already carries the extra modules, so the long PyInstaller line is untouched; the shell script adds it only where `ft_os` says windows (an MSYS or Git Bash build), so macOS and Linux builds do not change.
+
+The entry file already replaces a missing stdin, stdout or stderr with the null device before anything else runs (wave 4), so `--selfcheck` and the start-up's own lines still work when a windowed engine has no streams; when the shell starts it, the plugin's pipes are its streams and the address and the window key still reach the shell. `--selfcheck` at the end of the batch file still returns its exit code. To get the old console build for a look at the engine's words, set `FORMAT_ENGINE_WINDOWED=0`. Checked with `bash -n` and, for the batch file, by reading; no Windows build has shown it.
