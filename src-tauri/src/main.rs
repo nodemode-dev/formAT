@@ -13,7 +13,10 @@ use tauri_plugin_shell::process::{CommandChild, CommandEvent};
 use tauri_plugin_shell::ShellExt;
 use tauri_plugin_updater::UpdaterExt;
 
+mod engine_start;
 mod reveal;
+#[cfg(windows)]
+mod win_job;
 
 struct Backend(Mutex<Option<CommandChild>>);
 
@@ -21,7 +24,6 @@ const FALLBACK_LOGICAL: (f64, f64) = (1440.0, 900.0);
 const MIN_LOGICAL: (f64, f64) = (960.0, 620.0);
 const SCREEN_FRACTION: f64 = 0.88;
 const LOG_TAIL: usize = 40;
-const KEY_WAIT: std::time::Duration = std::time::Duration::from_secs(10);
 
 fn kill_backend(handle: &tauri::AppHandle) {
     let child = handle.state::<Backend>().0.lock().ok().and_then(|mut slot| slot.take());
@@ -46,6 +48,8 @@ fn kill_backend(handle: &tauri::AppHandle) {
                 }
             }
         }
+        #[cfg(windows)]
+        win_job::end();
         let _ = child.kill();
     }
 }
@@ -228,7 +232,7 @@ fn main() {
             let spawned = app.shell().sidecar("format-engine").and_then(|command| {
                 command
                     .env("FORMAT_DESKTOP", "1")
-                    .env("FORMAT_PARENT_PID", std::process::id().to_string())
+                    .env(engine_start::SHELL_ENV, std::process::id().to_string())
                     .env("FORMAT_WINDOW_KEY_STDOUT", "1")
                     .spawn()
             });
@@ -244,6 +248,8 @@ fn main() {
                     return Ok(());
                 }
             };
+            #[cfg(windows)]
+            win_job::hold_pid(child.pid());
             app.state::<Backend>().0.lock().unwrap().replace(child);
 
             tauri::async_runtime::spawn(async move {
@@ -255,23 +261,29 @@ fn main() {
                 let mut port: Option<u16> = None;
                 let mut key: Option<String> = None;
                 let mut opened = false;
+                let started_at = std::time::Instant::now();
+                let mut failure = engine_start::Failure::Stopped(None);
                 loop {
-                    let event = if key.is_some() || port.is_none() {
+                    let event = if opened {
                         match rx.recv().await {
                             Some(event) => event,
                             None => break,
                         }
                     } else {
+                        let closed = rx.is_closed();
                         match rx.try_recv() {
                             Ok(event) => event,
-                            Err(_) if address_at.is_some_and(|at| at.elapsed() >= KEY_WAIT) => {
-                                tail.push("the engine did not hand over the window key in time".to_owned());
-                                break;
-                            }
-                            Err(_) => {
-                                let _ = tauri::async_runtime::spawn_blocking(|| std::thread::sleep(std::time::Duration::from_millis(20))).await;
-                                continue;
-                            }
+                            Err(_) if closed => break,
+                            Err(_) => match engine_start::overdue(port.is_some(), started_at.elapsed(), address_at.map(|at| at.elapsed())) {
+                                Some(wait) => {
+                                    failure = engine_start::Failure::TimedOut(wait);
+                                    break;
+                                }
+                                None => {
+                                    let _ = tauri::async_runtime::spawn_blocking(|| std::thread::sleep(std::time::Duration::from_millis(20))).await;
+                                    continue;
+                                }
+                            },
                         }
                     };
                     let line = match event {
@@ -292,6 +304,7 @@ fn main() {
                         CommandEvent::Terminated(status) => {
                             if !opened {
                                 tail.push(format!("engine exited ({:?})", status.code));
+                                failure = engine_start::Failure::Stopped(status.code);
                             }
                             break;
                         }
@@ -320,7 +333,7 @@ fn main() {
                     }
                 }
                 if !opened {
-                    engine_failed(&handle, &format!("The FormAT engine failed to start. Please relaunch the app.\n\n{}", tail.join("\n")));
+                    engine_failed(&handle, &engine_start::message(&failure, &tail));
                 }
             });
             Ok(())

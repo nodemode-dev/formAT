@@ -223,11 +223,11 @@ def install_antigravity(home: Path, launcher: Path) -> None:
 
 def install(user: bool) -> None:
     sync()
-    for f, who in ((".mcp.json", "Claude Code (project server; approve it once when asked)"), (".cursor/mcp.json", "Cursor"),
-                   (".codex/config.toml", "Codex (read when you trust this project)"), (".agents/mcp_config.json", "Antigravity (its agy program, in this folder)")):
+    for f, who in ((".mcp.json", "Claude Code (project server; approve it once when asked)"), (".codex/config.toml", "Codex (read when you trust this project)"),
+                   (".cursor/mcp.json", "Cursor"), (".agents/mcp_config.json", "Antigravity (its agy program, in this folder)")):
         print(f"[format] {'ok  ' if (ROOT / f).is_file() else 'MISSING'} {f}: {who}")
     if not user:
-        print("[format] add --user to also register Format for every folder: Codex's ~/.codex/config.toml, Antigravity's ~/.gemini/config/mcp_config.json and, if installed, Claude Code's user scope")
+        print("[format] add --user to also register Format for every folder: Claude Code's user scope if it is installed, Codex's ~/.codex/config.toml and Antigravity's ~/.gemini/config/mcp_config.json; Cursor uses this folder's .cursor/mcp.json")
         return
     codex = Path.home() / ".codex" / "config.toml"
     text = codex.read_text(encoding="utf-8") if codex.is_file() else ""

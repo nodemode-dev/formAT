@@ -14,6 +14,7 @@ if ft_has faster_whisper; then
   optional+=(--collect-all faster_whisper --collect-all ctranslate2 --collect-all onnxruntime --collect-all tokenizers)
 fi
 ft_has ptyprocess && optional+=(--collect-submodules ptyprocess)
+if [ "$(ft_os)" = windows ] && [ "${FORMAT_ENGINE_WINDOWED:-1}" != 0 ]; then optional+=(--noconsole); fi
 rm -rf build/pyinstaller dist-engine
 "$py" -m PyInstaller --noconfirm --clean --onefile --name format-engine \
   --distpath dist-engine --workpath build/pyinstaller --specpath build/pyinstaller --paths "$FORMAT_ROOT/backend" \
