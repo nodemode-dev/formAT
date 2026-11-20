@@ -12,7 +12,6 @@ import json
 import socket
 import subprocess
 import threading
-import time
 from pathlib import Path
 
 APP_DIR_NAME = "Format"
@@ -72,40 +71,58 @@ def adopt_login_path() -> None:
     os.environ["PATH"] = os.pathsep.join(parts)
 
 
-def watch_parent() -> None:
-    parent = int(os.environ.get("FORMAT_PARENT_PID") or 0)
-    if not parent:
+LOG_FOLDER = "Logs"
+LOG_NAME = "format-engine.log"
+LOG_BYTES = 1_048_576
+LOG_ONLY = {"log_only": True}
+
+
+def parent_pid() -> int:
+    raw = os.environ.get("FORMAT_PARENT_PID", "").strip()
+    return int(raw) if raw.isascii() and raw.isdigit() else 0
+
+
+def start_log(data: Path) -> Path:
+    import logging
+    from logging.handlers import RotatingFileHandler
+
+    from app.core import startup
+
+    folder = data / LOG_FOLDER
+    folder.mkdir(parents=True, exist_ok=True)
+    kept = RotatingFileHandler(folder / LOG_NAME, maxBytes=LOG_BYTES, backupCount=2, encoding="utf-8")
+    kept.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
+    startup.keep_errors(folder)
+    said = logging.StreamHandler()
+    said.setLevel(logging.WARNING)
+    said.addFilter(lambda record: not getattr(record, "log_only", False))
+    log = logging.getLogger("format")
+    log.addHandler(kept)
+    log.addHandler(said)
+    log.setLevel(logging.INFO)
+    return folder
+
+
+def watch_shell(data: Path, shell: int) -> None:
+    if shell <= 1:
         return
-    launcher = os.getppid() if os.name != "nt" else 0
+    import logging
 
-    def alive(pid: int) -> bool:
-        if os.name == "nt":
-            import ctypes
-            handle = ctypes.windll.kernel32.OpenProcess(0x1000, False, pid)
-            if not handle:
-                return False
-            code = ctypes.c_ulong()
-            ctypes.windll.kernel32.GetExitCodeProcess(handle, ctypes.byref(code))
-            ctypes.windll.kernel32.CloseHandle(handle)
-            return code.value == 259
-        try:
-            os.kill(pid, 0)
-        except ProcessLookupError:
-            return False
-        except PermissionError:
-            return True
-        return True
+    from app.core import instance, startup
 
-    def loop() -> None:
-        while alive(parent) and (not launcher or os.getppid() == launcher):
-            time.sleep(0.5)
+    def leave() -> None:
+        logging.getLogger("format").info("the app that started this engine is gone (process %s), stopping", shell)
         unpacked = getattr(sys, "_MEIPASS", "")
         if os.name == "posix" and os.path.basename(unpacked).startswith("_MEI"):
             import shutil
             shutil.rmtree(unpacked, ignore_errors=True)
+        instance.release(data)
         os._exit(0)
 
-    threading.Thread(target=loop, name="format-parent-watch", daemon=True).start()
+    startup.watch(shell, leave)
+    launcher = os.getppid() if os.name != "nt" else 0
+    if launcher > 1 and launcher != shell:
+        startup.watch(launcher, leave)
 
 
 UNPACK_MARK = ".format-engine-running"
@@ -247,17 +264,48 @@ def main() -> int:
     if "--selfcheck" in sys.argv:
         prepare_env()
         return selfcheck()
-    prepare_env()
-    from app.core import instance
     try:
-        instance.claim(Path(os.environ["FORMAT_DATA_DIR"]))
+        return serve()
+    except Exception:
+        import logging
+        logging.getLogger("format").exception("the engine stopped on an error", extra=LOG_ONLY)
+        raise
+
+
+def serve() -> int:
+    import logging
+
+    try:
+        prepare_env()
+        data = Path(os.environ["FORMAT_DATA_DIR"])
+        start_log(data)
+    except OSError as err:
+        print(f"FormAT cannot use its data folder: {err}", file=sys.stderr, flush=True)
+        return 5
+    from app.core import instance, startup
+    log = logging.getLogger("format")
+    log.info("engine started, pid %s, data folder %s", os.getpid(), data)
+    shell = startup.shell_pid() or parent_pid()
+    if startup.alone() and not shell:
+        beside = startup.app_beside(Path(sys.executable))
+        if beside is not None and startup.open_app(beside):
+            log.info("started without its app, so it opened %s and stopped", beside)
+            return 0
+        log.error("started without its app, and no app program was found near %s", sys.executable, extra=LOG_ONLY)
+        print("format-engine is a part of FormAT and serves nothing on its own. Open FormAT instead.", file=sys.stderr, flush=True)
+        return 4
+    try:
+        replaced = instance.claim(data, shell)
     except instance.AlreadyRunning as err:
+        log.error("%s", err, extra=LOG_ONLY)
         print(err, file=sys.stderr, flush=True)
         return 2
+    if replaced:
+        log.info("an engine whose app was gone still held the data folder and was stopped (process %s)", replaced)
     hold_unpack()
     sweep_stale_unpacks()
     adopt_login_path()
-    watch_parent()
+    watch_shell(data, shell)
     import uvicorn
 
     from app.core import window_key
@@ -266,7 +314,10 @@ def main() -> int:
     if window_key.stdout_mode():
         sys.stdout.write(window_key.LINE + window_key.KEY + "\n")
         sys.stdout.flush()
-    uvicorn.run(fastapi_app, host="127.0.0.1", port=int(os.environ["FORMAT_PORT"]), log_level="info")
+    try:
+        uvicorn.run(fastapi_app, host="127.0.0.1", port=int(os.environ["FORMAT_PORT"]), log_level="info")
+    finally:
+        instance.release(data)
     return 0
 
 
