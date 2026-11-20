@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.29.0 · 2026-11-19
+
+- An engine left behind no longer keeps FormAT from starting. The engine is the helper program behind the window, and only one can use FormAT's data folder at a time. If an earlier engine of this version is still there although its app has gone, the next start ends it and opens; before, the app showed "FormAT is already running on the data folder" until that engine was ended by hand. An engine whose app is open is never ended: a second engine on the same folder is refused with the same sentence as before, which now also names the first engine's process. An engine left by 0.28.0 or older is treated as one whose app is open.
+- The engine leaves when its app has gone, however the app ended, as it did before. It now asks every two seconds, where it asked every half second.
+- The engine keeps a log of its own: `Logs/format-engine.log` in FormAT's data folder, started before anything else it does, so a start that fails leaves a line there. A Windows build without a console also keeps its errors, in `Logs/format-engine-errors.log`.
+- Opening the engine's program by itself, for example with a double click in the install folder, opens FormAT and starts no engine that nobody sees; if FormAT is not found beside it, it says "format-engine is a part of FormAT and serves nothing on its own. Open FormAT instead." To run a packaged engine by itself on purpose, set `FORMAT_NO_SHELL=1`.
+- A data folder that cannot be made is said in one sentence, where it was a page of error text.
+- When the engine fails to start, the app shows its message while the small loading window is still on screen, and closes only after you have answered it. If the main window cannot be opened, the app now says so; before, it ended without a word.
+- Not in this version: on Windows, the system itself ending the engine together with the app (the family's job object), a limit on how long the app waits for the engine's address, and the Windows build without a console, which stays off. Until then an app ended by force is covered by the engine's own check.
+- Not checked for this version: nothing was run on Windows or macOS, and no packaged engine was built. The desktop app was not compiled on the build machine, so the release build is the first compile of its changed file. No real agent program was run.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`). One new file shared by the Form family, `backend/app/core/startup.py`, copied from FormTools with its names changed.
+
 ## 0.28.0 · 2026-11-19
 
 - Antigravity (Google's `agy` program) joins Claude Code, Codex and Cursor as the fourth agent program FormAT knows. This repository carries `.agents/mcp_config.json` for it beside the files for the other three, and `./format agents install --user` also adds FormAT to Antigravity's own file, `~/.gemini/config/mcp_config.json`, keeping every other server listed there. If that file already has an entry named `format` that FormAT did not write, it is left alone and you are told.
