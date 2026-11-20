@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.30.0 · 2026-11-20
+
+- On Windows the engine now ends together with the app, however the app ends: closed, crashed or ended in Task Manager. The engine is the helper program behind the window; before, an app ended by force left it to notice on its own.
+- The app waits at most 90 seconds for the engine to say where it serves. Before, it could wait without end. If the wait runs out, the message says how long it waited and for what, with the engine's last lines, its exit code and where its log is, as before. When another copy of the engine holds FormAT's data folder, the message now says so in its first line.
+- The Windows engine is built with no console window. To build one with a console, for example to read what the engine says, set `FORMAT_ENGINE_WINDOWED=0` before `setup\freeze_backend.bat`.
+- On macOS, an engine left behind that has already ended is now taken as gone, so it no longer keeps the next start from opening.
+- `./format agents install` names the four agent programs in one order, Claude Code, Codex, Cursor and Antigravity, and says that Cursor uses this folder's `.cursor/mcp.json`. The setup guide follows the same order.
+- The engine still learns which app started it from `FORMAT_PARENT_PID`.
+- Not checked for this version: nothing was run on Windows or macOS, and no packaged engine was built. The desktop app was not built on the build machine, so the release build is its first compile. No real agent program was run.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`).
+
 ## 0.29.0 · 2026-11-19
 
 - An engine left behind no longer keeps FormAT from starting. The engine is the helper program behind the window, and only one can use FormAT's data folder at a time. If an earlier engine of this version is still there although its app has gone, the next start ends it and opens; before, the app showed "FormAT is already running on the data folder" until that engine was ended by hand. An engine whose app is open is never ended: a second engine on the same folder is refused with the same sentence as before, which now also names the first engine's process. An engine left by 0.28.0 or older is treated as one whose app is open.
