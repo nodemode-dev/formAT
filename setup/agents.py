@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
+import hashlib
 import json
 import os
 import re
 import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -21,6 +21,8 @@ MANIFEST = ROOT / "agents" / "manifest.json"
 APP = "format"
 DOCK = {"present": False, "positions": [], "tabs": []}
 MCP_URL = "http://127.0.0.1:8490/mcp"
+LOOKUP = ROOT / "backend" / "app" / "engine" / "agent_lookup.py"
+LOOKUP_HASHES = {"1.0.0": "252ea9bb9419d4990f174f91914f09800497bc69e98f849f5643bbf4217cc3f3", "1.0.1": "62667f9b68b7d101e1896ce617240424e33b7e498c560bc79d45f0ab26c77d51"}
 GROUPS = {
     "chat": "Chat with Claude", "conversation": "Chats", "message": "Chats", "artifact": "Artifacts", "files": "Chat files and outputs", "outputs": "Chat files and outputs",
     "tasks": "Chat files and outputs", "project": "Projects", "memory": "Memory", "skill": "Skills", "connector": "Connectors", "schedule": "Scheduled tasks",
@@ -138,8 +140,21 @@ def tree(folder: Path) -> dict:
     return {p.relative_to(folder).as_posix(): p.read_bytes() for p in sorted(folder.rglob("*")) if p.is_file()}
 
 
+def lookup_problems() -> list:
+    rel = LOOKUP.relative_to(ROOT).as_posix()
+    try:
+        raw = LOOKUP.read_bytes()
+    except OSError:
+        return [f"{rel}: missing (the shared finder for the agent programs)"]
+    said = re.search(rb'^VERSION = "([^"\r\n]+)"\r?$', raw, re.M)
+    version = said.group(1).decode("ascii", "replace") if said else "unknown"
+    if LOOKUP_HASHES.get(version) != hashlib.sha256(raw).hexdigest():
+        return [f"{rel}: does not match the hash recorded for version {version} (the shared finder changes only as a whole new version)"]
+    return []
+
+
 def check() -> int:
-    stale = []
+    stale = lookup_problems()
     if not MANIFEST.is_file() or MANIFEST.read_text(encoding="utf-8") != manifest_text():
         stale.append(MANIFEST.relative_to(ROOT).as_posix())
     for rel, text in generated():
@@ -172,15 +187,47 @@ def sync() -> None:
         shutil.copytree(SKILLS, MIRROR)
     print(f"[format] {len(REGISTRY)} commands; regenerated: {', '.join(changed) or 'nothing changed'}")
     print(f"[format] mirrored {', '.join(sorted(p.name for p in MIRROR.iterdir())) if MIRROR.is_dir() else 'no skills'} to .agents/skills for Codex and other agents")
+    problems = lookup_problems()
+    for line in problems:
+        print(f"[format] {line}")
+    if problems:
+        raise SystemExit(1)
+
+
+def install_antigravity(home: Path, launcher: Path) -> None:
+    cfg = home / ".gemini" / "config" / "mcp_config.json"
+    older = home / ".gemini" / "antigravity-cli" / "mcp_config.json"
+    if older.exists() and not cfg.exists():
+        print(f"[format] an older Antigravity file was seen at {older} and left alone; the documented file is {cfg}")
+    try:
+        data = json.loads(cfg.read_text(encoding="utf-8") or "{}") if cfg.exists() else {}
+    except ValueError:
+        data = None
+    if not isinstance(data, dict) or not isinstance(data.get("mcpServers", {}), dict):
+        print(f"[format] {cfg} is not an MCP servers file Format can read; left alone")
+        return
+    entry = {"command": launcher.as_posix(), "args": ["mcp"]}
+    have = data.get("mcpServers", {}).get(APP)
+    if have == entry:
+        print(f"[format] {cfg} already lists Format")
+    elif have is not None and not (isinstance(have, dict) and have.get("args") == ["mcp"] and Path(str(have.get("command", ""))).name == launcher.name):
+        print(f"[format] {cfg} has a server named {APP} that Format did not write; left alone")
+    else:
+        data.setdefault("mcpServers", {})[APP] = entry
+        cfg.parent.mkdir(parents=True, exist_ok=True)
+        part = cfg.with_name(cfg.name + f".part-{os.getpid()}")
+        part.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
+        os.replace(part, cfg)
+        print(f"[format] added Format to {cfg} (Antigravity)")
 
 
 def install(user: bool) -> None:
     sync()
     for f, who in ((".mcp.json", "Claude Code (project server; approve it once when asked)"), (".cursor/mcp.json", "Cursor"),
-                   (".codex/config.toml", "Codex (read when you trust this project)")):
+                   (".codex/config.toml", "Codex (read when you trust this project)"), (".agents/mcp_config.json", "Antigravity (its agy program, in this folder)")):
         print(f"[format] {'ok  ' if (ROOT / f).is_file() else 'MISSING'} {f}: {who}")
     if not user:
-        print("[format] add --user to also register Format for every folder: Codex's ~/.codex/config.toml and, if installed, Claude Code's user scope")
+        print("[format] add --user to also register Format for every folder: Codex's ~/.codex/config.toml, Antigravity's ~/.gemini/config/mcp_config.json and, if installed, Claude Code's user scope")
         return
     codex = Path.home() / ".codex" / "config.toml"
     text = codex.read_text(encoding="utf-8") if codex.is_file() else ""
@@ -192,11 +239,14 @@ def install(user: bool) -> None:
         with codex.open("a", encoding="utf-8") as f:
             f.write(f'\n[mcp_servers.format]\ncommand = "{launcher.as_posix()}"\nargs = ["mcp"]\n')
         print(f"[format] added Format to {codex}")
-    if shutil.which("claude"):
-        r = subprocess.run(["claude", "mcp", "add", "--scope", "user", "--transport", "http", "format", MCP_URL], capture_output=True, text=True)
+    install_antigravity(Path.home(), ROOT / ("format.bat" if os.name == "nt" else "format"))
+    from app.engine import agent_lookup
+    found = agent_lookup.check(agent_lookup.find("claude", override_vars=("FORMAT_CLAUDE_BIN",)))
+    if found.state == "runs":
+        r = agent_lookup.run([found.path, "mcp", "add", "--scope", "user", "--transport", "http", "format", MCP_URL], agent_lookup.child_env(found.path), 60)
         print(f"[format] Claude Code: {(r.stdout or r.stderr).strip().splitlines()[0] if (r.stdout or r.stderr).strip() else 'done'}")
     else:
-        print("[format] Claude Code is not on the PATH; this repo's .mcp.json covers it here")
+        print(f"[format] {agent_lookup.sentence(found, agent_lookup.install('claude'), 'set FORMAT_CLAUDE_BIN to its path')} This repo's .mcp.json covers Claude Code here")
 
 
 def main() -> None:
