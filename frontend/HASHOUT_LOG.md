@@ -905,6 +905,13 @@ Menus use `--z-menu`, the palette `--z-modal`; both live in `#overlay-root`, a d
 
 Starting values from the owner's claude.ai screenshots (planning sidecar `UI_STUDY.md` § Measurements): the sidebar is 16.8 percent of the window, the text column about 32.5 percent, the composer about 36.5 percent, the open file panel about 41 percent. At a 1728 px wide window those shares give roughly 290, 560, 630 and 710 px; the tokens round toward the family's 4 px grid and are tuned side by side with the screenshots in v0.2.0.
 
+### src/styles/ft-tokens.css · every FormVis token name resolves
+- refers-to: src/styles/ft-tokens.css :: the second `:root` block (--z-under, --z-local-2, --z-local-4, --z-local-5, --cv-tabs-h, --cv-action-blue, --cv-action-violet)
+- kind: decision
+- logged: v0.31.0 · 2026-11-20
+
+FormAT keeps its chat-first design by the owner's decision, and the family's rule for an app with its own look is names only: every name of FormVis's token file resolves here, no value of ours changes. Of FormVis 2.7.0's 154 names, 147 already resolved through the vendored family sheets (formvis v1.66.1); the seven FormVis added later are defined here with FormVis Studio Dark's values, since FormAT has no token that corresponds to any of them (the document tab strip's 34 px is a literal in shell.css, not a token, and is left as it is). They sit in this file so the vendored sheets stay unchanged. Nothing uses them yet: screenshots of the home view and the splash in studio, light, midnight and sand at 1440 by 900 were the same before and after, pixel for pixel, and the resolved-value dump differs only in these seven names.
+
 ---
 
 ## assets/format_icon.svg {#assets-format-icon}

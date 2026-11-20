@@ -35,3 +35,13 @@
 @media (prefers-reduced-motion: reduce) {
   :root { --ft-side-motion: 0ms linear; }
 }
+
+:root {
+  --z-under: -1;
+  --z-local-2: 2;
+  --z-local-4: 4;
+  --z-local-5: 5;
+  --cv-tabs-h: 34px;
+  --cv-action-blue: #3b82f6;
+  --cv-action-violet: #8b5cf6;
+}
