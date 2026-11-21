@@ -1208,3 +1208,10 @@ src/main.ts builds the views (`new App(host)`) before it calls `loadWindowKey`, 
 - logged: v0.28.0 · 2026-11-19
 
 The note under Settings, Outside agents listed "Claude Code, Codex, Cursor and other agents"; the family now offers four agent programs, so it reads "Claude Code, Codex, Cursor, Antigravity and other agents". One word in a sentence that already wraps; no element added. The window has no list or picker of agent programs (the terminal dock opens the person's shell and Claude's read-only tab, and chat chooses between the API key and Claude Code), so there was nothing else to extend: the four programs are reported by the engine's `claudecode.status` under `programs`, and nothing in the window shows that list yet. `tsc --noEmit` exit 0 in a scratch copy. Not looked at in a browser.
+
+### src/ui/browser-pane.ts · the frame request carries the window's key
+- refers-to: src/ui/browser-pane.ts :: loadFrame; src/engine-client/window-key.ts :: keyHeaders; backend/app/core/window_key.py :: PRIVATE_READS
+- kind: fix
+- logged: v0.32.0 · 2026-11-20
+
+The engine now answers `GET /api/browser/frame` only to the window (see the engine log's entry for 0.32.0), so `loadFrame` sends `keyHeaders()` with it. The pane fetches frames only after the events socket has delivered a browser status, and that socket opens only with a ticket taken after `loadWindowKey` has settled, so the key is always there by then. Seen in Chromium with the built window and the real engine: the pane's own frame requests answered 200 image/jpeg; the same read from a local program without the key, 403.

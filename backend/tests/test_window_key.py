@@ -19,6 +19,32 @@ def test_every_write_route_refuses_a_call_without_the_window_key(app, bare):
     assert found == []
 
 
+PUBLIC_READS = {"/api/health", "/api/commands", "/api/commands/{cid}", "/api/voice", "/api/connectors/oauth/callback"}
+ID_READS = {"/api/uploads/{fid}", "/api/chats/{cid}/files/{rel}", "/api/chats/{cid}/outputs.zip", "/api/artifacts/{aid}/v/{number}", "/api/artifacts/{aid}/v/{number}/source",
+            "/api/artifacts/{aid}/v/{number}/export/{fmt}", "/api/native/snapshots/{name}", "/s/{token}"}
+
+
+def test_the_open_lists_are_exactly_the_named_routes():
+    assert set(window_key.OPEN) == {"/mcp", "/api/window/key"}
+    assert window_key.OPEN_PREFIXES == ("/api/commands/",)
+    assert set(window_key.PRIVATE_READS) == {"/api/browser/frame"}
+
+
+def test_every_read_route_is_public_addressed_by_a_random_id_or_refused_without_the_window_key(app, bare):
+    reads = {path for path, item in app.openapi()["paths"].items() if "get" in item}
+    assert reads - PUBLIC_READS - ID_READS == set(window_key.PRIVATE_READS), f"read routes not classified: {sorted(reads - PUBLIC_READS - ID_READS - set(window_key.PRIVATE_READS))}"
+    for path in window_key.PRIVATE_READS:
+        r = bare.get(path)
+        assert r.status_code == 403 and r.json()["detail"] == window_key.REFUSED, path
+        r = bare.get(path, headers={window_key.HEADER: "not-the-key"})
+        assert r.status_code == 403 and window_key.KEY not in r.text, path
+
+
+def test_the_window_reads_the_built_in_browser_frame_with_its_key(client, bare):
+    assert client.get("/api/browser/frame").status_code in (200, 204)
+    assert bare.get("/api/health").status_code == 200
+
+
 def test_a_command_without_the_window_key_is_an_outside_agent(bare, client):
     set_policy("blocked")
     try:

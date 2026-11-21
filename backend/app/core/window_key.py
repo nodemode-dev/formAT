@@ -12,6 +12,7 @@ TICKET_LIFE = 30.0
 READS = ("GET", "HEAD", "OPTIONS")
 OPEN = ("/mcp", "/api/window/key")
 OPEN_PREFIXES = ("/api/commands/",)
+PRIVATE_READS = ("/api/browser/frame",)
 KEY = secrets.token_urlsafe(32)
 STATE = {"claimed": False, "secondClaim": False}
 TICKETS: dict[str, float] = {}
@@ -65,12 +66,18 @@ def open_path(path: str) -> bool:
     return path in OPEN or path.startswith(OPEN_PREFIXES)
 
 
+def needs_key(method, path: str) -> bool:
+    if method in READS:
+        return path in PRIVATE_READS
+    return not open_path(path)
+
+
 class WindowKeyGuard:
     def __init__(self, app) -> None:
         self.app = app
 
     async def __call__(self, scope, receive, send) -> None:
-        if scope["type"] != "http" or scope.get("method") in READS or open_path(str(scope.get("path", ""))) or is_window(scope):
+        if scope["type"] != "http" or not needs_key(scope.get("method"), str(scope.get("path", ""))) or is_window(scope):
             await self.app(scope, receive, send)
             return
         body = json.dumps({"detail": REFUSED}).encode("utf-8")

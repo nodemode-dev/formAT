@@ -1,4 +1,5 @@
 import { run } from '../engine-client/api';
+import { keyHeaders } from '../engine-client/window-key';
 import { el, q, setAttr, setText } from './dom';
 import { ui } from './icons-ft';
 
@@ -159,7 +160,7 @@ export class BrowserPane {
     this.loading = true;
     const seq = this.wantSeq;
     try {
-      const res = await fetch(`/api/browser/frame?s=${seq}`, { cache: 'no-store' });
+      const res = await fetch(`/api/browser/frame?s=${seq}`, { cache: 'no-store', headers: keyHeaders() });
       if (res.status === 200) {
         const url = URL.createObjectURL(await res.blob());
         const pre = new Image();
