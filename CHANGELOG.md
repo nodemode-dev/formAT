@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.32.0 · 2026-11-20
+
+- The page shown in the Browser pane is now sent only to the FormAT window. Other programs on your computer that ask for it are refused, as they already were for every change. Nothing changes in how you use the pane.
+- Agents you connect over MCP or the command line work as before: they follow your Outside agents choice in Settings (Ask, Allowed or Blocked).
+- Not checked for this version: nothing was run on macOS or Windows, and no packaged engine was built. The desktop app was not built on the build machine. No real agent program was run.
+- Engine: no new commands (still 114; 115 MCP tools with `run_command`).
+
 ## 0.31.0 · 2026-11-20
 
 - FormAT keeps its own chat-first look. Every name of the Form family's shared design vocabulary (the colour, size and layer names FormVis defines) now has a value in FormAT too, so a piece shared across the family finds what it looks for. Nothing you see changes: the window looks the same, pixel for pixel, in the dark and light themes.
